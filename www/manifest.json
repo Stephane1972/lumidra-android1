@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Lumidra — Fais éclore ta légende",
+  "short_name": "Lumidra",
+  "description": "Élève, soigne et fais évoluer tes dragons dans un sanctuaire paisible.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFCF6",
+  "theme_color": "#C9A24B",
+  "lang": "fr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

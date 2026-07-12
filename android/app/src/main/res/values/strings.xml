@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lumidra</string>
+    <string name="title_activity_main">Lumidra</string>
+    <string name="package_name">fr.hthermie.lumidra</string>
+    <string name="custom_url_scheme">fr.hthermie.lumidra</string>
+</resources>

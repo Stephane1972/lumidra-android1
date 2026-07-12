@@ -1,0 +1,6 @@
+{
+  "appId": "fr.hthermie.lumidra",
+  "appName": "Lumidra",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
