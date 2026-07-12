@@ -51,7 +51,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tail -c 60000 /tmp/capcopy.log > /tmp/capcopy_trimmed.log
-          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body=@/tmp/capcopy_trimmed.log || true
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -F body=@/tmp/capcopy_trimmed.log || true
 
       - name: Échouer explicitement si la copie a échoué
         if: steps.capcopy.outcome == 'failure'
