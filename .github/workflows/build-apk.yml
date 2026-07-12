@@ -36,13 +36,6 @@ jobs:
       - name: Installer les dépendances npm
         run: npm install
 
-      - name: Versions (diagnostic)
-        run: |
-          node --version
-          npm --version
-          npx --version
-          npx @capacitor/cli --version
-
       - name: Copier les assets web (www/ → android/app/src/main/assets/public)
         id: capcopy
         run: npx cap copy android > /tmp/capcopy.log 2>&1
