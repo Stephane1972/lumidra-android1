@@ -34,7 +34,23 @@ jobs:
         run: npm install
 
       - name: Copier les assets web (www/ → android/app/src/main/assets/public)
-        run: npx cap copy android
+        id: capcopy
+        run: |
+          { node --version; npm --version; npx cap --version; npx cap copy android; } > /tmp/capcopy.log 2>&1
+        continue-on-error: true
+
+      - name: Publier le diagnostic en commentaire si l'étape précédente a échoué
+        if: steps.capcopy.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat /tmp/capcopy.log
+          tail -c 60000 /tmp/capcopy.log > /tmp/capcopy_trimmed.log
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body=@/tmp/capcopy_trimmed.log
+
+      - name: Échouer explicitement si la copie a échoué
+        if: steps.capcopy.outcome == 'failure'
+        run: exit 1
 
       - name: Construire l'APK (debug, prêt à installer directement)
         working-directory: android
