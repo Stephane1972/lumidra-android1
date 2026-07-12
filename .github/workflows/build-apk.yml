@@ -58,8 +58,28 @@ jobs:
         run: exit 1
 
       - name: Construire l'APK (debug, prêt à installer directement)
+        id: gradlebuild
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace > /tmp/gradle.log 2>&1
+        continue-on-error: true
+
+      - name: Afficher le log Gradle (toujours)
+        if: always()
+        run: tail -c 8000 /tmp/gradle.log
+
+      - name: Publier le diagnostic Gradle en commentaire si échec
+        if: steps.gradlebuild.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tail -c 60000 /tmp/gradle.log > /tmp/gradle_trimmed.log
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -F body=@/tmp/gradle_trimmed.log || true
+
+      - name: Échouer explicitement si la construction a échoué
+        if: steps.gradlebuild.outcome == 'failure'
+        run: exit 1
 
       - name: Mettre l'APK à disposition en téléchargement
         uses: actions/upload-artifact@v4
