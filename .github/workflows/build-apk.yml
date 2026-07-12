@@ -27,15 +27,18 @@ jobs:
       - name: Installer le SDK Android
         uses: android-actions/setup-android@v3
 
+      - name: Accepter les licences du SDK Android (sécurité supplémentaire)
+        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
       - name: Installer les dépendances npm
         run: npm install
 
-      - name: Synchroniser le projet Android (copie www/ + plugins Capacitor)
-        run: npx cap sync android
+      - name: Copier les assets web (www/ → android/app/src/main/assets/public)
+        run: npx cap copy android
 
       - name: Construire l'APK (debug, prêt à installer directement)
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Mettre l'APK à disposition en téléchargement
         uses: actions/upload-artifact@v4
