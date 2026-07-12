@@ -6,6 +6,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,20 +36,29 @@ jobs:
       - name: Installer les dépendances npm
         run: npm install
 
+      - name: Versions (diagnostic)
+        run: |
+          node --version
+          npm --version
+          npx --version
+          npx @capacitor/cli --version
+
       - name: Copier les assets web (www/ → android/app/src/main/assets/public)
         id: capcopy
-        run: |
-          { node --version; npm --version; npx cap --version; npx cap copy android; } > /tmp/capcopy.log 2>&1
+        run: npx cap copy android > /tmp/capcopy.log 2>&1
         continue-on-error: true
+
+      - name: Afficher le log de copie (toujours, réussite ou non)
+        if: always()
+        run: cat /tmp/capcopy.log
 
       - name: Publier le diagnostic en commentaire si l'étape précédente a échoué
         if: steps.capcopy.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cat /tmp/capcopy.log
           tail -c 60000 /tmp/capcopy.log > /tmp/capcopy_trimmed.log
-          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body=@/tmp/capcopy_trimmed.log
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body=@/tmp/capcopy_trimmed.log || true
 
       - name: Échouer explicitement si la copie a échoué
         if: steps.capcopy.outcome == 'failure'
