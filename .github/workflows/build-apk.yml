@@ -36,9 +36,9 @@ jobs:
       - name: Installer les dépendances npm
         run: npm install
 
-      - name: Copier les assets web (www/ → android/app/src/main/assets/public)
+      - name: Synchroniser le projet Android (copie www/ + régénère les plugins Capacitor/Cordova)
         id: capcopy
-        run: npx cap copy android > /tmp/capcopy.log 2>&1
+        run: npx cap sync android > /tmp/capcopy.log 2>&1
         continue-on-error: true
 
       - name: Afficher le log de copie (toujours, réussite ou non)
