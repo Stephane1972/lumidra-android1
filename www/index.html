@@ -1133,15 +1133,41 @@ function buildSaveFileContents() {
   }, null, 2);
 }
 
-function exportSave() {
+async function exportSave() {
+  const contents = buildSaveFileContents();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `lumidra-sauvegarde-${dateStr}.json`;
+
+  // Dans l'app native (Capacitor), un lien de téléchargement classique ne marche pas :
+  // la WebView n'a pas de gestionnaire de téléchargements comme un vrai navigateur.
+  // On écrit un vrai fichier via Filesystem, puis on ouvre le partage natif pour que
+  // le joueur choisisse où l'enregistrer (Drive, Fichiers, e-mail...) — un endroit qu'il
+  // pourra retrouver, contrairement à un téléchargement silencieux qui disparaissait.
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+      && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem && window.Capacitor.Plugins.Share) {
+    try {
+      const { Filesystem, Directory, Encoding } = window.Capacitor.Plugins;
+      const written = await Filesystem.writeFile({ path: fileName, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
+      await window.Capacitor.Plugins.Share.share({
+        title: 'Sauvegarde Lumidra',
+        text: 'Ta sauvegarde Lumidra',
+        url: written.uri,
+        dialogTitle: 'Enregistrer ou partager ta sauvegarde',
+      });
+      showToast('Choisis où enregistrer ta sauvegarde');
+    } catch (e) {
+      showToast("Impossible d'exporter la sauvegarde");
+    }
+    return;
+  }
+
+  // Navigateur / PWA web classique : le téléchargement direct fonctionne normalement.
   try {
-    const contents = buildSaveFileContents();
     const blob = new Blob([contents], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const dateStr = new Date().toISOString().slice(0, 10);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lumidra-sauvegarde-${dateStr}.json`;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
