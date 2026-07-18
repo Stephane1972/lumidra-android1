@@ -235,9 +235,34 @@ button:focus-visible { outline:2px solid var(--gold-deep); outline-offset:2px; }
 .anim-fadeup { animation: lumidra-fadeup .35s ease both; }
 .anim-shake  { animation: lumidra-shake .3s ease; }
 
-@media (prefers-reduced-motion: reduce) {
-  .anim-pop,.anim-pulse,.anim-float,.anim-fadeup,.anim-shake { animation:none !important; }
+@keyframes lumidra-idle-bob      {
+  0%, 100% { transform: translateY(0) scale(1,1); }
+  12%      { transform: translateY(1px) scale(1.06,0.92); }
+  38%      { transform: translateY(-13px) scale(0.95,1.07); }
+  62%      { transform: translateY(0) scale(1.07,0.9); }
+  78%      { transform: translateY(0) scale(1,1); }
 }
+@keyframes lumidra-legendary-glow{ 0%,100%{opacity:.28;transform:scale(1);} 50%{opacity:.55;transform:scale(1.1);} }
+@keyframes lumidra-wing-flap     { 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(-16deg);} }
+@keyframes lumidra-eye-blink     { 0%,90%,100%{transform:scaleY(1);} 95%{transform:scaleY(0.12);} }
+@keyframes lumidra-tail-swish    { 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(9deg);} }
+.dragon-anim-idle           { animation: lumidra-idle-bob 3.4s cubic-bezier(.34,1.56,.64,1) infinite; transform-origin:50% 100%; }
+.dragon-anim-legendary-halo { animation: lumidra-legendary-glow 2.4s ease-in-out infinite; transform-origin:center; }
+.dragon-wing-flap           { animation: lumidra-wing-flap 1.7s ease-in-out infinite; transform-origin:0 0; }
+.dragon-eye-blink           { animation: lumidra-eye-blink 5.5s ease-in-out infinite; transform-origin:100px 70px; }
+.dragon-tail-swish          { animation: lumidra-tail-swish 3.4s ease-in-out infinite; transform-origin:126px 150px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-pop,.anim-pulse,.anim-float,.anim-fadeup,.anim-shake,.dragon-anim-idle,.dragon-anim-legendary-halo,
+  .dragon-wing-flap,.dragon-eye-blink,.dragon-tail-swish { animation:none !important; }
+}
+
+/* Réglage "Animations douces" (indépendant du prefers-reduced-motion système) :
+   garde un peu de vie sans le rebond marqué façon squash-stretch. */
+body.gentle-fx .dragon-anim-idle { animation-name: lumidra-idle-bob-soft; animation-duration: 3.2s; animation-timing-function: ease-in-out; }
+body.gentle-fx .dragon-wing-flap { animation-duration: 2.8s; }
+body.gentle-fx .dragon-tail-swish { animation-duration: 4.4s; }
+@keyframes lumidra-idle-bob-soft { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
 
 /* ---- accessibilité clavier / états ---- */
 [data-action]:focus-visible { outline:2px solid var(--gold-deep); outline-offset:2px; border-radius:8px; }
@@ -278,28 +303,11 @@ const ELEMENTS = {
 
 const INK = '#3A2E2A';
 const RARITY_LABEL = ['Commun', 'Commun', 'Rare', 'Épique', 'Légendaire'];
-const RARITY_STARS = [1, 1, 2, 3, 5];
+const RARITY_STARS = [1, 1, 2, 3, 3];
 const STAGE_LABEL = { bebe: 'Bébé', juvenile: 'Juvénile', adulte: 'Adulte' };
 const TEMPERAMENTS = ['Calme', 'Joueur', 'Audacieux', 'Loyal'];
-/* ---- effets doux du tempérament (jamais punitifs, juste une légère couleur de jeu) ---- */
-const TEMPERAMENT_EFFECTS = {
-  Calme:     { happinessDecayMult: 0.7,  cooldownMult: 1.0,  eclatBonus: 0  },
-  Joueur:    { happinessDecayMult: 1.15, cooldownMult: 0.85, eclatBonus: 4  },
-  Audacieux: { happinessDecayMult: 1.0,  cooldownMult: 1.0,  vigueurBonus: 6 },
-  Loyal:     { happinessDecayMult: 0.85, cooldownMult: 1.0,  harmonieBonus: 8 },
-};
 const CARE_COOLDOWN_MS = 90000; // 1 min 30 — un vrai temps de pause, plus une boucle instantanée
-/* ---- bonheur : décroît doucement depuis le dernier soin, jamais en dessous du plancher ---- */
-const HAPPINESS_FLOOR = 30;           // un dragon négligé reste triste, jamais "cassé"
-const HAPPINESS_DECAY_FULL_MS = 6 * 3600 * 1000; // 6h sans soin → bonheur au plancher
-const SAVE_KEY = 'lumidra-save-v2';
-const SAVE_KEY_LEGACY = 'lumidra-save-v1';
-const SCHEMA_VERSION = 2;
-/* ---- friandise : un sink d'écailles pérenne (répétable) plutôt qu'un pur achat cosmétique unique.
-   Contrairement au décor (acheté une fois pour toutes), elle reste utile toute la vie du dragon,
-   donne enfin un usage concret au système de bonheur, et évite que l'économie ne devienne
-   entièrement inutile une fois les 6 décors possédés (1450 écailles au total). ---- */
-const TREAT_COST = 40;
+const SAVE_KEY = 'lumidra-save-v1';
 
 const SPECIES = [
   { id:'braisor', name:'Braisor', element:'feu', variant:0, lore:"Petit dragon trapu qui traîne une fumée joueuse derrière lui." },
@@ -326,42 +334,47 @@ const SPECIES = [
   { id:'bourgette', name:'Bourgette', element:'nature', variant:1, lore:"De petites fleurs éclosent sur son dos." },
   { id:'lianor', name:'Lianor', element:'nature', variant:2, lore:"Sa queue en liane fleurie ne cesse jamais de pousser." },
   { id:'sylvandre', name:'Sylvandre', element:'nature', variant:3, lore:"Allure de vieux chêne vivant, mémoire de la forêt." },
+  // Légendaires — extrêmement rares, aperçus surtout lors des quêtes légendaires et à la Cime des Anciens Dragons.
+  { id:'ignarok', name:'Ignarok', element:'feu', variant:4, lore:"Dragon de braise ancestrale, on dit qu'il dort au cœur des volcans depuis des siècles." },
+  { id:'leviatriss', name:'Léviatriss', element:'eau', variant:4, lore:"Créature abyssale légendaire, ses écailles scintillent comme des étoiles sous l'eau." },
+  { id:'terragorn', name:'Terragorn', element:'terre', variant:4, lore:"Géant de pierre vivante, chaque pas fait naître une nouvelle montagne, dit la légende." },
+  { id:'zephyrion', name:'Zéphyrion', element:'air', variant:4, lore:"Maître des tempêtes, invisible sauf quand il choisit de se montrer." },
+  { id:'aurelios', name:'Aurélios', element:'lumiere', variant:4, lore:"Dragon solaire mythique, son envol dessinerait l'aube selon les anciens récits." },
+  { id:'sylvamater', name:'Sylvamater', element:'nature', variant:4, lore:"Esprit ancien de la forêt, on ne le voit qu'une fois par génération de gardiens." },
 ];
-
-/* ---- espèces légendaires : contenu de fin de collection, débloqué une fois les 24 espèces communes découvertes ---- */
-const LEGENDARY_SPECIES = [
-  { id:'ignazur', name:'Ignazur', element:'feu', variant:4, legendary:true, lore:"On raconte qu'il est né de la première étincelle jamais allumée sur Lumidra." },
-  { id:'maregliss', name:'Marégliss', element:'eau', variant:4, legendary:true, lore:"Gardien des marées, il n'apparaît qu'aux Gardiens les plus patients." },
-  { id:'terravelle', name:'Terravelle', element:'terre', variant:4, legendary:true, lore:"Ses écailles portent la mémoire de chaque montagne de l'archipel." },
-  { id:'zephyriel', name:'Zéphyriel', element:'air', variant:4, legendary:true, lore:"Il ne touche jamais le sol deux fois au même endroit." },
-];
-const ALL_SPECIES = SPECIES.concat(LEGENDARY_SPECIES);
 
 const ZONES = [
-  { id:'plaine', name:'Plaine des Premières Écailles', elements:['feu','terre'], unlockLevel:1 },
-  { id:'golfe', name:'Golfe de Brume', elements:['eau','air'], unlockLevel:3 },
-  { id:'foret', name:'Forêt de Sylvandre', elements:['nature','terre'], unlockLevel:5 },
-  { id:'archipel', name:'Archipel des Vents', elements:['air','lumiere'], unlockLevel:8 },
+  { id:'plaine', name:'Plaine des Premières Écailles', elements:['feu','terre'], unlockLevel:1, lore:"Là où les tout premiers gardiens ont appris à marcher aux côtés des dragons. Le sol y garde encore une chaleur tranquille." },
+  { id:'golfe', name:'Golfe de Brume', elements:['eau','air'], unlockLevel:3, lore:"Une côte toujours voilée d'un brouillard léger, où les dragons d'eau et d'air se croisent au lever du jour." },
+  { id:'foret', name:'Forêt de Sylvandre', elements:['nature','terre'], unlockLevel:5, lore:"Une forêt si ancienne que certains arbres seraient eux-mêmes d'anciens dragons endormis." },
+  { id:'archipel', name:'Archipel des Vents', elements:['air','lumiere'], unlockLevel:8, lore:"Des îlots suspendus par les courants, où la lumière du matin attire les dragons les plus rapides." },
+  { id:'cime', name:'Cime des Anciens Dragons', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:12, lore:"Le sommet que tous les éléments se partagent. On raconte que chaque dragon légendaire y revient au moins une fois." },
 ];
 
 const EXPEDITION_TYPES = [
-  { id:'reco', name:'Reconnaissance', seconds:180, ecaillesMin:30, ecaillesMax:50, eggChance:0.30, team:false },
-  { id:'collecte', name:'Collecte', seconds:480, ecaillesMin:60, ecaillesMax:100, eggChance:0.45, team:false },
-  { id:'explo', name:'Exploration', seconds:7200, ecaillesMin:100, ecaillesMax:160, eggChance:0.60, team:false },
-  { id:'majeure', name:'Expédition majeure', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, team:true },
+  { id:'reco', name:'Reconnaissance', seconds:180, ecaillesMin:30, ecaillesMax:50, eggChance:0.30, legendaryChance:0, team:false, tagline:'Pour une petite pause' },
+  { id:'collecte', name:'Collecte', seconds:480, ecaillesMin:60, ecaillesMax:100, eggChance:0.45, legendaryChance:0.01, team:false, tagline:"Le temps d'un goûter" },
+  { id:'explo', name:'Exploration', seconds:7200, ecaillesMin:100, ecaillesMax:160, eggChance:0.60, legendaryChance:0.04, team:false, tagline:"Idéal pour l'après-midi" },
+  { id:'majeure', name:'Expédition majeure', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, legendaryChance:0.08, team:true, tagline:'À lancer avant de partir' },
+  { id:'quete-legendaire', name:'Quête légendaire', seconds:21600, ecaillesMin:220, ecaillesMax:340, eggChance:0.85, legendaryChance:0.35, team:true, tagline:'Une nuit entière sur la piste d\'un dragon légendaire' },
 ];
 
 const DECOR = [
-  { id:'lanterne', name:'Lanterne de Papier', emoji:'🏮', cost:150 },
-  { id:'bassin', name:'Bassin de Nénuphars', emoji:'🪷', cost:220 },
-  { id:'cristal', name:'Cristal Lumineux', emoji:'💎', cost:300 },
-  { id:'banc', name:'Banc de Pierre', emoji:'🪨', cost:180 },
-  { id:'arche', name:'Arche Fleurie', emoji:'💐', cost:260 },
-  { id:'carillon', name:'Carillon de Vent', emoji:'🎐', cost:340 },
+  { id:'lanterne', name:'Lanterne de Papier', cost:150 },
+  { id:'bassin', name:'Bassin de Nénuphars', cost:220 },
+  { id:'cristal', name:'Cristal Lumineux', cost:300 },
+  { id:'banc', name:'Banc de Pierre', cost:180 },
+  { id:'arche', name:'Arche Fleurie', cost:260 },
+  { id:'carillon', name:'Carillon de Vent', cost:340 },
+  { id:'autel', name:'Autel Ancien', cost:420 },
+  { id:'statue-ancien', name:'Statue de Gardien', cost:480 },
+  { id:'flamme-eternelle', name:'Flamme Éternelle', cost:520 },
+  { id:'voile-solaire', name:'Voile Solaire', cost:260, seasonal:'ete' },
+  { id:'citrouille-doree', name:'Citrouille Dorée', cost:260, seasonal:'automne' },
+  { id:'guirlande-etoilee', name:'Guirlande Étoilée', cost:260, seasonal:'hiver' },
 ];
 
 const DEFAULT_STATE = {
-  schemaVersion: SCHEMA_VERSION,
   onboarded: false,
   mode: 'eclosion',
   gardienName: 'Gardien',
@@ -370,66 +383,66 @@ const DEFAULT_STATE = {
   dragons: [],
   eggInbox: [],
   discovered: [],
-  legendaryDiscovered: [],
   expeditions: [],
   decorOwned: [],
   decorEquipped: [],
   parentalLock: false,
+  reduceVibrations: false,
   collectionCompleteShown: false,
-  dailyQuests: null,        // { dateKey, quests:[{id,label,target,progress,reward,done,claimed}] }
+  collectionBannerCollapsed: false,
+  dailyQuests: null,
+  weeklyChallenge: null,
+  achievementsClaimed: [],
+  achievementsBannerCollapsed: false,
+  statsExpeditionsCompleted: 0,
+  laboCooldownUntil: 0,
+  statsBredCount: 0,
+  soundEnabled: true,
+  gentleAnimations: false,
+  lastLoginDate: null,
+  loginStreak: 0,
+  longestStreak: 0,
+  statsEggsHatched: 0,
+  tutorialSeen: false,
+  selectedTitle: null,
+  expeditionLog: [],
 };
 
+// Retourne une copie de DEFAULT_STATE avec des tableaux/objets neufs à chaque appel.
+// (Object.assign({}, DEFAULT_STATE) seul ne copie que la RÉFÉRENCE des tableaux : sans
+// cette fonction, state.dragons.push(...) mutait aussi DEFAULT_STATE.dragons, ce qui
+// pouvait corrompre le Reset et l'import d'une sauvegarde dans la même session.)
 function freshDefaultState() {
-  // DEFAULT_STATE contient des tableaux (dragons, eggInbox, discovered...) : un Object.assign
-  // superficiel copierait les mêmes références partagées entre toutes les parties, ce qui
-  // empêchait par exemple le bouton "Réinitialiser" de vraiment vider la collection.
-  return JSON.parse(JSON.stringify(DEFAULT_STATE));
-}
-
-/* ---- quêtes du jour : contenu court renouvelé chaque jour pour donner un but au-delà de la collection ---- */
-const DAILY_QUEST_TEMPLATES = [
-  { id: 'soin',  label: 'Câliner un dragon',          target: 1, reward: 20 },
-  { id: 'expe',  label: "Lancer une expédition",       target: 1, reward: 25 },
-  { id: 'ecaille', label: 'Gagner 60 écailles',        target: 60, reward: 30 },
-];
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-}
-function ensureDailyQuests() {
-  const key = todayKey();
-  if (state.dailyQuests && state.dailyQuests.dateKey === key) return;
-  state.dailyQuests = {
-    dateKey: key,
-    quests: DAILY_QUEST_TEMPLATES.map(t => ({ id: t.id, label: t.label, target: t.target, reward: t.reward, progress: 0, done: false, claimed: false })),
-  };
-}
-function bumpDailyQuest(id, amount) {
-  ensureDailyQuests();
-  const q = state.dailyQuests.quests.find(x => x.id === id);
-  if (!q || q.done) return;
-  q.progress = Math.min(q.target, q.progress + amount);
-  if (q.progress >= q.target) q.done = true;
-}
-function claimDailyQuest(questId) {
-  ensureDailyQuests();
-  const q = state.dailyQuests.quests.find(x => x.id === questId);
-  if (!q || !q.done || q.claimed) return;
-  q.claimed = true;
-  state.ecailles += q.reward;
-  saveStateDebounced();
-  showToast(`+${q.reward} écailles — quête terminée !`);
-  renderTopBar();
-  if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+  return Object.assign({}, DEFAULT_STATE, {
+    dragons: [], eggInbox: [], discovered: [], expeditions: [],
+    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [],
+  });
 }
 
 /* ---- utilitaires purs ---- */
 
 function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
-function speciesById(id) { return ALL_SPECIES.find(s => s.id === id); }
-function requiredHatchTaps(species) { return [3, 3, 4, 5, 6][species.variant] || 3; }
+const SPECIES_BY_ID = new Map(SPECIES.map(s => [s.id, s]));
+function speciesById(id) { return SPECIES_BY_ID.get(id); }
+function dragonDisplayName(dragon, species) { return (dragon.customName && dragon.customName.trim()) || species.name; }
 function computeStage(careCount) { return careCount >= 12 ? 'adulte' : careCount >= 5 ? 'juvenile' : 'bebe'; }
 function computeLevel(xp) { return Math.floor(xp / 60) + 1; }
+function xpIntoLevel(xp) { return xp % 60; }
+
+// Centralise tous les gains d'XP pour détecter une montée de niveau et la célébrer
+// (toast + son + vibration), plutôt que de dupliquer cette détection à chaque appel.
+function addXp(amount) {
+  const before = computeLevel(state.xp);
+  state.xp += amount;
+  const after = computeLevel(state.xp);
+  if (after > before) {
+    setTimeout(() => {
+      showToast(`🎉 Niveau ${after} atteint !`);
+      playAchievementSound();
+      haptic([30, 50, 30, 50, 80]);
+    }, 350);
+  }
+}
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function fmtCountdown(ms) {
@@ -445,50 +458,26 @@ function fmtCountdown(ms) {
   return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
 }
 
-function weightedSpeciesFromZone(zone) {
-  const pool = SPECIES.filter(s => zone.elements.includes(s.element));
+function weightedSpeciesFromZone(zone, legendaryChance) {
+  if (legendaryChance) {
+    const legendaryPool = SPECIES.filter(s => s.variant === 4 && zone.elements.includes(s.element));
+    if (legendaryPool.length && Math.random() < legendaryChance) {
+      return legendaryPool[randInt(0, legendaryPool.length - 1)];
+    }
+  }
+  const pool = SPECIES.filter(s => zone.elements.includes(s.element) && s.variant < 4);
   const weighted = [];
   pool.forEach(s => { const w = s.variant <= 1 ? 5 : s.variant === 2 ? 2 : 1; for (let i = 0; i < w; i++) weighted.push(s); });
   return weighted[randInt(0, weighted.length - 1)];
 }
 
-/* ---- compression douce au-delà du "genou" : au lieu d'un plafond dur à 100 qui rendait le soin et le
-   tempérament invisibles dès qu'un dragon rare/épique/légendaire approchait du maximum, les valeurs sous
-   le genou (72) passent telles quelles (aucun changement pour les dragons communs), et celles au-dessus
-   s'approchent de 100 sans jamais le figer complètement — deux dragons légendaires, l'un choyé et l'autre
-   négligé, restent donc mesurablement différents au lieu d'être tous deux collés à 100. ---- */
-function softCapStat(raw) {
-  const knee = 72, room = 28;
-  if (raw <= knee) return Math.max(5, Math.round(raw));
-  const excess = raw - knee;
-  const compressed = knee + room * (1 - Math.exp(-excess / (room * 1.6)));
-  return Math.min(100, Math.round(compressed));
-}
-
 function computeDragonStats(dragon, zone) {
   const s = speciesById(dragon.speciesId);
-  const rarityBase = [30, 30, 45, 60, 80][s.variant];
+  const rarityBase = [30, 30, 45, 60, 85][s.variant];
   const stageBonus = { bebe: 0, juvenile: 8, adulte: 16 }[dragon.stage];
-  const temp = TEMPERAMENT_EFFECTS[dragon.temperament] || {};
-  const happiness = computeHappiness(dragon);
-  const happinessMod = (happiness - 60) / 4; // -7.5 .. +10, léger, jamais décisif seul
-  const rawVigueur = rarityBase + stageBonus + (temp.vigueurBonus || 0) + happinessMod;
-  const rawEclat = rarityBase + stageBonus + (zone.elements.includes(s.element) ? 20 : 0) + (temp.eclatBonus || 0) + happinessMod;
-  return { vigueur: softCapStat(rawVigueur), eclat: softCapStat(rawEclat) };
-}
-
-/* ---- bonheur dérivé : décroît doucement depuis le dernier événement positif (naissance, soin ou friandise) ----
-   Corrigé : un dragon jamais câliné décroît désormais depuis sa naissance, exactement comme un dragon
-   câliné puis délaissé. Avant ce correctif, l'absence totale de soin restait figée à 70 pour toujours
-   (lastCareAt valait 0, donc falsy) — ignorer un dragon depuis le début était accidentellement "plus sûr"
-   que le câliner une fois puis l'abandonner. */
-function computeHappiness(dragon) {
-  const referenceAt = Math.max(dragon.lastCareAt || 0, dragon.happinessBoostAt || 0, dragon.bornAt || 0) || Date.now();
-  const elapsed = Date.now() - referenceAt;
-  const temp = TEMPERAMENT_EFFECTS[dragon.temperament] || {};
-  const decayMult = temp.happinessDecayMult || 1;
-  const ratio = Math.min(1, (elapsed * decayMult) / HAPPINESS_DECAY_FULL_MS);
-  return Math.round(100 - ratio * (100 - HAPPINESS_FLOOR));
+  const vigueur = rarityBase + stageBonus;
+  const eclat = rarityBase + stageBonus + (zone.elements.includes(s.element) ? 20 : 0);
+  return { vigueur, eclat };
 }
 
 function escapeHtml(str) {
@@ -554,6 +543,7 @@ const ICON_INNER = {
   heart: '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3.4.9-4.5 2.3C10.9 3.9 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
   'chevron-right': '<path d="m9 18 6-6-6-6"/>',
   'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   'rotate-ccw': '<path d="M3 12a9 9 0 1 0 2.6-6.3L3 8"/><path d="M3 3v5h5"/>',
   shield: '<path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/>',
@@ -565,6 +555,10 @@ const ICON_INNER = {
   wind: '<path d="M2 8 Q10 4 18 8"/><path d="M2 12.5 Q14 8.5 22 12.5"/><path d="M2 17 Q8 21 14 17"/>',
   sun: `<circle cx="12" cy="12" r="4.2"/>${sunRays(12, 12, 6.6, 9.6, 8)}`,
   leaf: '<path transform="translate(12,12) rotate(-20) scale(1.55)" d="M0,-10 C6,-4 6,4 0,10 C-6,4 -6,-4 0,-10 Z"/><line transform="translate(12,12) rotate(-20) scale(1.55)" x1="0" y1="-7" x2="0" y2="7"/>',
+  download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/>',
+  upload: '<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M4 19h16"/>',
+  flask: '<path d="M9 2v6.5L4 18a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3L15 8.5V2"/><path d="M7 16h10"/><path d="M8.5 2h7"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
 };
 
 /**
@@ -597,8 +591,8 @@ function teardropPath(cx, cy, scale, rotation) {
 
 function elementAccentsSVG(element, variant, tailX, tailY, headX, headY) {
   const c = ELEMENTS[element];
-  const tailScale = [0.8, 1.0, 1.15, 1.3][variant];
-  const headScale = [0, 0, 0.7, 0.9][variant];
+  const tailScale = [0.8, 1.0, 1.15, 1.3, 1.4][variant];
+  const headScale = [0, 0, 0.7, 0.9, 1.0][variant];
   let out = '';
 
   if (element === 'feu') {
@@ -625,7 +619,7 @@ function elementAccentsSVG(element, variant, tailX, tailY, headX, headY) {
     out += leaf(tailX, tailY, tailScale, -20);
     if (headScale) {
       out += leaf(headX, headY, headScale, 15);
-      if (variant === 3) {
+      if (variant >= 3) {
         let petals = '';
         for (let i = 0; i < 5; i++) {
           const a = (i * 72 - 90) * Math.PI / 180;
@@ -674,8 +668,6 @@ function backSpikesSVG(count, fill) {
 
 function dragonSVG(opts) {
   const element = opts.element, variant = opts.variant, stage = opts.stage || 'adulte', size = opts.size || 100;
-  const isLegendary = variant >= 4;
-  const visualVariant = Math.min(variant, 3); // les tableaux de forme s'arrêtent à l'épique ; le légendaire réutilise l'épique + halo
   const c = ELEMENTS[element];
   const idStr = nextSvgUid();
   const gradId = `grad-${element}-${idStr}`;
@@ -683,22 +675,24 @@ function dragonSVG(opts) {
   const overallScale = stage === 'bebe' ? 0.72 : stage === 'juvenile' ? 0.87 : 1.0;
   const headBoost = stage === 'bebe' ? 1.22 : stage === 'juvenile' ? 1.06 : 1.0;
   const wingsOn = stage !== 'bebe';
-  const wingScale = (stage === 'juvenile' ? 0.85 : 1.0) * (0.86 + visualVariant * 0.05);
-  const hornScale = (stage === 'bebe' ? 0.7 : stage === 'juvenile' ? 0.9 : 1.0) * (1 + visualVariant * 0.12) * (isLegendary ? 1.18 : 1);
-  const showGlow = (visualVariant === 3 || isLegendary) && stage === 'adulte';
-  const legendaryOutline = isLegendary ? `stroke="var(--gold-deep)" stroke-width="2.5"` : '';
+  const wingScale = (stage === 'juvenile' ? 0.85 : 1.0) * (0.86 + variant * 0.05);
+  const hornScale = (stage === 'bebe' ? 0.7 : stage === 'juvenile' ? 0.9 : 1.0) * (1 + variant * 0.12);
+  const showGlow = (variant === 3 && stage === 'adulte') || variant === 4;
   const spikeCount = stage === 'bebe' ? 0 : 3;
   const tailTip = { x: 178, y: 150 };
   const headAccent = { x: 122, y: 46 };
 
   const wings = wingsOn ? `
-    <g transform="translate(96,114) rotate(-14)">${wingSVG(false, wingScale, c.light, c.base)}</g>
-    <g transform="translate(104,114) rotate(14)">${wingSVG(true, wingScale, c.light, c.base)}</g>` : '';
+    <g transform="translate(96,114) rotate(-14)"><g class="dragon-wing-flap">${wingSVG(false, wingScale, c.light, c.base)}</g></g>
+    <g transform="translate(104,114) rotate(14)"><g class="dragon-wing-flap">${wingSVG(true, wingScale, c.light, c.base)}</g></g>` : '';
 
   const spikes = spikeCount > 0 ? backSpikesSVG(spikeCount, c.deep) : '';
-  const legendarySparkles = isLegendary && stage === 'adulte' ? legendarySparklesSVG() : '';
+  const legendarySparkles = variant === 4 ? `
+    <circle cx="46" cy="60" r="3" fill="#FFFFFF" opacity="0.9" class="anim-pulse" style="animation-delay:0s"/>
+    <circle cx="152" cy="50" r="2.4" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:.6s"/>
+    <circle cx="140" cy="150" r="2.6" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:1.1s"/>` : '';
 
-  return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" role="img" aria-label="Dragon ${c.name}${isLegendary ? ', légendaire' : ''}">
+  return `<svg class="dragon-anim-idle" style="animation-delay:${(Math.random() * 2.4).toFixed(2)}s" viewBox="0 0 200 200" width="${size}" height="${size}" role="img" aria-label="Dragon ${c.name}${variant === 4 ? ' légendaire' : ''}">
     <defs>
       <radialGradient id="${gradId}" cx="35%" cy="30%" r="75%">
         <stop offset="0%" stop-color="${c.light}"/>
@@ -706,40 +700,37 @@ function dragonSVG(opts) {
       </radialGradient>
     </defs>
     <g transform="translate(100,172) scale(${overallScale}) translate(-100,-172)">
-      ${showGlow ? `<circle cx="100" cy="110" r="78" fill="${c.light}" opacity="${isLegendary ? 0.32 : 0.22}"/>` : ''}
+      ${showGlow ? `<circle cx="100" cy="110" r="78" fill="${variant === 4 ? 'var(--gold)' : c.light}" opacity="0.22" class="${variant === 4 ? 'dragon-anim-legendary-halo' : ''}"/>` : ''}
       <ellipse cx="82" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
       <ellipse cx="118" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
-      <path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})"/>
+      <g class="dragon-tail-swish"><path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})"/></g>
       ${wings}
-      <ellipse cx="100" cy="124" rx="50" ry="42" fill="url(#${gradId})" ${legendaryOutline}/>
+      <ellipse cx="100" cy="124" rx="50" ry="42" fill="url(#${gradId})"/>
       <ellipse cx="100" cy="138" rx="30" ry="22" fill="${c.light}" opacity="0.55"/>
       ${spikes}
-      ${elementAccentsSVG(element, visualVariant, tailTip.x, tailTip.y, headAccent.x, headAccent.y)}
+      ${legendarySparkles}
+      ${elementAccentsSVG(element, variant, tailTip.x, tailTip.y, headAccent.x, headAccent.y)}
       <g transform="translate(100,72) scale(${headBoost}) translate(-100,-72)">
         <ellipse cx="100" cy="76" rx="22" ry="14" fill="url(#${gradId})"/>
-        <circle cx="100" cy="72" r="33" fill="url(#${gradId})" ${legendaryOutline}/>
-        <g transform="translate(100,72) scale(${hornScale}) translate(-100,-72)">${hornsSVG(visualVariant, c.deep)}</g>
+        <circle cx="100" cy="72" r="33" fill="url(#${gradId})"/>
+        <g transform="translate(100,72) scale(${hornScale}) translate(-100,-72)">${hornsSVG(variant, c.deep)}</g>
         <ellipse cx="76" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
         <ellipse cx="124" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
-        <ellipse cx="86" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
-        <ellipse cx="114" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
-        <circle cx="88" cy="70" r="5" fill="${INK}"/>
-        <circle cx="116" cy="70" r="5" fill="${INK}"/>
-        <circle cx="90.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
-        <circle cx="118.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
+        <g class="dragon-eye-blink">
+          <ellipse cx="86" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
+          <ellipse cx="114" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
+          <circle cx="88" cy="70" r="5" fill="${INK}"/>
+          <circle cx="116" cy="70" r="5" fill="${INK}"/>
+          <circle cx="90.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
+          <circle cx="118.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
+        </g>
         <circle cx="93" cy="83" r="1.3" fill="${c.deep}" opacity="0.6"/>
         <circle cx="107" cy="83" r="1.3" fill="${c.deep}" opacity="0.6"/>
         <path d="M91,89 Q100,94 109,89" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
         <path d="M92,89 L91,94 L95,90 Z" fill="#FFFFFF"/>
       </g>
-      ${legendarySparkles}
     </g>
   </svg>`;
-}
-
-function legendarySparklesSVG() {
-  const pts = [[38,60],[162,52],[150,180],[30,150],[100,20]];
-  return pts.map(([x,y],i) => `<path transform="translate(${x},${y}) scale(${0.6 + (i%2)*0.3})" d="${starPath(0,0,7,2.8,4)}" fill="#FFF6DC" opacity="0.85"/>`).join('');
 }
 
 function eggSVG(opts) {
@@ -768,68 +759,446 @@ function eggSVG(opts) {
 
 
 /* =========================================================================
+   LUMIDRA — icônes de décoration (boutique et sanctuaire)
+   Même langage graphique que les dragons/l'œuf : dégradés + formes simples.
+   Remplace les emoji utilisés précédemment pour chaque décoration.
+   ========================================================================= */
+
+function decorIconSVG(decorId, size) {
+  size = size || 30;
+  const gradId = 'decor-' + decorId + '-' + nextSvgUid();
+  let defs = '', body = '';
+
+  if (decorId === 'lanterne') {
+    const c = ELEMENTS.lumiere;
+    defs = `<radialGradient id="${gradId}" cx="35%" cy="25%" r="80%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></radialGradient>`;
+    body = `<rect x="13" y="2" width="6" height="3" rx="1.2" fill="${c.deep}"/>
+      <path d="M8,8 C8,4.5 24,4.5 24,8 L24,23 C24,26.5 8,26.5 8,23 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1.1"/>
+      <line x1="12.3" y1="7" x2="12.3" y2="24" stroke="${c.deep}" stroke-width="0.9" opacity="0.4"/>
+      <line x1="16" y1="6.6" x2="16" y2="24.4" stroke="${c.deep}" stroke-width="0.9" opacity="0.4"/>
+      <line x1="19.7" y1="7" x2="19.7" y2="24" stroke="${c.deep}" stroke-width="0.9" opacity="0.4"/>
+      <rect x="13" y="26.5" width="6" height="3" rx="1.2" fill="${c.deep}"/>
+      <line x1="16" y1="29.5" x2="16" y2="31.4" stroke="${c.deep}" stroke-width="1.3" stroke-linecap="round"/>`;
+  } else if (decorId === 'bassin') {
+    const eau = ELEMENTS.eau, nat = ELEMENTS.nature;
+    defs = `<radialGradient id="${gradId}" cx="35%" cy="20%" r="85%"><stop offset="0%" stop-color="${eau.light}"/><stop offset="100%" stop-color="${eau.base}"/></radialGradient>`;
+    body = `<ellipse cx="16" cy="21" rx="13.5" ry="6.5" fill="url(#${gradId})" stroke="${eau.deep}" stroke-width="1"/>
+      <ellipse cx="10.5" cy="17.3" rx="5.2" ry="3" fill="${nat.base}" stroke="${nat.deep}" stroke-width="0.8"/>
+      <ellipse cx="20.3" cy="19.3" rx="4.2" ry="2.4" fill="${nat.light}" stroke="${nat.deep}" stroke-width="0.8"/>
+      <circle cx="20.3" cy="17.1" r="1.9" fill="#F3B8D0"/>
+      <circle cx="20.3" cy="17.1" r="0.8" fill="var(--gold)"/>`;
+  } else if (decorId === 'cristal') {
+    const c = ELEMENTS.air;
+    defs = `<linearGradient id="${gradId}" x1="20%" y1="0%" x2="80%" y2="100%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></linearGradient>`;
+    body = `<path d="M16,3 L25,13 L20,29 L12,29 L7,13 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1.1"/>
+      <path d="M16,3 L16,29 M7,13 L25,13 M16,3 L12,29 M16,3 L20,29" stroke="#FFFFFF" stroke-width="0.7" opacity="0.5"/>
+      <path d="${starPath(24, 6, 2.6, 1, 4)}" fill="${c.light}"/>
+      <path d="${starPath(6, 21, 2, 0.8, 4)}" fill="${c.light}"/>`;
+  } else if (decorId === 'banc') {
+    const c = ELEMENTS.terre;
+    defs = `<linearGradient id="${gradId}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></linearGradient>`;
+    body = `<rect x="4" y="13" width="24" height="4.5" rx="1.6" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+      <rect x="7" y="17.5" width="3.6" height="9" rx="1.2" fill="${c.deep}"/>
+      <rect x="21.4" y="17.5" width="3.6" height="9" rx="1.2" fill="${c.deep}"/>
+      <rect x="6" y="14" width="20" height="1.6" rx="0.8" fill="${c.light}" opacity="0.7"/>`;
+  } else if (decorId === 'arche') {
+    const c = ELEMENTS.nature;
+    defs = `<linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="${c.base}"/><stop offset="100%" stop-color="${c.deep}"/></linearGradient>`;
+    body = `<path d="M7,29 L7,15 C7,7.5 25,7.5 25,15 L25,29" fill="none" stroke="url(#${gradId})" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="8.5" cy="11" r="2.1" fill="#F3B8D0"/><circle cx="8.5" cy="11" r="0.8" fill="var(--gold)"/>
+      <circle cx="16" cy="6.5" r="2.1" fill="#F3B8D0"/><circle cx="16" cy="6.5" r="0.8" fill="var(--gold)"/>
+      <circle cx="23.5" cy="11" r="2.1" fill="#F3B8D0"/><circle cx="23.5" cy="11" r="0.8" fill="var(--gold)"/>`;
+  } else if (decorId === 'carillon') {
+    const c = ELEMENTS.air;
+    defs = `<linearGradient id="${gradId}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></linearGradient>`;
+    body = `<ellipse cx="16" cy="5" rx="7.5" ry="2.1" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+      <line x1="10.5" y1="6.5" x2="10.5" y2="15.5" stroke="${c.deep}" stroke-width="1"/>
+      <line x1="16" y1="6.5" x2="16" y2="21" stroke="${c.deep}" stroke-width="1"/>
+      <line x1="21.5" y1="6.5" x2="21.5" y2="17.5" stroke="${c.deep}" stroke-width="1"/>
+      <rect x="8.9" y="15.5" width="3.2" height="7.5" rx="1.5" fill="${c.light}" stroke="${c.deep}" stroke-width="0.7"/>
+      <rect x="14.4" y="21" width="3.2" height="7.5" rx="1.5" fill="${c.base}" stroke="${c.deep}" stroke-width="0.7"/>
+      <rect x="19.9" y="17.5" width="3.2" height="7.5" rx="1.5" fill="${c.light}" stroke="${c.deep}" stroke-width="0.7"/>
+      <path d="M3,9 Q6.5,7 5.5,11.5" stroke="${c.deep}" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round"/>`;
+  } else if (decorId === 'autel') {
+    const c = ELEMENTS.lumiere;
+    defs = `<radialGradient id="${gradId}" cx="35%" cy="20%" r="85%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></radialGradient>`;
+    body = `<rect x="6" y="21" width="20" height="6" rx="1.2" fill="${c.deep}"/>
+      <rect x="9" y="15" width="14" height="6.5" rx="1" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+      <path d="${starPath(16, 9, 3.4, 1.4, 4)}" fill="var(--gold)"/>
+      <circle cx="16" cy="9" r="1" fill="#FFFFFF"/>`;
+  } else if (decorId === 'statue-ancien') {
+    const c = ELEMENTS.terre;
+    defs = `<linearGradient id="${gradId}" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.deep}"/></linearGradient>`;
+    body = `<rect x="8" y="25" width="16" height="4" rx="1" fill="${c.deep}"/>
+      <path d="M12,25 C11,16 11,10 16,6 C21,10 21,16 20,25 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+      <circle cx="13.4" cy="12.5" r="1.4" fill="${INK}" opacity="0.6"/>
+      <circle cx="18.6" cy="12.5" r="1.4" fill="${INK}" opacity="0.6"/>
+      <path d="M13,17 Q16,19.5 19,17" stroke="${c.deep}" stroke-width="1" fill="none" stroke-linecap="round"/>`;
+  } else if (decorId === 'flamme-eternelle') {
+    const c = ELEMENTS.feu;
+    defs = `<radialGradient id="${gradId}" cx="40%" cy="20%" r="85%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.deep}"/></radialGradient>`;
+    body = `<ellipse cx="16" cy="27" rx="8" ry="2.6" fill="${c.deep}" opacity="0.5"/>
+      <path d="M16,4 C22,11 21,16 17,17.5 C19,14 17,12 16,10 C15,12.5 12,15 13,19 C9,17 9,10 16,4 Z" fill="url(#${gradId})"/>
+      <path d="M16,12 C18,15.5 17.3,18 15.6,18.8 C16.5,16.5 15.5,15 14.8,14 C14.4,15.6 13,17 13.6,19.2" fill="${c.light}" opacity="0.85"/>`;
+  } else if (decorId === 'voile-solaire') {
+    const c = ELEMENTS.lumiere;
+    defs = `<linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></linearGradient>`;
+    body = `<line x1="4" y1="6" x2="28" y2="6" stroke="${c.deep}" stroke-width="1.4"/>
+      <path d="M6,6 Q7,20 4,26 Q9,23 12,26 Q13,15 10,6 Z" fill="url(#${gradId})" opacity="0.9"/>
+      <path d="M14,6 Q15,20 12,27 Q17,23 20,27 Q21,15 18,6 Z" fill="url(#${gradId})" opacity="0.75"/>
+      <path d="M22,6 Q23,18 20,25 Q25,22 27,25 Q28,14 26,6 Z" fill="url(#${gradId})" opacity="0.6"/>`;
+  } else if (decorId === 'citrouille-doree') {
+    defs = `<radialGradient id="${gradId}" cx="35%" cy="25%" r="85%"><stop offset="0%" stop-color="var(--gold)"/><stop offset="100%" stop-color="#B87A1E"/></radialGradient>`;
+    body = `<rect x="15" y="3" width="2" height="5" rx="1" fill="#6B7A3A"/>
+      <ellipse cx="16" cy="18" rx="12" ry="10" fill="url(#${gradId})"/>
+      <path d="M9,10 Q9,26 9,26" stroke="#B87A1E" stroke-width="1" opacity="0.5" fill="none"/>
+      <path d="M16,8 Q16,28 16,28" stroke="#B87A1E" stroke-width="1" opacity="0.5" fill="none"/>
+      <path d="M23,10 Q23,26 23,26" stroke="#B87A1E" stroke-width="1" opacity="0.5" fill="none"/>`;
+  } else if (decorId === 'guirlande-etoilee') {
+    body = `<path d="M2,10 Q16,22 30,10" stroke="#8FA3C8" stroke-width="1.2" fill="none"/>
+      <path d="${starPath(8, 14, 3, 1.2, 4)}" fill="var(--gold)"/>
+      <path d="${starPath(16, 19, 3.6, 1.4, 4)}" fill="var(--gold)"/>
+      <path d="${starPath(24, 14, 3, 1.2, 4)}" fill="var(--gold)"/>`;
+  }
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><defs>${defs}</defs>${body}</svg>`;
+}
+
+
+/* =========================================================================
    LUMIDRA — application (état, rendu, événements) — aucune dépendance
    ========================================================================= */
+
+/* =========================================================================
+   LUMIDRA — sons (synthétisés, aucun fichier externe requis)
+   ========================================================================= */
+
+let audioCtx = null;
+function getAudioCtx() {
+  if (!state.soundEnabled) return null;
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { return null; }
+  }
+  if (audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e) {} }
+  return audioCtx;
+}
+
+function playTone(freq, duration, opts) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  opts = opts || {};
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = opts.type || 'sine';
+    osc.frequency.value = freq;
+    const now = ctx.currentTime;
+    const vol = opts.volume != null ? opts.volume : 0.1;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(vol, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration + 0.03);
+  } catch (e) { /* audio indisponible : silencieux */ }
+}
+
+function playCareSound() { playTone(520, 0.12, { type: 'sine', volume: 0.09 }); }
+function playCoinSound() {
+  playTone(880, 0.09, { type: 'triangle', volume: 0.08 });
+  setTimeout(() => playTone(1180, 0.1, { type: 'triangle', volume: 0.07 }), 70);
+}
+function playHatchSound() {
+  [660, 880, 1180, 1480].forEach((f, i) => setTimeout(() => playTone(f, 0.16, { type: 'sine', volume: 0.1 }), i * 90));
+}
+function playAchievementSound() {
+  [520, 660, 880].forEach((f, i) => setTimeout(() => playTone(f, 0.18, { type: 'triangle', volume: 0.09 }), i * 100));
+}
+
+/* =========================================================================
+   LUMIDRA — objectifs quotidiens & succès
+   ========================================================================= */
+
+const QUEST_POOL = [
+  { type: 'soin', desc: 'Soigne 3 dragons', target: 3, reward: 25 },
+  { type: 'expedition', desc: 'Lance 1 expédition', target: 1, reward: 20 },
+  { type: 'eclosion', desc: 'Fais éclore 1 œuf', target: 1, reward: 30 },
+  { type: 'collecte', desc: 'Gagne 60 écailles en expédition', target: 60, reward: 20 },
+];
+
+const WEEKLY_POOL = [
+  { type: 'expedition', desc: 'Termine 8 expéditions cette semaine', target: 8, reward: 100 },
+  { type: 'soin', desc: 'Soigne 15 dragons cette semaine', target: 15, reward: 90 },
+  { type: 'eclosion', desc: 'Fais éclore 5 œufs cette semaine', target: 5, reward: 110 },
+  { type: 'collecte', desc: 'Gagne 400 écailles en expédition cette semaine', target: 400, reward: 80 },
+];
+
+const ACHIEVEMENTS = [
+  { id: 'premier-envol', name: 'Premier Envol', desc: 'Fais éclore ton premier dragon.', reward: 20, target: 1, progress: (s) => Math.min(1, s.dragons.length) },
+  { id: 'petite-tribu', name: 'Petite Tribu', desc: 'Élève 5 dragons.', reward: 40, target: 5, progress: (s) => Math.min(5, s.dragons.length) },
+  { id: 'grande-tribu', name: 'Grande Tribu', desc: 'Élève 10 dragons.', reward: 80, target: 10, progress: (s) => Math.min(10, s.dragons.length) },
+  { id: 'collectionneur', name: 'Collectionneur', desc: 'Découvre 10 espèces.', reward: 60, target: 10, progress: (s) => Math.min(10, s.discovered.length) },
+  { id: 'maitre-gardien', name: 'Maître Gardien', desc: 'Découvre toutes les espèces.', reward: 200, target: SPECIES.length, progress: (s) => Math.min(SPECIES.length, s.discovered.length) },
+  { id: 'explorateur', name: 'Explorateur', desc: 'Termine 5 expéditions.', reward: 50, target: 5, progress: (s) => Math.min(5, s.statsExpeditionsCompleted || 0) },
+  { id: 'grand-explorateur', name: 'Grand Explorateur', desc: 'Termine 20 expéditions.', reward: 120, target: 20, progress: (s) => Math.min(20, s.statsExpeditionsCompleted || 0) },
+  { id: 'legende-vivante', name: 'Légende Vivante', desc: 'Élève un dragon légendaire.', reward: 150, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 4) ? 1 : 0) },
+  { id: 'decorateur', name: 'Décorateur', desc: 'Possède 3 décorations.', reward: 30, target: 3, progress: (s) => Math.min(3, s.decorOwned.length) },
+  { id: 'genetique', name: 'Éleveur', desc: 'Réussis 3 élevages au Laboratoire.', reward: 60, target: 3, progress: (s) => Math.min(3, s.statsBredCount || 0) },
+];
+
+// Titres cosmétiques débloqués par certains succès, affichables sous le nom du Gardien.
+const TITLES = [
+  { id: 'petite-tribu', name: 'Éleveur' },
+  { id: 'grand-explorateur', name: 'Grand Explorateur' },
+  { id: 'collectionneur', name: 'Collectionneur' },
+  { id: 'legende-vivante', name: 'Ami des Légendes' },
+  { id: 'maitre-gardien', name: 'Maître Gardien Suprême' },
+];
+
+function unlockedTitles() {
+  return TITLES.filter(t => state.achievementsClaimed.includes(t.id));
+}
+
+function currentTitleName() {
+  if (!state.selectedTitle) return null;
+  const t = TITLES.find(tt => tt.id === state.selectedTitle);
+  return t && state.achievementsClaimed.includes(t.id) ? t.name : null;
+}
+
+function todayDateStr() { return new Date().toISOString().slice(0, 10); }
+function weekKeyStr() { return `w${Math.floor(Date.now() / 86400000 / 7)}`; }
+
+function ensureDailyQuests() {
+  if (state.dailyQuests && state.dailyQuests.date === todayDateStr()) return;
+  const pool = QUEST_POOL.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+  }
+  const picked = pool.slice(0, 3).map(q => ({ id: q.type, type: q.type, desc: q.desc, target: q.target, reward: q.reward, progress: 0, claimed: false }));
+  state.dailyQuests = { date: todayDateStr(), quests: picked };
+  saveStateDebounced();
+}
+
+function ensureWeeklyChallenge() {
+  const wk = weekKeyStr();
+  if (state.weeklyChallenge && state.weeklyChallenge.weekKey === wk) return;
+  const pick = WEEKLY_POOL[randInt(0, WEEKLY_POOL.length - 1)];
+  state.weeklyChallenge = { weekKey: wk, type: pick.type, desc: pick.desc, target: pick.target, reward: pick.reward, progress: 0, claimed: false };
+  saveStateDebounced();
+}
+
+function claimWeeklyChallenge() {
+  const w = state.weeklyChallenge;
+  if (!w || w.claimed || w.progress < w.target) return;
+  w.claimed = true;
+  state.ecailles += w.reward;
+  saveStateDebounced();
+  showToast(`Défi hebdomadaire réussi ! +${w.reward} écailles`);
+  haptic([30, 40, 60]);
+  playAchievementSound();
+  renderTopBar();
+  if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+}
+
+// Bonus de connexion quotidienne : compte les jours consécutifs et récompense en écailles.
+// Retourne { streak, bonus } le jour où un nouveau bonus est accordé, sinon null.
+function checkLoginStreak() {
+  const today = todayDateStr();
+  if (state.lastLoginDate === today) return null;
+  if (state.lastLoginDate) {
+    const prevDate = new Date(state.lastLoginDate + 'T00:00:00Z');
+    const todayDate = new Date(today + 'T00:00:00Z');
+    const diffDays = Math.round((todayDate - prevDate) / 86400000);
+    state.loginStreak = diffDays === 1 ? (state.loginStreak || 0) + 1 : 1;
+  } else {
+    state.loginStreak = 1;
+  }
+  state.longestStreak = Math.max(state.longestStreak || 0, state.loginStreak);
+  const bonus = 10 + Math.min(state.loginStreak, 10) * 2;
+  state.ecailles += bonus;
+  state.lastLoginDate = today;
+  saveStateDebounced();
+  return { streak: state.loginStreak, bonus };
+}
+
+function bumpQuestProgress(type, amount) {
+  let changed = false;
+  if (state.dailyQuests) {
+    const q = state.dailyQuests.quests.find(qq => qq.type === type && !qq.claimed);
+    if (q) { q.progress = Math.min(q.target, q.progress + amount); changed = true; }
+  }
+  if (state.weeklyChallenge && state.weeklyChallenge.type === type && !state.weeklyChallenge.claimed) {
+    state.weeklyChallenge.progress = Math.min(state.weeklyChallenge.target, state.weeklyChallenge.progress + amount);
+    changed = true;
+  }
+  if (changed) saveStateDebounced();
+}
+
+function claimDailyQuest(questId) {
+  if (!state.dailyQuests) return;
+  const q = state.dailyQuests.quests.find(qq => qq.id === questId);
+  if (!q || q.claimed || q.progress < q.target) return;
+  q.claimed = true;
+  state.ecailles += q.reward;
+  saveStateDebounced();
+  showToast(`+${q.reward} écailles !`);
+  haptic(30);
+  playCoinSound();
+  renderTopBar();
+  if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+}
+
+function claimAchievement(id) {
+  const ach = ACHIEVEMENTS.find(a => a.id === id);
+  if (!ach || state.achievementsClaimed.includes(id)) return;
+  if (ach.progress(state) < ach.target) return;
+  state.achievementsClaimed.push(id);
+  state.ecailles += ach.reward;
+  saveStateDebounced();
+  showToast(`Succès débloqué : ${ach.name} (+${ach.reward} écailles)`);
+  haptic([30, 40, 60]);
+  playAchievementSound();
+  renderTopBar();
+  if (ui.screen === 'dragondex') renderScreenDragondex();
+}
 
 /* ---- état persistant + état d'interface transitoire ---- */
 let state = freshDefaultState();
 let now = Date.now();
 
 const ui = {
-  screen: 'sanctuaire',          // sanctuaire | dragondex | carte | boutique | reglages
+  screen: 'sanctuaire',          // sanctuaire | dragondex | carte | boutique | reglages | labo
   hatchFlow: null,               // { egg, taps, revealedDragon }
   detailDragonId: null,
+  releaseConfirmId: null,
   detailSpecies: null,           // { species, discovered }
   lockChallenge: null,           // { a, b, answer, onSuccessScreen }
   confirmResetOpen: false,
+  pendingImport: null,           // état en attente de confirmation d'import
+  confirmImportOpen: false,
   toast: null,
   dragondexFilter: 'tous',
+  dragondexSearch: '',
+  dragondexRarityFilter: 'tous',
   onboarding: { name: '', mode: 'eclosion' },
   reglagesName: '',
   carte: { view: 'zones', zoneId: null, typeId: null, teamIds: [] },
+  sanctuaireSort: 'recent',
+  sanctuaireSearch: '',
+  objectivesBannerCollapsed: true,
+  expeditionLogCollapsed: true,
+  tutorialStep: null,
+  labo: { parentAId: null, parentBId: null, picking: null },
 };
 
 let toastTimer = null;
 let saveTimer = null;
 
 function haptic(pattern) {
+  if (state.reduceVibrations) return;
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* API absente ou refusée : silencieux, ne casse rien */ }
 }
 
 /* ---- persistance (localStorage) ---- */
-function migrateState(parsed) {
-  // v1 → v2 : ajoute les champs introduits par la v2 sans jamais toucher aux données existantes du joueur
-  const merged = Object.assign(freshDefaultState(), parsed);
-  merged.schemaVersion = SCHEMA_VERSION;
-  if (!Array.isArray(merged.legendaryDiscovered)) merged.legendaryDiscovered = [];
-  if (!Array.isArray(merged.discovered)) merged.discovered = [];
-  return merged;
-}
 function loadState() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
-      state = migrateState(JSON.parse(raw));
-      return;
+      const parsed = JSON.parse(raw);
+      state = Object.assign(freshDefaultState(), parsed);
     }
-    // pas de sauvegarde v2 : tente une récupération depuis une ancienne sauvegarde v1
-    const legacy = localStorage.getItem(SAVE_KEY_LEGACY);
-    if (legacy) {
-      state = migrateState(JSON.parse(legacy));
-      saveStateDebounced();
-    }
-  } catch (e) { /* sauvegarde illisible : on démarre proprement sur DEFAULT_STATE, aucune donnée à moitié écrite */ }
+  } catch (e) { /* pas de sauvegarde valide */ }
 }
 function saveStateDebounced() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    } catch (e) {
-      // stockage plein / indisponible (mode privé, quota) : le joueur doit le savoir, pas d'échec silencieux
-      showToast('⚠️ Sauvegarde impossible (stockage plein ou indisponible)');
-    }
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
   }, 300);
+}
+
+/* ---- export / import de la sauvegarde (fichier .json) ----
+   Permet de conserver sa progression d'une mise à jour du fichier HTML à l'autre :
+   on exporte un fichier .json depuis l'ancienne version, on l'importe dans la nouvelle. */
+
+const SAVE_FILE_FORMAT_VERSION = 1;
+
+function buildSaveFileContents() {
+  return JSON.stringify({
+    app: 'lumidra',
+    formatVersion: SAVE_FILE_FORMAT_VERSION,
+    exportedAt: new Date().toISOString(),
+    state,
+  }, null, 2);
+}
+
+function exportSave() {
+  try {
+    const contents = buildSaveFileContents();
+    const blob = new Blob([contents], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lumidra-sauvegarde-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('Sauvegarde exportée !');
+  } catch (e) {
+    showToast("Impossible d'exporter la sauvegarde");
+  }
+}
+
+// Vérifie grossièrement qu'un objet importé ressemble bien à un état Lumidra valide,
+// pour éviter d'écraser la progression actuelle avec un fichier invalide ou corrompu.
+function looksLikeValidState(obj) {
+  if (!obj || typeof obj !== 'object') return false;
+  if (!Array.isArray(obj.dragons)) return false;
+  if (!Array.isArray(obj.discovered)) return false;
+  if (typeof obj.xp !== 'number') return false;
+  if (typeof obj.ecailles !== 'number') return false;
+  return true;
+}
+
+function handleImportedFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      // Le fichier peut être soit une enveloppe { app, formatVersion, state }, soit un état brut.
+      const candidate = (parsed && typeof parsed === 'object' && parsed.state) ? parsed.state : parsed;
+      if (!looksLikeValidState(candidate)) {
+        showToast('Fichier de sauvegarde invalide');
+        return;
+      }
+      ui.pendingImport = candidate;
+      ui.confirmImportOpen = true;
+      renderModals();
+    } catch (e) {
+      showToast('Fichier de sauvegarde illisible');
+    }
+  };
+  reader.onerror = () => showToast('Impossible de lire le fichier');
+  reader.readAsText(file);
+}
+
+function applyPendingImport() {
+  if (!ui.pendingImport) return;
+  // Object.assign avec DEFAULT_STATE en base : si la nouvelle version du jeu a ajouté
+  // des champs qui n'existaient pas dans l'ancienne sauvegarde, ils gardent leur valeur par défaut.
+  state = Object.assign(freshDefaultState(), ui.pendingImport);
+  document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
+  ui.pendingImport = null;
+  ui.confirmImportOpen = false;
+  ui.screen = 'sanctuaire';
+  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+  renderAll();
+  showToast('Sauvegarde importée !');
 }
 
 /* ---- petites briques HTML réutilisées ---- */
@@ -845,9 +1214,8 @@ function elementChipHtml(elKey) {
 
 function rarityStarsHtml(variant) {
   const n = RARITY_STARS[variant];
-  const total = Math.max(3, n);
   let stars = '';
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < 3; i++) {
     stars += icon('star', { size: 11, color: i < n ? 'var(--gold)' : '#D8CFC0' });
   }
   return `<span class="inline-flex items-center gap-0.5">${stars}<span class="font-body font-bold fs-11 ml-0.5" style="color:var(--ink-soft)">${RARITY_LABEL[variant]}</span></span>`;
@@ -867,10 +1235,81 @@ function statBarHtml(label, value) {
   </div>`;
 }
 
+function titlePickerCardHtml() {
+  const unlocked = unlockedTitles();
+  if (unlocked.length === 0) return '';
+  const chips = [{ id: null, name: 'Aucun' }, ...unlocked].map(t => {
+    const active = state.selectedTitle === t.id;
+    return `<button data-action="select-title" data-title-id="${t.id || ''}" aria-pressed="${active}" class="font-body font-bold fs-11 rounded-full shrink-0" style="padding:6px 12px;background:${active ? 'var(--gold)' : 'var(--sky)'};color:var(--ink)">${escapeHtml(t.name)}</button>`;
+  }).join('');
+  return `<div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+    <div class="font-body font-bold fs-11 mb-2" style="color:var(--ink-soft)">Titre</div>
+    <div class="flex gap-2 overflow-x-auto pb-1">${chips}</div>
+  </div>`;
+}
+
 function toggleHtml(action, checked) {
-  return `<button data-action="${action}" class="w-11 h-6 rounded-full relative" style="background:${checked ? 'var(--gold)' : '#D8CFC0'}">
+  return `<button data-action="${action}" class="w-11 h-6 rounded-full relative shrink-0" style="background:${checked ? 'var(--gold)' : '#D8CFC0'}">
     <span class="rounded-full bg-white" style="position:absolute;top:2px;width:20px;height:20px;left:${checked ? '22px' : '2px'};transition:left .15s ease;"></span>
   </button>`;
+}
+
+function preferenceRowHtml(action, checked, title, desc, last) {
+  return `<div class="flex items-center justify-between gap-3" style="padding:11px 0;${last ? '' : 'border-bottom:1px solid #EEE6D8'}">
+    <div>
+      <div class="font-body font-bold fs-12" style="color:var(--ink)">${title}</div>
+      <div class="font-body fs-10" style="color:var(--ink-soft)">${desc}</div>
+    </div>
+    ${toggleHtml(action, checked)}
+  </div>`;
+}
+
+function statRowHtml(label, value, last) {
+  return `<div class="flex items-center justify-between" style="padding:5px 0;${last ? '' : 'border-bottom:1px solid #EEE6D8'}">
+    <span class="font-body fs-12" style="color:var(--ink-soft)">${escapeHtml(label)}</span>
+    <span class="font-display font-bold fs-12" style="color:var(--ink)">${escapeHtml(String(value))}</span>
+  </div>`;
+}
+
+function favoriteElementLabel() {
+  if (state.dragons.length === 0) return '—';
+  const counts = {};
+  state.dragons.forEach(d => {
+    const el = speciesById(d.speciesId).element;
+    counts[el] = (counts[el] || 0) + 1;
+  });
+  let best = null, bestCount = 0;
+  Object.keys(counts).forEach(el => { if (counts[el] > bestCount) { best = el; bestCount = counts[el]; } });
+  return best ? ELEMENTS[best].name : '—';
+}
+
+function expeditionLogCardHtml() {
+  const log = state.expeditionLog || [];
+  if (log.length === 0) return '';
+  if (ui.expeditionLogCollapsed) {
+    return `<button data-action="toggle-expedition-log" aria-expanded="false" class="mb-3 rounded-2xl w-full flex items-center gap-2" style="padding:12px 16px;background:var(--parchment)">
+      <span class="flex-1 text-left font-body font-bold fs-13" style="color:var(--ink)">Journal des expéditions</span>
+      ${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}
+    </button>`;
+  }
+  const rows = log.map(e => {
+    const label = e.legendary ? '✨ Œuf légendaire !' : e.gotEgg ? 'Nouvel œuf' : 'Écailles seulement';
+    const when = new Date(e.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `<div class="flex items-center justify-between" style="padding:7px 0;border-bottom:1px solid #EEE6D8">
+      <div>
+        <div class="font-body font-bold fs-11" style="color:var(--ink)">${escapeHtml(e.zoneName)} · ${escapeHtml(e.typeName)}</div>
+        <div class="font-body fs-10" style="color:var(--ink-soft)">${when} · ${label}</div>
+      </div>
+      <span class="font-display font-bold fs-11" style="color:var(--gold-deep)">+${e.ecailles}</span>
+    </div>`;
+  }).join('');
+  return `<div class="mb-3 rounded-2xl p-4" style="background:var(--parchment)">
+    <button data-action="toggle-expedition-log" aria-expanded="true" class="w-full flex items-center gap-2 mb-1" style="margin-bottom:6px">
+      <span class="flex-1 text-left font-body font-bold fs-13" style="color:var(--ink)">Journal des expéditions</span>
+      <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
+    </button>
+    ${rows}
+  </div>`;
 }
 
 /* ---- calculs dérivés ---- */
@@ -930,9 +1369,12 @@ function renderTopBar() {
         ${escapeHtml(state.gardienName.slice(0, 1).toUpperCase())}
       </div>
       <div>
-        <div class="font-display font-bold text-sm leading-tight" style="color:var(--ink)">${escapeHtml(state.gardienName)}</div>
+        <div class="font-display font-bold text-sm leading-tight flex items-center gap-1\\.5" style="color:var(--ink)">${escapeHtml(state.gardienName)}${currentTitleName() ? `<span class="font-body font-bold" style="font-size:9px;padding:2px 6px;border-radius:9999px;background:var(--sky);color:var(--ink-soft)">${escapeHtml(currentTitleName())}</span>` : ''}</div>
         <div class="font-body font-bold fs-11" style="color:var(--ink-soft)">
           Niveau ${computeLevel(state.xp)} · ${state.mode === 'eclosion' ? 'Gardien' : 'Stratège'}${complete ? ` ${icon('star', { size: 11, color: 'var(--gold-deep)' })}` : ''}
+        </div>
+        <div class="rounded-full overflow-hidden mt-0\\.5" role="progressbar" aria-label="Progression vers le niveau suivant" aria-valuenow="${xpIntoLevel(state.xp)}" aria-valuemin="0" aria-valuemax="60" style="width:84px;height:4px;background:#E6DFD3;margin-top:2px">
+          <div class="h-full rounded-full" style="width:${Math.round((xpIntoLevel(state.xp) / 60) * 100)}%;background:var(--gold)"></div>
         </div>
       </div>
     </div>
@@ -947,6 +1389,20 @@ function renderTopBar() {
   </div>`;
 }
 
+// Compte les récompenses prêtes à réclamer par écran, pour les badges de nav
+// (répond au constat d'audit : les objectifs repliés par défaut manquaient de visibilité).
+function claimableRewardsByScreen() {
+  const questsReady = state.dailyQuests ? state.dailyQuests.quests.filter(q => q.progress >= q.target && !q.claimed).length : 0;
+  const weeklyReady = state.weeklyChallenge && state.weeklyChallenge.progress >= state.weeklyChallenge.target && !state.weeklyChallenge.claimed ? 1 : 0;
+  const achievementsReady = ACHIEVEMENTS.filter(a => !state.achievementsClaimed.includes(a.id) && a.progress(state) >= a.target).length;
+  return { sanctuaire: questsReady + weeklyReady, dragondex: achievementsReady };
+}
+
+function navBadgeHtml(count) {
+  if (!count) return '';
+  return `<span aria-hidden="true" class="font-display font-bold" style="position:absolute;top:-2px;right:2px;min-width:15px;height:15px;padding:0 3px;border-radius:9999px;background:#D9634A;color:#fff;font-size:9px;line-height:15px;text-align:center;border:2px solid var(--parchment)">${count > 9 ? '9+' : count}</span>`;
+}
+
 function renderNavBar() {
   const root = document.getElementById('navbar-root');
   const items = [
@@ -955,12 +1411,14 @@ function renderNavBar() {
     { id: 'carte', label: 'Carte', ic: 'map' },
     { id: 'boutique', label: 'Boutique', ic: 'shopping-bag' },
   ];
+  if (state.mode === 'stratege') items.push({ id: 'labo', label: 'Labo', ic: 'flask' });
+  const rewards = claimableRewardsByScreen();
   root.innerHTML = `
   <div class="flex justify-around items-center px-2 pt-2 safe-bottom" style="background:var(--parchment);border-top:1px solid #EEE6D8">
     ${items.map(it => {
       const active = ui.screen === it.id;
-      return `<button data-action="nav" data-screen="${it.id}" aria-current="${active ? 'page' : 'false'}" class="flex flex-col items-center gap-1 font-display font-bold fs-10 px-2" style="color:${active ? 'var(--gold-deep)' : 'var(--ink-soft)'}">
-        ${icon(it.ic, { size: 21, strokeWidth: active ? 2.4 : 2 })}${it.label}
+      return `<button data-action="nav" data-screen="${it.id}" aria-current="${active ? 'page' : 'false'}" class="flex flex-col items-center gap-1 font-display font-bold fs-10 px-2 relative" style="color:${active ? 'var(--gold-deep)' : 'var(--ink-soft)'}">
+        <span style="position:relative;display:inline-flex">${icon(it.ic, { size: 21, strokeWidth: active ? 2.4 : 2 })}${navBadgeHtml(rewards[it.id])}</span>${it.label}
       </button>`;
     }).join('')}
   </div>`;
@@ -970,45 +1428,165 @@ function renderNavBar() {
    ÉCRAN — SANCTUAIRE
    ========================================================================= */
 
+function dailyQuestsCardHtml() {
+  if (!state.dailyQuests) return '';
+  const rows = state.dailyQuests.quests.map(q => {
+    const ready = q.progress >= q.target && !q.claimed;
+    const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
+    const rightSide = q.claimed
+      ? `<span style="display:inline-flex">${icon('check', { size: 14, color: 'var(--ink-soft)' })}</span>`
+      : ready
+        ? `<button data-action="claim-quest" data-quest-id="${q.id}" class="font-display font-bold fs-10 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${coinIconHtml()} +${q.reward}</button>`
+        : `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${q.progress}/${q.target}</span>`;
+    return `<div class="flex items-center gap-2\\.5" style="gap:10px;padding:6px 0">
+      <div class="flex-1">
+        <div class="font-body font-bold fs-12" style="color:${q.claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(q.desc)}</div>
+        <div class="w-full rounded-full overflow-hidden mt-1" role="progressbar" aria-valuenow="${q.progress}" aria-valuemin="0" aria-valuemax="${q.target}" aria-label="${escapeHtml(q.desc)}" style="background:#EEE6D8;height:5px;">
+          <div class="h-full rounded-full" style="width:${pct}%;background:${q.claimed ? '#C9BFA9' : 'var(--gold)'}"></div>
+        </div>
+      </div>
+      ${rightSide}
+    </div>`;
+  }).join('');
+  return `<div class="rounded-2xl p-3\\.5 mb-3" style="padding:14px;background:var(--parchment)">
+    <div class="flex items-center justify-between mb-1">
+      <div class="font-display font-bold fs-13" style="color:var(--ink)">Objectifs du jour</div>
+      ${state.loginStreak > 1 ? `<span class="font-body font-bold fs-11 flex items-center gap-1" style="color:var(--gold-deep)">🔥 ${state.loginStreak} jours</span>` : ''}
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function weeklyChallengeCardHtml() {
+  const w = state.weeklyChallenge;
+  if (!w) return '';
+  const ready = w.progress >= w.target && !w.claimed;
+  const pct = Math.min(100, Math.round((w.progress / w.target) * 100));
+  const rightSide = w.claimed
+    ? `<span style="display:inline-flex">${icon('check', { size: 14, color: 'var(--ink-soft)' })}</span>`
+    : ready
+      ? `<button data-action="claim-weekly-challenge" class="font-display font-bold fs-10 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${coinIconHtml()} +${w.reward}</button>`
+      : `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${w.progress}/${w.target}</span>`;
+  return `<div class="rounded-2xl p-3\\.5 mb-3 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#EDE7F6,#E3DAF0)">
+    <span style="font-size:22px" aria-hidden="true">🗓️</span>
+    <div class="flex-1">
+      <div class="font-display font-bold fs-12" style="color:var(--ink)">Défi de la semaine</div>
+      <div class="font-body font-bold fs-11 mb-1" style="color:${w.claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(w.desc)}</div>
+      <div class="w-full rounded-full overflow-hidden" role="progressbar" aria-valuenow="${w.progress}" aria-valuemin="0" aria-valuemax="${w.target}" aria-label="${escapeHtml(w.desc)}" style="background:rgba(255,255,255,.6);height:5px;">
+        <div class="h-full rounded-full" style="width:${pct}%;background:#8A6FBF"></div>
+      </div>
+    </div>
+    ${rightSide}
+  </div>`;
+}
+
+/* =========================================================================
+   LUMIDRA — événements saisonniers
+   ========================================================================= */
+
+const EVENTS = [
+  { id: 'ete', name: "Festival d'Été", emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', tagline: 'Décoration exclusive en boutique : Voile Solaire !' },
+  { id: 'automne', name: "Récolte d'Automne", emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', tagline: 'Décoration exclusive en boutique : Citrouille Dorée !' },
+  { id: 'hiver', name: "Veillée d'Hiver", emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', tagline: 'Décoration exclusive en boutique : Guirlande Étoilée !' },
+];
+
+function getActiveEvent() {
+  const now = new Date();
+  const m = now.getMonth() + 1, d = now.getDate();
+  const inRange = (ev) => {
+    const after = (mm, dd) => mm > ev.startMonth || (mm === ev.startMonth && dd >= ev.startDay);
+    const before = (mm, dd) => mm < ev.endMonth || (mm === ev.endMonth && dd <= ev.endDay);
+    if (ev.startMonth <= ev.endMonth) return after(m, d) && before(m, d);
+    return after(m, d) || before(m, d); // fenêtre à cheval sur le nouvel an
+  };
+  return EVENTS.find(inRange) || null;
+}
+
+function seasonalEventBannerHtml() {
+  const ev = getActiveEvent();
+  if (!ev) return '';
+  return `<div class="rounded-2xl p-3\\.5 mb-3 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FDEDD3,#FBDCC0)">
+    <div style="font-size:26px" aria-hidden="true">${ev.emoji}</div>
+    <div class="flex-1">
+      <div class="font-display font-bold fs-12" style="color:var(--ink)">${escapeHtml(ev.name)}</div>
+      <div class="font-body fs-11" style="color:var(--ink-soft)">${escapeHtml(ev.tagline)}</div>
+    </div>
+  </div>`;
+}
+
 function dragonHabitatCardHtml(dragon, busy) {
   const species = speciesById(dragon.speciesId);
   const happyDots = Math.min(4, 1 + Math.floor(dragon.careCount / 3));
   let dots = '';
   for (let i = 0; i < 4; i++) dots += `<span class="w-1\\.5 h-1\\.5 rounded-full" style="width:6px;height:6px;background:${i < happyDots ? 'var(--gold)' : '#E6DFD3'}"></span>`;
-  const happiness = computeHappiness(dragon);
-  const needsCare = happiness < 45 && !busy;
   return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
     ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">en expédition</span>` : ''}
-    ${needsCare ? `<span class="absolute" style="top:6px;left:6px" title="A besoin d'un câlin">${icon('heart', { size: 13, color: '#C97A1F' })}</span>` : ''}
+    ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
-    <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(species.name)}</div>
+    <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
     <div class="flex gap-1 mt-1">${dots}</div>
   </button>`;
 }
 
-function dailyQuestsPanelHtml() {
-  ensureDailyQuests();
-  const quests = state.dailyQuests.quests;
-  const rows = quests.map(q => {
-    const pct = Math.min(100, Math.round((q.progress / q.target) * 100));
-    const label = q.id === 'ecaille' ? `${q.label} (${Math.min(q.progress, q.target)}/${q.target})` : q.label;
-    let action = '';
-    if (q.claimed) action = `<span class="font-body font-bold fs-11" style="color:var(--ink-soft)">${icon('check', { size: 13, color: 'var(--gold-deep)' })}</span>`;
-    else if (q.done) action = `<button data-action="claim-daily-quest" data-quest-id="${q.id}" class="font-display font-bold fs-10 px-2\\.5 py-1 rounded-xl" style="padding:4px 10px;background:var(--gold);color:var(--ink)">Récupérer</button>`;
-    else action = `<span class="font-body font-bold fs-10" style="color:var(--ink-soft)">${coinIconHtml()} ${q.reward}</span>`;
-    return `<div class="mb-2">
-      <div class="flex justify-between items-center mb-1">
-        <span class="font-body font-semibold fs-11" style="color:var(--ink)">${escapeHtml(label)}</span>
-        ${action}
-      </div>
-      <div class="w-full h-1\\.5 rounded-full overflow-hidden" style="background:#EEE6D8;height:6px;">
-        <div class="h-full rounded-full" style="width:${pct}%;background:${q.done ? 'var(--gold-deep-btn)' : 'var(--gold)'}"></div>
-      </div>
-    </div>`;
-  }).join('');
-  return `<div class="rounded-2xl p-3\\.5 mb-3" style="padding:14px;background:var(--parchment)">
-    <h3 class="font-display font-bold fs-13 mb-2" style="color:var(--ink)">Quêtes du jour</h3>
-    ${rows}
+function sortedDragonsForDisplay() {
+  let list = state.dragons.slice();
+  const search = (ui.sanctuaireSearch || '').trim();
+  if (search) {
+    const q = normalizeSearch(search);
+    list = list.filter(d => normalizeSearch(dragonDisplayName(d, speciesById(d.speciesId))).includes(q));
+  }
+  const sort = ui.sanctuaireSort || 'recent';
+  if (sort === 'favoris') {
+    list.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0) || b.bornAt - a.bornAt);
+  } else if (sort === 'alpha') {
+    list.sort((a, b) => dragonDisplayName(a, speciesById(a.speciesId)).localeCompare(dragonDisplayName(b, speciesById(b.speciesId)), 'fr'));
+  } else if (sort === 'rarete') {
+    list.sort((a, b) => speciesById(b.speciesId).variant - speciesById(a.speciesId).variant || b.bornAt - a.bornAt);
+  } else {
+    list.sort((a, b) => b.bornAt - a.bornAt);
+  }
+  return list;
+}
+
+function sanctuaireSortChipsHtml() {
+  const options = [
+    { id: 'recent', label: 'Récents' },
+    { id: 'favoris', label: 'Favoris' },
+    { id: 'alpha', label: 'A-Z' },
+    { id: 'rarete', label: 'Rareté' },
+  ];
+  const cur = ui.sanctuaireSort || 'recent';
+  return `<div class="flex gap-1\\.5 mb-2\\.5 overflow-x-auto" style="gap:6px;margin-bottom:10px">${options.map(o => `
+    <button data-action="set-sanctuaire-sort" data-sort="${o.id}" aria-pressed="${cur === o.id}" class="shrink-0 font-body font-bold fs-11 rounded-full" style="padding:5px 12px;background:${cur === o.id ? 'var(--gold)' : 'rgba(255,255,255,.6)'};color:var(--ink)">${o.label}</button>`).join('')}</div>`;
+}
+
+function objectivesSummaryHtml() {
+  const questsReady = state.dailyQuests ? state.dailyQuests.quests.filter(q => q.progress >= q.target && !q.claimed).length : 0;
+  const weeklyReady = state.weeklyChallenge && state.weeklyChallenge.progress >= state.weeklyChallenge.target && !state.weeklyChallenge.claimed ? 1 : 0;
+  const readyCount = questsReady + weeklyReady;
+  const activeEvent = getActiveEvent();
+
+  if (ui.objectivesBannerCollapsed) {
+    const bits = [];
+    if (state.dailyQuests) bits.push(`${state.dailyQuests.quests.filter(q => !q.claimed).length} objectif${state.dailyQuests.quests.filter(q => !q.claimed).length > 1 ? 's' : ''} du jour`);
+    if (state.weeklyChallenge && !state.weeklyChallenge.claimed) bits.push('1 défi de la semaine');
+    const summary = bits.length ? bits.join(' · ') : 'Tout est à jour';
+    return `<button data-action="toggle-objectives-banner" aria-expanded="false" class="w-full flex items-center gap-2\\.5 rounded-2xl mb-3" style="gap:10px;padding:10px 14px;background:var(--parchment)">
+      <span style="font-size:18px" aria-hidden="true">${activeEvent ? activeEvent.emoji : '🎯'}</span>
+      <span class="flex-1 text-left font-body font-bold fs-12" style="color:var(--ink)">${summary}</span>
+      ${readyCount > 0 ? `<span class="font-display font-bold fs-10 rounded-full" style="padding:3px 8px;background:var(--gold);color:var(--ink)">${readyCount} à réclamer</span>` : ''}
+      ${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}
+    </button>`;
+  }
+
+  return `<div class="mb-1">
+    <button data-action="toggle-objectives-banner" aria-expanded="true" class="w-full flex items-center gap-2 mb-2" style="color:var(--gold-deep)">
+      <span class="font-display font-bold fs-12 flex-1 text-left">Objectifs</span>
+      <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
+    </button>
+    ${dailyQuestsCardHtml()}
+    ${weeklyChallengeCardHtml()}
+    ${seasonalEventBannerHtml()}
   </div>`;
 }
 
@@ -1017,7 +1595,7 @@ function renderScreenSanctuaire() {
   const equippedDecor = DECOR.filter(d => state.decorEquipped.includes(d.id));
   let html = `<div class="flex-1 overflow-y-auto px-4 pb-4">`;
 
-  html += dailyQuestsPanelHtml();
+  html += objectivesSummaryHtml();
 
   if (state.eggInbox.length > 0) {
     html += `<button data-action="start-hatch-from-inbox" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 mb-3 text-left" style="background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
@@ -1033,13 +1611,23 @@ function renderScreenSanctuaire() {
   html += `<div class="rounded-3xl p-4" style="background:linear-gradient(180deg,#E7F0FA,#DCEBF6)">
     <div class="flex items-center justify-between mb-2\\.5" style="margin-bottom:10px">
       <h3 class="font-display font-semibold fs-13" style="color:var(--ink-soft)">Ton sanctuaire</h3>
-      ${equippedDecor.length ? `<div class="flex gap-1">${equippedDecor.map(d => `<span class="text-base" style="font-size:16px">${d.emoji}</span>`).join('')}</div>` : ''}
+      ${equippedDecor.length ? `<div class="flex gap-1">${equippedDecor.map(d => decorIconSVG(d.id, 18)).join('')}</div>` : ''}
     </div>`;
 
   if (state.dragons.length === 0) {
     html += emptyNoteHtml("Ton sanctuaire est vide pour l'instant. Fais éclore ton premier œuf !");
   } else {
-    html += `<div class="grid grid-cols-2 gap-3">${state.dragons.map(d => dragonHabitatCardHtml(d, !!busy[d.id])).join('')}</div>`;
+    if (state.dragons.length > 1) {
+      html += `<button data-action="care-all-dragons" class="w-full flex items-center justify-center gap-1\\.5 font-body font-bold fs-11 rounded-xl mb-2\\.5" style="padding:8px;margin-bottom:10px;background:rgba(255,255,255,.55);color:var(--ink)">${icon('heart', { size: 13, color: '#D9634A' })} Soigner tous les dragons disponibles</button>`;
+    }
+    if (state.dragons.length > 5) {
+      html += `<input id="sanctuaire-search-input" data-bind="sanctuaire-search" value="${escapeHtml(ui.sanctuaireSearch || '')}" placeholder="Chercher un de tes dragons…" aria-label="Chercher un dragon"
+        class="w-full font-body font-semibold fs-12 rounded-xl px-3 py-2\\.5 mb-2\\.5" style="padding:10px 12px;margin-bottom:10px;background:rgba(255,255,255,.6);color:var(--ink)"/>`;
+    }
+    html += sanctuaireSortChipsHtml();
+    html += sortedDragonsForDisplay().length === 0
+      ? emptyNoteHtml('Aucun dragon ne correspond à cette recherche.')
+      : `<div class="grid grid-cols-2 gap-3">${sortedDragonsForDisplay().map(d => dragonHabitatCardHtml(d, !!busy[d.id])).join('')}</div>`;
   }
   html += `</div></div>`;
 
@@ -1050,15 +1638,68 @@ function renderScreenSanctuaire() {
    ÉCRAN — DRAGONDEX
    ========================================================================= */
 
+function achievementsCardHtml() {
+  const unclaimedReady = ACHIEVEMENTS.filter(a => !state.achievementsClaimed.includes(a.id) && a.progress(state) >= a.target).length;
+  if (state.achievementsBannerCollapsed) {
+    return `<button data-action="toggle-achievements-banner" aria-expanded="false" class="mb-3 rounded-2xl w-full flex items-center gap-2" style="padding:8px 12px;background:#F1ECE2">
+      <span style="display:inline-flex">${icon('sparkles', { size: 16, color: 'var(--gold-deep)' })}</span>
+      <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--ink)">Succès${unclaimedReady ? ` · ${unclaimedReady} à réclamer` : ''}</span>
+      <span style="display:inline-flex">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
+    </button>`;
+  }
+  const rows = ACHIEVEMENTS.map(a => {
+    const claimed = state.achievementsClaimed.includes(a.id);
+    const prog = a.progress(state);
+    const ready = !claimed && prog >= a.target;
+    return `<div class="flex items-center gap-2\\.5" style="gap:10px;padding:7px 0;border-bottom:1px solid #EEE6D8">
+      <div class="flex-1">
+        <div class="font-body font-bold fs-12" style="color:${claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(a.name)}</div>
+        <div class="font-body fs-10" style="color:var(--ink-soft)">${escapeHtml(a.desc)}</div>
+      </div>
+      ${claimed
+        ? `<span style="display:inline-flex">${icon('check', { size: 14, color: 'var(--ink-soft)' })}</span>`
+        : ready
+          ? `<button data-action="claim-achievement" data-achievement-id="${a.id}" class="font-display font-bold fs-10 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${coinIconHtml()} +${a.reward}</button>`
+          : `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${prog}/${a.target}</span>`
+      }
+    </div>`;
+  }).join('');
+  return `<div class="mb-3 rounded-2xl p-3\\.5" style="padding:14px;background:#F1ECE2">
+    <button data-action="toggle-achievements-banner" aria-expanded="true" class="w-full flex items-center gap-2 mb-1" style="margin-bottom:4px;">
+      <span style="display:inline-flex">${icon('sparkles', { size: 16, color: 'var(--gold-deep)' })}</span>
+      <span class="flex-1 text-left font-display font-bold fs-12" style="color:var(--ink)">Succès${unclaimedReady ? ` · ${unclaimedReady} à réclamer` : ''}</span>
+      <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
+    </button>
+    ${rows}
+  </div>`;
+}
+
+function normalizeSearch(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function renderScreenDragondex() {
   const filter = ui.dragondexFilter;
-  const filtered = filter === 'tous' ? SPECIES : SPECIES.filter(s => s.element === filter);
+  const rarityFilter = ui.dragondexRarityFilter || 'tous';
+  let filtered = filter === 'tous' ? SPECIES : SPECIES.filter(s => s.element === filter);
+  if (rarityFilter !== 'tous') filtered = filtered.filter(s => s.variant === Number(rarityFilter));
+  const search = (ui.dragondexSearch || '').trim();
+  if (search) {
+    const q = normalizeSearch(search);
+    filtered = filtered.filter(s => state.discovered.includes(s.id) && normalizeSearch(s.name).includes(q));
+  }
 
   let chips = `<button data-action="dragondex-filter" data-element="tous" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${filter === 'tous' ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${filter === 'tous' ? 'var(--gold-deep-btn)' : 'transparent'}">Tous</button>`;
   Object.entries(ELEMENTS).forEach(([key, el]) => {
     const active = filter === key;
     chips += `<button data-action="dragondex-filter" data-element="${key}" class="flex items-center gap-1 font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${active ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${active ? el.deep : 'transparent'}">${icon(el.icon, { size: 12, color: active ? el.deep : 'currentColor' })} ${el.name}</button>`;
   });
+
+  const rarityOptions = [{ v: 'tous', label: 'Toutes raretés' }, { v: '0', label: 'Commun' }, { v: '2', label: 'Rare' }, { v: '3', label: 'Épique' }, { v: '4', label: 'Légendaire' }];
+  let rarityChips = rarityOptions.map(o => {
+    const active = rarityFilter === o.v;
+    return `<button data-action="dragondex-rarity-filter" data-rarity="${o.v}" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:${active ? 'var(--gold)' : 'var(--parchment)'};color:var(--ink)">${o.label}</button>`;
+  }).join('');
 
   let cards = filtered.map(s => {
     const discovered = state.discovered.includes(s.id);
@@ -1073,42 +1714,30 @@ function renderScreenDragondex() {
 
   let completeBanner = '';
   if (state.discovered.length === SPECIES.length) {
-    completeBanner = `<div class="mb-3 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
-      <div style="font-size:26px;line-height:1;">🏆</div>
-      <div>
-        <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">Maître Gardien</div>
-        <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Les 24 espèces sont découvertes. Collection complète !</div>
-      </div>
-    </div>`;
+    if (state.collectionBannerCollapsed) {
+      completeBanner = `<button data-action="toggle-collection-banner" aria-expanded="false" class="mb-3 rounded-2xl w-full flex items-center gap-2" style="padding:8px 12px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
+        <span style="font-size:18px;line-height:1;">🏆</span>
+        <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--gold-deep)">Collection complète</span>
+        <span style="display:inline-flex">${icon('chevron-down', { size: 14, color: 'var(--gold-deep)' })}</span>
+      </button>`;
+    } else {
+      completeBanner = `<div class="mb-3 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
+        <div style="font-size:26px;line-height:1;">🏆</div>
+        <div class="flex-1">
+          <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">Maître Gardien</div>
+          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Les ${SPECIES.length} espèces sont découvertes. Collection complète !</div>
+        </div>
+        <button data-action="toggle-collection-banner" aria-expanded="true" aria-label="Réduire la bannière" class="shrink-0 rounded-full flex items-center justify-center" style="width:28px;height:28px;background:rgba(255,255,255,.55)">
+          <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--gold-deep)' })}</span>
+        </button>
+      </div>`;
+    }
   }
 
-  let legendarySection = '';
-  const collectionComplete = state.discovered.length === SPECIES.length;
-  if (collectionComplete) {
-    const legendaryCards = LEGENDARY_SPECIES.map(s => {
-      const discovered = state.legendaryDiscovered.includes(s.id);
-      return `<button data-action="open-species" data-species-id="${s.id}" class="rounded-2xl p-2 flex flex-col items-center" style="background:var(--parchment)">
-        <div style="filter:${discovered ? 'none' : 'grayscale(1) brightness(0.4)'};opacity:${discovered ? 1 : 0.55}">
-          ${dragonSVG({ element: s.element, variant: s.variant, stage: 'adulte', size: 58 })}
-        </div>
-        <div class="font-display font-bold fs-10 mt-1 text-center" style="color:${discovered ? 'var(--ink)' : 'var(--ink-soft)'}">${discovered ? escapeHtml(s.name) : '???'}</div>
-        ${!discovered ? icon('lock', { size: 10, color: 'var(--ink-soft)' }) : ''}
-      </button>`;
-    }).join('');
-    legendarySection = `<div class="mt-4">
-      <div class="flex items-center justify-between mb-2\\.5" style="margin-bottom:10px">
-        <h3 class="font-display font-bold fs-13" style="color:var(--ink)">${icon('sparkles', { size: 14, color: 'var(--gold-deep)' })} Dragons Légendaires</h3>
-        <span class="font-body font-bold fs-11" style="color:var(--ink-soft)">${state.legendaryDiscovered.length}/${LEGENDARY_SPECIES.length}</span>
-      </div>
-      <p class="font-body font-semibold fs-11 mb-2\\.5" style="margin-bottom:10px;color:var(--ink-soft)">Une chance rare apparaît en Expédition majeure, maintenant que ton Dragondex commun est complet.</p>
-      <div class="grid grid-cols-3 gap-2\\.5" style="gap:10px">${legendaryCards}</div>
-    </div>`;
-  } else {
-    legendarySection = `<div class="mt-4 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:#F1ECE2">
-      ${icon('sparkles', { size: 20, color: 'var(--gold-deep)' })}
-      <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : complète les ${SPECIES.length} espèces communes pour ouvrir la chance de les rencontrer en Expédition majeure.</div>
-    </div>`;
-  }
+  let legendaryBanner = `<div class="mt-4 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:#F1ECE2">
+    ${icon('sparkles', { size: 20, color: 'var(--gold-deep)' })}
+    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires.</div>
+  </div>`;
 
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
@@ -1117,9 +1746,15 @@ function renderScreenDragondex() {
       <span class="font-body font-bold text-xs" style="color:var(--ink-soft)">${state.discovered.length}/${SPECIES.length} découverts</span>
     </div>
     ${completeBanner}
-    <div class="flex gap-2 mb-3 overflow-x-auto pb-1">${chips}</div>
-    <div class="grid grid-cols-3 gap-2\\.5" style="gap:10px">${cards}</div>
-    ${legendarySection}
+    ${achievementsCardHtml()}
+    <div class="relative mb-3">
+      <input id="dragondex-search-input" data-bind="dragondex-search" value="${escapeHtml(ui.dragondexSearch || '')}" placeholder="Chercher un dragon découvert…" aria-label="Chercher un dragon"
+        class="w-full font-body font-semibold fs-12 rounded-xl px-3 py-2\.5" style="padding:10px 12px;background:var(--parchment);color:var(--ink)"/>
+    </div>
+    <div class="flex gap-2 mb-2 overflow-x-auto pb-1">${chips}</div>
+    <div class="flex gap-2 mb-3 overflow-x-auto pb-1">${rarityChips}</div>
+    ${filtered.length === 0 ? emptyNoteHtml('Aucun dragon découvert ne correspond à cette recherche.') : `<div class="grid grid-cols-3 gap-2\\.5" style="gap:10px">${cards}</div>`}
+    ${legendaryBanner}
   </div>`;
 }
 
@@ -1127,30 +1762,75 @@ function renderScreenDragondex() {
    ÉCRAN — CARTE / EXPÉDITIONS
    ========================================================================= */
 
-function zoneCardHtml(zone, locked) {
-  const chips = zone.elements.map(el => {
-    const c = ELEMENTS[el];
-    return `<div class="w-9 h-9 rounded-full flex items-center justify-center" style="background:${c.light};border:2px solid var(--parchment)">${icon(c.icon, { size: 16, color: c.deep })}</div>`;
+function zonesPathMapHtml() {
+  const level = computeLevel(state.xp);
+  const n = ZONES.length;
+  const xs = [76, 244, 76, 244, 160]; // alternance gauche/droite façon "parcours"
+  const ySpacing = 132;
+  const yStart = 56;
+  const points = ZONES.map((z, i) => ({ zone: z, x: xs[i % xs.length], y: yStart + i * ySpacing, unlocked: level >= z.unlockLevel }));
+  const firstLockedIndex = points.findIndex(p => !p.unlocked);
+
+  let pathD = '';
+  points.forEach((p, i) => {
+    if (i === 0) { pathD += `M ${p.x},${p.y}`; }
+    else {
+      const prev = points[i - 1];
+      const midY = (prev.y + p.y) / 2;
+      pathD += ` C ${prev.x},${midY} ${p.x},${midY} ${p.x},${p.y}`;
+    }
+  });
+  const totalHeight = yStart + (n - 1) * ySpacing + 70;
+
+  const nodesHtml = points.map((p, i) => {
+    const { zone, unlocked } = p;
+    const isNext = i === (firstLockedIndex === -1 ? -1 : firstLockedIndex);
+    const chips = zone.elements.map(el => {
+      const c = ELEMENTS[el];
+      return icon(c.icon, { size: 13, color: unlocked ? c.deep : '#B7AF9E' });
+    }).join('');
+    return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
+      ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
+      <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : ' (verrouillé)'}"
+        class="rounded-full flex items-center justify-center relative ${unlocked ? 'dragon-anim-idle' : ''}"
+        style="width:66px;height:66px;margin:0 auto;background:${unlocked ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : '#D8CFC0'};box-shadow:0 4px 0 ${unlocked ? 'var(--gold-deep)' : '#B7AF9E'};border:3px solid #fff;animation-delay:${(i * 0.35).toFixed(2)}s">
+        ${unlocked ? `<span style="display:flex;gap:1px">${chips}</span>` : icon('lock', { size: 18, color: '#8C8371' })}
+      </button>
+      <div class="font-display font-bold" style="font-size:10px;margin-top:6px;color:${unlocked ? 'var(--ink)' : 'var(--ink-soft)'};line-height:1.2">${escapeHtml(zone.name)}</div>
+      ${!unlocked ? `<div class="font-body font-bold" style="font-size:9px;color:var(--ink-soft)">Niveau ${zone.unlockLevel}</div>` : ''}
+    </div>`;
   }).join('');
-  return `<button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${locked ? '1' : '0'}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left" style="padding:14px;background:${locked ? '#EDE7DA' : 'var(--parchment)'};opacity:${locked ? 0.75 : 1}">
-    <div class="flex -space-x-2">${chips}</div>
-    <div class="flex-1">
-      <div class="font-display font-bold fs-13" style="color:var(--ink)">${escapeHtml(zone.name)}</div>
-      <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${locked ? `Niveau ${zone.unlockLevel} requis` : zone.elements.map(e => ELEMENTS[e].name).join(' · ')}</div>
-    </div>
-    ${locked ? icon('lock', { size: 16, color: 'var(--ink-soft)' }) : icon('chevron-right', { size: 16, color: 'var(--ink-soft)' })}
-  </button>`;
+
+  return `<div style="position:relative;width:100%;height:${totalHeight}px;">
+    <svg viewBox="0 0 320 ${totalHeight}" style="position:absolute;top:0;left:0;width:100%;height:100%" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${pathD}" fill="none" stroke="#D8CFC0" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15"/>
+      <path d="${pathD}" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15" opacity="0.85"
+        style="clip-path:inset(0 0 ${Math.max(0, 100 - ((firstLockedIndex === -1 ? n - 1 : firstLockedIndex) / (n - 1)) * 100)}% 0)"/>
+    </svg>
+    ${nodesHtml}
+  </div>`;
 }
 
-function typeCardHtml(t) {
-  return `<button data-action="carte-choose-type" data-type-id="${t.id}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left" style="padding:14px;background:var(--parchment)">
-    <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#FFF3DC">${icon('clock', { size: 18, color: 'var(--gold-deep)' })}</div>
-    <div class="flex-1">
-      <div class="font-display font-bold fs-13" style="color:var(--ink)">${t.name}</div>
-      <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">~${fmtCountdown(t.seconds * 1000)} · ${t.ecaillesMin}-${t.ecaillesMax} écailles${(t.team && state.mode === 'stratege') ? ' · équipe' : ''}</div>
-    </div>
-    ${icon('chevron-right', { size: 16, color: 'var(--ink-soft)' })}
-  </button>`;
+function typesPathHtml(types) {
+  const stepColors = ['#8FBF7F', '#E0AA3E', '#E8734A', '#B5502C', '#8A6FBF'];
+  return `<div class="flex flex-col">${types.map((t, i) => {
+    const color = stepColors[i % stepColors.length];
+    const isLast = i === types.length - 1;
+    return `<div style="display:flex;gap:10px;align-items:stretch">
+      <div style="display:flex;flex-direction:column;align-items:center;width:30px;flex-shrink:0">
+        <div class="font-display font-bold shrink-0" style="width:28px;height:28px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-size:12px">${i + 1}</div>
+        ${!isLast ? `<div style="flex:1;width:3px;min-height:18px;background:#E6DFD3;margin:2px 0"></div>` : ''}
+      </div>
+      <button data-action="carte-choose-type" data-type-id="${t.id}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left flex-1" style="padding:14px;margin-bottom:14px;background:var(--parchment)">
+        <div class="flex-1">
+          <div class="font-display font-bold fs-13" style="color:var(--ink)">${t.name}</div>
+          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">~${fmtCountdown(t.seconds * 1000)} · ${t.ecaillesMin}-${t.ecaillesMax} écailles${t.team ? ' · équipe' : ''}</div>
+          ${t.tagline ? `<div class="font-body fs-10 mt-1" style="color:var(--gold-deep)">${escapeHtml(t.tagline)}</div>` : ''}
+        </div>
+        ${icon('chevron-right', { size: 16, color: 'var(--ink-soft)' })}
+      </button>
+    </div>`;
+  }).join('')}</div>`;
 }
 
 function activeExpeditionCardHtml(exp) {
@@ -1177,7 +1857,7 @@ function teamPickerHtml(zone, availableDragons) {
   let totalVig = 0, totalEclat = 0;
   team.forEach(d => { const st = computeDragonStats(d, zone); totalVig += st.vigueur; totalEclat += st.eclat; });
   const avgVig = team.length ? Math.min(100, Math.round(totalVig / team.length)) : 0;
-  const avgEclat = team.length ? softCapStat(totalEclat / team.length + harmonyBonus * 0.3) : 0;
+  const avgEclat = team.length ? Math.min(100, Math.round(totalEclat / team.length + harmonyBonus * 0.3)) : 0;
   const harmonie = team.length ? Math.min(100, 30 + harmonyBonus + team.length * 10) : 0;
 
   let grid;
@@ -1216,13 +1896,13 @@ function renderScreenCarte() {
   }
 
   if (c.view === 'zones') {
-    html += `<div class="flex flex-col gap-2\\.5" style="gap:10px">
-      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">Zones d'expédition</h3>
-      ${ZONES.map(z => zoneCardHtml(z, computeLevel(state.xp) < z.unlockLevel)).join('')}
-    </div>`;
+    html += `<h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Parcours d'expédition</h3>
+      <p class="font-body font-semibold fs-11 mb-2" style="color:var(--ink-soft)">Avance de zone en zone à mesure que ton niveau grandit.</p>
+      ${zonesPathMapHtml()}`;
   } else if (c.view === 'types') {
     const zone = ZONES.find(z => z.id === c.zoneId);
-    html += flowPanelHtml(zone.name, EXPEDITION_TYPES.map(typeCardHtml).join(''));
+    const loreHtml = zone.lore ? `<p class="font-body fs-11 italic mb-3" style="color:var(--ink-soft)">${escapeHtml(zone.lore)}</p>` : '';
+    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => !t.team || state.mode === 'stratege')));
   } else if (c.view === 'pick1') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     let inner;
@@ -1231,12 +1911,8 @@ function renderScreenCarte() {
     } else {
       inner = `<div class="grid grid-cols-4 gap-2">${availableDragons.map(d => {
         const s = speciesById(d.speciesId);
-        const st = computeDragonStats(d, zone);
-        return `<button data-action="carte-pick-single" data-dragon-id="${d.id}" class="rounded-xl p-1\\.5 flex flex-col items-center" style="padding:6px;background:var(--parchment)">
-          ${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size: 48 })}
-          <span class="font-body font-bold fs-9" style="color:var(--ink-soft)">V${Math.round(st.vigueur)} · É${Math.round(st.eclat)}</span>
-        </button>`;
-      }).join('')}</div><p class="font-body font-semibold fs-11 mt-2" style="color:var(--ink-soft)">Un dragon bien soigné et adapté au terrain part avec de meilleures chances.</p>`;
+        return `<button data-action="carte-pick-single" data-dragon-id="${d.id}" class="rounded-xl p-1\\.5 flex flex-col items-center" style="padding:6px;background:var(--parchment)">${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size: 48 })}</button>`;
+      }).join('')}</div>`;
     }
     html += flowPanelHtml('Choisis un dragon', inner);
   } else if (c.view === 'team') {
@@ -1261,15 +1937,19 @@ function flowPanelHtml(title, innerHtml) {
    ========================================================================= */
 
 function renderScreenBoutique() {
-  const cards = DECOR.map(d => {
+  const activeEvent = getActiveEvent();
+  const visibleDecor = DECOR.filter(d => !d.seasonal || state.decorOwned.includes(d.id) || (activeEvent && activeEvent.id === d.seasonal));
+  const cards = visibleDecor.map(d => {
     const owned = state.decorOwned.includes(d.id);
     const equipped = state.decorEquipped.includes(d.id);
-    const canAfford = state.ecailles >= d.cost;
+    const seasonLocked = d.seasonal && !owned && !(activeEvent && activeEvent.id === d.seasonal);
+    const canAfford = state.ecailles >= d.cost && !seasonLocked;
     const action = !owned
       ? `<button data-action="buy-decor" data-decor-id="${d.id}" ${canAfford ? '' : 'disabled'} class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full flex items-center justify-center gap-1" style="padding:6px 12px;background:${canAfford ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">${coinIconHtml()} ${d.cost}</button>`
       : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? 'Équipé ✓' : 'Équiper'}</button>`;
-    return `<div class="rounded-2xl p-3 flex flex-col items-center" style="background:var(--parchment)">
-      <div class="text-3xl mb-1" style="font-size:30px">${d.emoji}</div>
+    return `<div class="rounded-2xl p-3 flex flex-col items-center relative" style="background:var(--parchment)">
+      ${d.seasonal ? `<span class="absolute font-display font-bold" style="top:6px;right:6px;font-size:14px" aria-hidden="true">${EVENTS.find(e => e.id === d.seasonal)?.emoji || ''}</span>` : ''}
+      <div class="mb-1 flex items-center justify-center" style="height:34px">${decorIconSVG(d.id, 34)}</div>
       <div class="font-display font-bold text-xs text-center" style="color:var(--ink)">${d.name}</div>
       ${action}
     </div>`;
@@ -1279,7 +1959,70 @@ function renderScreenBoutique() {
   <div class="flex-1 overflow-y-auto px-4 pb-4">
     <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Décorations</h3>
     <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Personnalise ton sanctuaire avec des écailles gagnées en jouant — jamais d'argent réel ici.</p>
+    ${seasonalEventBannerHtml()}
     <div class="grid grid-cols-2 gap-2\\.5" style="gap:10px">${cards}</div>
+  </div>`;
+}
+
+/* =========================================================================
+   ÉCRAN — LABORATOIRE
+   ========================================================================= */
+
+function renderScreenLabo() {
+  const busy = busyDragonIds();
+  const eligible = state.dragons.filter(d => d.stage === 'adulte' && !busy[d.id]);
+  const { parentAId, parentBId, picking } = ui.labo;
+  const a = parentAId ? state.dragons.find(d => d.id === parentAId) : null;
+  const b = parentBId ? state.dragons.find(d => d.id === parentBId) : null;
+
+  const slotHtml = (dragon, slot) => {
+    if (!dragon) {
+      return `<button data-action="labo-open-picker" data-slot="${slot}" class="rounded-2xl flex flex-col items-center justify-center gap-1" style="height:120px;border:2px dashed #D8CFC0;background:rgba(255,255,255,.4)">
+        ${icon('plus', { size: 22, color: 'var(--ink-soft)' })}
+        <span class="font-body font-bold fs-11" style="color:var(--ink-soft)">Choisir</span>
+      </button>`;
+    }
+    const species = speciesById(dragon.speciesId);
+    return `<button data-action="labo-open-picker" data-slot="${slot}" class="rounded-2xl flex flex-col items-center p-2" style="height:120px;background:var(--parchment)">
+      ${dragonSVG({ element: species.element, variant: species.variant, stage: 'adulte', size: 72 })}
+      <div class="font-display font-bold fs-11 mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
+    </button>`;
+  };
+
+  const cooldownLeft = Math.max(0, (state.laboCooldownUntil || 0) - Date.now());
+  const onCooldown = cooldownLeft > 0;
+  const canBreed = a && b && a.id !== b.id && !onCooldown && state.ecailles >= BREED_COST;
+
+  let pickerHtml = '';
+  if (picking) {
+    const already = picking === 'a' ? parentBId : parentAId;
+    const options = eligible.filter(d => d.id !== already);
+    pickerHtml = `<div class="rounded-2xl p-3 mb-3" style="background:var(--parchment)">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-display font-bold fs-12" style="color:var(--ink)">Choisir un parent</div>
+        <button data-action="labo-close-picker" aria-label="Fermer" class="w-7 h-7 rounded-full flex items-center justify-center" style="background:#F1ECE2">${icon('x', { size: 14, color: 'var(--ink-soft)' })}</button>
+      </div>
+      ${options.length === 0 ? emptyNoteHtml('Aucun autre dragon adulte disponible.') : `
+      <div class="grid grid-cols-3 gap-2">${options.map(d => {
+        const species = speciesById(d.speciesId);
+        return `<button data-action="labo-select-parent" data-slot="${picking}" data-dragon-id="${d.id}" class="rounded-xl flex flex-col items-center p-1\\.5" style="background:var(--sky)">
+          ${dragonSVG({ element: species.element, variant: species.variant, stage: 'adulte', size: 50 })}
+          <div class="font-body font-bold" style="font-size:9px;color:var(--ink)">${escapeHtml(dragonDisplayName(d, species))}</div>
+        </button>`;
+      }).join('')}</div>`}
+    </div>`;
+  }
+
+  document.getElementById('screen-root').innerHTML = `
+  <div class="flex-1 overflow-y-auto px-4 pb-4">
+    <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Laboratoire</h3>
+    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Associe deux dragons adultes pour obtenir un œuf inattendu — parfois même légendaire.</p>
+    ${eligible.length < 2 && !(a && b) ? emptyNoteHtml('Il te faut au moins 2 dragons adultes, non occupés, pour tenter un élevage.') : ''}
+    ${pickerHtml}
+    <div class="grid grid-cols-2 gap-3 mb-3">${slotHtml(a, 'a')}${slotHtml(b, 'b')}</div>
+    <button data-action="breed-dragons" ${canBreed ? '' : 'disabled'} class="w-full font-display font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2" style="background:${canBreed ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">
+      ${onCooldown ? `Disponible dans ${fmtCountdown(cooldownLeft)}` : `${coinIconHtml()} Élever (${BREED_COST})`}
+    </button>
   </div>`;
 }
 
@@ -1301,6 +2044,8 @@ function renderScreenReglages() {
       </div>
     </div>
 
+    ${titlePickerCardHtml()}
+
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
       <div class="font-body font-bold fs-11 mb-2" style="color:var(--ink-soft)">Mode de jeu</div>
       <div class="flex gap-2">
@@ -1316,13 +2061,35 @@ function renderScreenReglages() {
       <p class="font-body fs-11 mt-2 leading-relaxed" style="color:var(--ink-soft)">Ta collection est commune aux deux modes. Stratège ajoute les équipes d'expédition et le tempérament des dragons.</p>
     </div>
 
-    <div class="rounded-2xl p-4 mb-3 flex items-center justify-between gap-3" style="background:var(--parchment)">
-      <div>
-        <div class="font-body font-bold fs-13" style="color:var(--ink)">Verrouillage parental</div>
-        <div class="font-body fs-11" style="color:var(--ink-soft)">Protège l'accès aux réglages par une question simple.</div>
-      </div>
-      ${toggleHtml('toggle-parental-lock', state.parentalLock)}
+    <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">Préférences</div>
+      ${preferenceRowHtml('toggle-parental-lock', state.parentalLock, 'Verrouillage parental', "Protège l'accès aux réglages par une question simple.")}
+      ${preferenceRowHtml('toggle-reduce-vibrations', state.reduceVibrations, 'Réduire les vibrations', 'Désactive le retour haptique (éclosion, déverrouillage, récompenses).')}
+      ${preferenceRowHtml('toggle-sound', state.soundEnabled, 'Sons', "Petites mélodies pour l'éclosion, les soins et les récompenses.")}
+      ${preferenceRowHtml('toggle-gentle-animations', state.gentleAnimations, 'Animations douces', "Réduit l'intensité des rebonds des dragons, sans les désactiver complètement.", true)}
     </div>
+
+    <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">Sauvegarde</div>
+      <p class="font-body fs-11 leading-relaxed mb-3" style="color:var(--ink-soft)">Exporte un fichier pour garder ta progression avant une mise à jour, ou importe-le pour la restaurer.</p>
+      <div class="flex gap-2">
+        <button data-action="export-save" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('download', { size: 14 })} Exporter</button>
+        <button data-action="import-save-trigger" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('upload', { size: 14 })} Importer</button>
+      </div>
+      <input type="file" id="import-save-input" accept="application/json,.json" style="display:none" aria-hidden="true"/>
+    </div>
+
+    <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+      <div class="font-body font-bold fs-13 mb-2" style="color:var(--ink)">Statistiques</div>
+      ${statRowHtml('Dragons actuels', state.dragons.length)}
+      ${statRowHtml('Œufs éclos au total', state.statsEggsHatched || 0)}
+      ${statRowHtml('Expéditions terminées', state.statsExpeditionsCompleted || 0)}
+      ${statRowHtml('Élevages réussis', state.statsBredCount || 0)}
+      ${statRowHtml('Meilleure série de connexion', `${state.longestStreak || 0} jour${(state.longestStreak || 0) > 1 ? 's' : ''}`)}
+      ${statRowHtml('Élément favori', favoriteElementLabel(), true)}
+    </div>
+
+    ${expeditionLogCardHtml()}
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
       <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">À propos</div>
@@ -1337,6 +2104,16 @@ function renderScreenReglages() {
    MODALES
    ========================================================================= */
 
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+}
+
+let modalIsOpen = false;
+let modalReturnFocusEl = null;
+
 function renderModals() {
   const root = document.getElementById('modal-root');
   let html = '';
@@ -1348,8 +2125,31 @@ function renderModals() {
   } else if (ui.detailSpecies) html += speciesDetailModalHtml(ui.detailSpecies);
   else if (ui.lockChallenge) html += lockChallengeModalHtml(ui.lockChallenge);
   else if (ui.confirmResetOpen) html += confirmResetModalHtml();
+  else if (ui.confirmImportOpen) html += confirmImportModalHtml();
+  else if (ui.tutorialStep !== null) html += tutorialModalHtml();
+
+  // Piège de focus clavier : mémorise l'élément déclencheur à l'ouverture,
+  // le restaure à la fermeture, pour ne jamais laisser le focus s'échapper
+  // vers le contenu masqué derrière la modale.
+  const opening = !!html && !modalIsOpen;
+  if (opening) modalReturnFocusEl = document.activeElement;
 
   root.innerHTML = html;
+
+  if (html) {
+    modalIsOpen = true;
+    const sheet = root.querySelector('.modal-sheet');
+    if (sheet && !sheet.contains(document.activeElement)) {
+      const focusables = getFocusableElements(sheet);
+      (focusables[0] || sheet).focus({ preventScroll: true });
+    }
+  } else if (modalIsOpen) {
+    modalIsOpen = false;
+    if (modalReturnFocusEl && document.body.contains(modalReturnFocusEl) && typeof modalReturnFocusEl.focus === 'function') {
+      modalReturnFocusEl.focus({ preventScroll: true });
+    }
+    modalReturnFocusEl = null;
+  }
 
   if (ui.lockChallenge) {
     wireHoldGate(() => {
@@ -1368,18 +2168,20 @@ function hatchModalHtml(flow) {
 
   const body = !revealed ? `
     <div style="position:relative;z-index:1" class="${flow.taps > 0 ? 'anim-shake' : ''}">${eggSVG({ element: species.element, size: 170, cracks: flow.taps })}</div>
-    <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? 'Un œuf mystérieux…' : flow.taps < flow.tapsNeeded ? 'Ça bouge…' : 'Ça y est !'}</p>
-    <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">✨ Appuie pour faire éclore (${flow.taps}/${flow.tapsNeeded})</button>
+    <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? 'Un œuf mystérieux…' : flow.taps < 3 ? 'Ça bouge…' : 'Ça y est !'}</p>
+    <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">✨ Appuie pour faire éclore (${flow.taps}/3)</button>
   ` : `
     <div class="relative anim-pop" style="position:relative;z-index:1">${dragonSVG({ element: species.element, variant: species.variant, stage: 'bebe', size: 170 })}</div>
+    ${species.variant === 4 ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">✨ DRAGON LÉGENDAIRE ✨</div>` : ''}
     <h2 class="font-display font-extrabold text-xl mt-2" style="position:relative;z-index:1;color:var(--ink)">${escapeHtml(species.name.toUpperCase())}</h2>
     <div class="flex items-center gap-2 mt-1" style="position:relative;z-index:1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     <p class="font-body fs-13 text-center mt-3 leading-relaxed rounded-2xl px-4 py-3" style="position:relative;z-index:1;color:var(--ink);background:var(--sky)">${escapeHtml(species.lore)}</p>
     <button data-action="hatch-finish" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">Accueillir ${escapeHtml(species.name)} ✨</button>
+    ${state.eggInbox.length > 0 ? `<button data-action="hatch-finish-and-continue" class="w-full font-body font-bold fs-11 mt-2\\.5 py-2" style="position:relative;z-index:1;margin-top:10px;color:var(--gold-deep)">Faire éclore le suivant (${state.eggInbox.length} restant${state.eggInbox.length > 1 ? 's' : ''})</button>` : ''}
   `;
 
-  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Éclosion"><div class="modal-sheet hatch-sheet safe-bottom-sheet">
-    <div class="hatch-glow" style="background:radial-gradient(circle, ${c.light}66, transparent 70%)"></div>
+  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Éclosion"><div class="modal-sheet hatch-sheet safe-bottom-sheet" tabindex="-1">
+    <div class="hatch-glow" style="background:radial-gradient(circle, ${revealed && species.variant === 4 ? 'var(--gold)' : c.light}66, transparent 70%)"></div>
     ${body}
   </div></div>`;
 }
@@ -1387,32 +2189,26 @@ function hatchModalHtml(flow) {
 function dragonDetailModalHtml(dragon) {
   const species = speciesById(dragon.speciesId);
   const busy = !!busyDragonIds()[dragon.id];
-  const cd = effectiveCooldown(dragon);
-  const cooldownLeft = dragon.lastCareAt ? cd - (now - dragon.lastCareAt) : 0;
+  const cooldownLeft = dragon.lastCareAt ? CARE_COOLDOWN_MS - (now - dragon.lastCareAt) : 0;
   const canCare = cooldownLeft <= 0 && !busy;
   const nextStageAt = dragon.stage === 'bebe' ? 5 : dragon.stage === 'juvenile' ? 12 : null;
   const progressPct = nextStageAt ? Math.min(100, (dragon.careCount / nextStageAt) * 100) : 100;
   const cooldownLabel = cooldownLeft >= 60000 ? `Encore ${Math.ceil(cooldownLeft / 60000)} min` : `Encore ${Math.ceil(cooldownLeft / 1000)}s`;
-  const happiness = computeHappiness(dragon);
-  const happinessNote = happiness >= 70 ? 'Épanoui' : happiness >= 45 ? 'Content' : 'Un peu triste — un câlin lui ferait du bien';
-  const canTreat = happiness < 95 && state.ecailles >= TREAT_COST;
-  const showTreatButton = happiness < 95;
 
-  return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(species.name)}"><div class="modal-sheet safe-bottom-sheet">
+  return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(dragonDisplayName(dragon, species))}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <button data-action="close-dragon-detail" aria-label="Fermer" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+    <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}
-    <h2 class="font-display font-extrabold text-xl mt-2" style="color:var(--ink)">${escapeHtml(species.name)}</h2>
-    <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
-    <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
-    <div class="w-full mt-3 flex justify-center gap-4 font-body font-bold fs-11" style="color:var(--ink-soft)"><span>Tempérament : ${dragon.temperament}</span></div>
-    <div class="w-full mt-3">
-      <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)"><span>Bonheur</span><span>${happinessNote}</span></div>
-      <div class="w-full h-2 rounded-full overflow-hidden" style="background:#EEE6D8">
-        <div class="h-full rounded-full" style="width:${happiness}%;background:${happiness >= 45 ? 'var(--gold)' : '#C97A1F'}"></div>
-      </div>
-      ${showTreatButton ? `<button data-action="give-treat" data-dragon-id="${dragon.id}" ${canTreat ? '' : 'disabled'} class="btn-ghost full mt-2 flex items-center justify-center gap-1\\.5" style="margin-top:8px;font-size:12px;">🍬 Offrir une friandise (${TREAT_COST} écailles)</button>` : ''}
+    <div class="flex items-center gap-2 mt-2 w-full justify-center">
+      <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="Renommer ce dragon"
+        class="font-display font-extrabold text-lg text-center rounded-xl px-2 py-1" style="color:var(--ink);background:var(--sky);max-width:180px"/>
+      <button data-action="rename-dragon" data-dragon-id="${dragon.id}" aria-label="Valider le nom" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--gold)">${icon('check', { size: 15, color: 'var(--ink)' })}</button>
     </div>
-    <div class="w-full mt-3">
+    <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
+    ${dragonStatsRowHtml(dragon, species)}
+    <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
+    ${state.mode === 'stratege' ? `<div class="w-full mt-3 flex justify-center gap-4 font-body font-bold fs-11" style="color:var(--ink-soft)"><span>Tempérament : ${dragon.temperament}</span></div>` : ''}
+    <div class="w-full mt-4">
       <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)">
         <span>Stade : ${STAGE_LABEL[dragon.stage]}</span>${nextStageAt ? `<span>${dragon.careCount}/${nextStageAt} soins</span>` : ''}
       </div>
@@ -1424,12 +2220,115 @@ function dragonDetailModalHtml(dragon) {
       ${icon('heart', { size: 16, color: canCare ? 'var(--ink)' : 'currentColor' })}
       ${busy ? 'En expédition' : canCare ? 'Câliner' : cooldownLabel}
     </button>
+    <button data-action="share-dragon-card" data-dragon-id="${dragon.id}" class="w-full font-body font-bold fs-11 mt-2\\.5 py-2 flex items-center justify-center gap-1\\.5" style="margin-top:10px;color:var(--gold-deep)">
+      ${icon('download', { size: 13, color: 'var(--gold-deep)' })} Télécharger sa carte
+    </button>
+    ${releaseButtonHtml(dragon, species, busy)}
   </div></div>`;
+}
+
+/* =========================================================================
+   LUMIDRA — carte de dragon partageable (image SVG téléchargeable)
+   ========================================================================= */
+
+function wrapTextLines(text, maxChars) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  words.forEach(w => {
+    if ((cur + ' ' + w).trim().length > maxChars) { lines.push(cur.trim()); cur = w; }
+    else { cur = (cur + ' ' + w).trim(); }
+  });
+  if (cur) lines.push(cur.trim());
+  return lines;
+}
+
+function buildDragonCardSVG(dragon, species) {
+  const c = ELEMENTS[species.element];
+  const dragonMarkup = dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 260 });
+  const name = escapeHtml(dragonDisplayName(dragon, species));
+  const subtitle = `${ELEMENTS[species.element].name} · ${RARITY_LABEL[species.variant]}`;
+  const loreLines = wrapTextLines(species.lore, 42);
+  const loreTspans = loreLines.map((line, i) => `<tspan x="320" dy="${i === 0 ? 0 : 24}">${escapeHtml(line)}</tspan>`).join('');
+  const starsRow = Array.from({ length: 3 }).map((_, i) =>
+    i < RARITY_STARS[species.variant]
+      ? `<path transform="translate(${290 + i * 30},520) scale(1.1)" d="${starPath(0, 0, 9, 3.6, 5)}" fill="#E0AA3E"/>`
+      : `<path transform="translate(${290 + i * 30},520) scale(1.1)" d="${starPath(0, 0, 9, 3.6, 5)}" fill="#E6DFD3"/>`
+  ).join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900" viewBox="0 0 640 900">
+    <defs>
+      <linearGradient id="cardbg" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="${c.light}"/>
+        <stop offset="100%" stop-color="${c.base}"/>
+      </linearGradient>
+    </defs>
+    <rect width="640" height="900" rx="0" fill="url(#cardbg)"/>
+    <rect x="20" y="20" width="600" height="860" rx="28" fill="#FFFBF2" opacity="0.94" stroke="#fff" stroke-width="3"/>
+    <g transform="translate(190,70)">${dragonMarkup}</g>
+    <text x="320" y="470" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="700" fill="${INK}">${name}</text>
+    <g>${starsRow}</g>
+    <text x="320" y="555" text-anchor="middle" font-family="Verdana, sans-serif" font-size="17" font-weight="700" fill="${c.deep}">${escapeHtml(subtitle)}</text>
+    <text x="320" y="605" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="17" fill="${INK}">${loreTspans}</text>
+    <text x="320" y="850" text-anchor="middle" font-family="Verdana, sans-serif" font-size="15" font-weight="700" fill="${c.deep}" opacity="0.75">🐉 Lumidra</text>
+  </svg>`;
+}
+
+function exportDragonCard(dragonId) {
+  const dragon = state.dragons.find(d => d.id === dragonId);
+  if (!dragon) return;
+  const species = speciesById(dragon.speciesId);
+  try {
+    const svgStr = buildDragonCardSVG(dragon, species);
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const slug = dragonDisplayName(dragon, species).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lumidra-${slug || 'dragon'}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('Carte du dragon téléchargée !');
+    haptic(20);
+  } catch (e) {
+    showToast('Impossible de générer la carte');
+  }
+}
+
+const RELEASE_REFUND = [15, 15, 30, 60, 150];
+
+function dragonStatsRowHtml(dragon, species) {
+  const homeZone = { elements: [species.element] };
+  const { vigueur, eclat } = computeDragonStats(dragon, homeZone);
+  const bar = (label, value, color) => `<div class="flex-1">
+    <div class="flex items-center justify-between font-body font-bold" style="font-size:9.5px;color:var(--ink-soft)"><span>${label}</span><span>${value}</span></div>
+    <div class="w-full rounded-full overflow-hidden mt-0\\.5" style="background:#EEE6D8;height:4px;"><div class="h-full rounded-full" style="width:${Math.min(100, value)}%;background:${color}"></div></div>
+  </div>`;
+  return `<div class="flex gap-3 w-full mt-3" style="max-width:220px">${bar('Vigueur', vigueur, '#B5502C')}${bar('Éclat', eclat, 'var(--gold)')}</div>`;
+}
+
+function releaseButtonHtml(dragon, species, busy) {
+  if (species.variant === 4) {
+    return `<p class="font-body fs-10 text-center mt-3" style="color:var(--ink-soft)">Les dragons légendaires ne peuvent pas être relâchés.</p>`;
+  }
+  const refund = RELEASE_REFUND[species.variant];
+  if (ui.releaseConfirmId === dragon.id) {
+    return `<div class="w-full mt-3 rounded-2xl p-3" style="background:#FBEAE4">
+      <p class="font-body fs-11 text-center mb-2" style="color:#B5502C">Relâcher ${escapeHtml(dragonDisplayName(dragon, species))} définitivement ? (+${refund} écailles)</p>
+      <div class="flex gap-2">
+        <button data-action="cancel-release-dragon" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl" style="background:#F1ECE2;color:var(--ink-soft)">Annuler</button>
+        <button data-action="confirm-release-dragon" data-dragon-id="${dragon.id}" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl text-white" style="background:#B5502C">Confirmer</button>
+      </div>
+    </div>`;
+  }
+  return `<button data-action="request-release-dragon" data-dragon-id="${dragon.id}" ${busy ? 'disabled' : ''} class="w-full font-body font-bold fs-11 mt-3 py-2" style="color:${busy ? '#D8CFC0' : 'var(--ink-soft)'}">Relâcher dans la nature (+${refund} écailles)</button>`;
 }
 
 function speciesDetailModalHtml(entry) {
   const { species, discovered } = entry;
-  return `<div class="modal-overlay" data-backdrop-close="close-species-detail" role="dialog" aria-modal="true" aria-label="${discovered ? escapeHtml(species.name) : 'Dragon non découvert'}"><div class="modal-sheet safe-bottom-sheet">
+  return `<div class="modal-overlay" data-backdrop-close="close-species-detail" role="dialog" aria-modal="true" aria-label="${discovered ? escapeHtml(species.name) : 'Dragon non découvert'}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <button data-action="close-species-detail" aria-label="Fermer" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
     <div style="filter:${discovered ? 'none' : 'grayscale(1) brightness(0.4)'}">${dragonSVG({ element: species.element, variant: species.variant, stage: 'adulte', size: 140 })}</div>
     <h2 class="font-display font-extrabold text-xl mt-2" style="color:var(--ink)">${discovered ? escapeHtml(species.name) : '???'}</h2>
@@ -1442,7 +2341,7 @@ const HOLD_GATE_DURATION_MS = 3500;
 const HOLD_GATE_CIRCUMFERENCE = 213.6; // 2 * PI * 34
 
 function lockChallengeModalHtml(challenge) {
-  return `<div class="modal-overlay" data-backdrop-close="close-lock-challenge" role="dialog" aria-modal="true" aria-label="Verrouillage parental"><div class="modal-sheet safe-bottom-sheet">
+  return `<div class="modal-overlay" data-backdrop-close="close-lock-challenge" role="dialog" aria-modal="true" aria-label="Verrouillage parental"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     ${icon('shield', { size: 28, color: 'var(--gold-deep)' })}
     <h3 class="font-display font-bold text-base mt-2 text-center" style="color:var(--ink)">Zone réservée à un adulte</h3>
     <p id="hold-gate-instructions" class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Maintiens le bouton appuyé quelques secondes pour continuer.</p>
@@ -1458,12 +2357,52 @@ function lockChallengeModalHtml(challenge) {
 }
 
 function confirmResetModalHtml() {
-  return `<div class="modal-overlay" data-backdrop-close="cancel-reset" role="dialog" aria-modal="true" aria-label="Confirmation"><div class="modal-sheet safe-bottom-sheet">
+  return `<div class="modal-overlay" data-backdrop-close="cancel-reset" role="dialog" aria-modal="true" aria-label="Confirmation"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">Réinitialiser ta progression ?</h3>
     <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Tous tes dragons et ta progression seront définitivement perdus.</p>
     <div class="flex gap-2 w-full mt-4" style="margin-top:16px;">
       <button data-action="cancel-reset" class="btn-ghost flex-1">Annuler</button>
       <button data-action="confirm-reset" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:#B5502C">Confirmer</button>
+    </div>
+  </div></div>`;
+}
+
+const TUTORIAL_SLIDES = [
+  { emoji: '🏡', title: 'Ton Sanctuaire', text: "C'est ici que vivent tes dragons. Câline-les régulièrement pour les aider à grandir, et garde un œil sur tes objectifs du jour tout en haut." },
+  { emoji: '🗺️', title: 'La Carte', text: "Avance de zone en zone à mesure que tu montes de niveau, et lance des expéditions pour ramener des écailles et de nouveaux œufs." },
+  { emoji: '📖', title: 'Le Dragondex', text: 'Ta collection complète : espèces découvertes, succès à débloquer, et une recherche pour retrouver un dragon précis.' },
+  { emoji: '🧪', title: 'Boutique & Labo', text: 'La Boutique te permet de décorer ton sanctuaire. En mode Stratège, le Laboratoire te permet aussi de croiser deux dragons adultes.' },
+];
+
+function tutorialModalHtml() {
+  const i = ui.tutorialStep;
+  const slide = TUTORIAL_SLIDES[i];
+  const isLast = i === TUTORIAL_SLIDES.length - 1;
+  const dots = TUTORIAL_SLIDES.map((_, idx) => `<span class="rounded-full" style="width:${idx === i ? 16 : 6}px;height:6px;background:${idx === i ? 'var(--gold)' : '#E6DFD3'};transition:width .15s ease"></span>`).join('');
+  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Découverte de Lumidra"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <div style="font-size:48px" aria-hidden="true">${slide.emoji}</div>
+    <h2 class="font-display font-extrabold text-lg mt-2" style="color:var(--ink)">${escapeHtml(slide.title)}</h2>
+    <p class="font-body fs-13 text-center mt-2 leading-relaxed" style="color:var(--ink-soft)">${escapeHtml(slide.text)}</p>
+    <div class="flex items-center gap-1\\.5 mt-4" style="gap:6px">${dots}</div>
+    <div class="flex gap-2 w-full mt-4" style="margin-top:16px">
+      ${!isLast ? `<button data-action="tutorial-skip" class="btn-ghost flex-1">Passer</button>` : ''}
+      <button data-action="tutorial-next" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl" style="background:var(--gold);color:var(--ink)">${isLast ? "C'est parti !" : 'Suivant'}</button>
+    </div>
+  </div></div>`;
+}
+
+function confirmImportModalHtml() {
+  const s = ui.pendingImport || {};
+  const dragonCount = Array.isArray(s.dragons) ? s.dragons.length : 0;
+  const discoveredCount = Array.isArray(s.discovered) ? s.discovered.length : 0;
+  const name = s.gardienName ? escapeHtml(s.gardienName) : 'Gardien';
+  return `<div class="modal-overlay" data-backdrop-close="cancel-import" role="dialog" aria-modal="true" aria-label="Confirmation d'import"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">Importer cette sauvegarde ?</h3>
+    <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Gardien : <strong>${name}</strong> — ${dragonCount} dragon${dragonCount > 1 ? 's' : ''}, ${discoveredCount} espèce${discoveredCount > 1 ? 's' : ''} découverte${discoveredCount > 1 ? 's' : ''}.</p>
+    <p class="font-body fs-11 text-center mt-1" style="color:var(--ink-soft)">Ta progression actuelle sur cet appareil sera remplacée par celle du fichier importé.</p>
+    <div class="flex gap-2 w-full mt-4" style="margin-top:16px;">
+      <button data-action="cancel-import" class="btn-ghost flex-1">Annuler</button>
+      <button data-action="confirm-import" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:var(--gold);color:var(--ink)">Importer</button>
     </div>
   </div></div>`;
 }
@@ -1556,6 +2495,8 @@ function renderAll() {
     document.getElementById('main-shell').style.display = 'none';
     renderOnboarding();
   } else {
+    ensureDailyQuests();
+    ensureWeeklyChallenge();
     document.getElementById('onboarding-root').style.display = 'none';
     document.getElementById('main-shell').style.display = 'flex';
     renderTopBar();
@@ -1572,6 +2513,7 @@ function renderScreenByName(name) {
   else if (name === 'carte') renderScreenCarte();
   else if (name === 'boutique') renderScreenBoutique();
   else if (name === 'reglages') renderScreenReglages();
+  else if (name === 'labo') renderScreenLabo();
 }
 
 /* =========================================================================
@@ -1600,109 +2542,103 @@ function completeOnboarding() {
   state.gardienName = name || 'Gardien';
   state.mode = mode;
   state.eggInbox = [egg];
+  checkLoginStreak();
   saveStateDebounced();
 
-  ui.hatchFlow = { egg, taps: 0, tapsNeeded: requiredHatchTaps(starter), revealedDragon: null };
+  ui.hatchFlow = { egg, taps: 0, revealedDragon: null };
   renderAll();
 }
 
-function effectiveCooldown(dragon) {
-  const temp = TEMPERAMENT_EFFECTS[dragon.temperament] || {};
-  return Math.round(CARE_COOLDOWN_MS * (temp.cooldownMult || 1));
-}
-
-function giveTreat(dragonId) {
-  const d = state.dragons.find(dd => dd.id === dragonId);
-  if (!d || state.ecailles < TREAT_COST) return;
-  state.ecailles -= TREAT_COST;
-  d.happinessBoostAt = Date.now(); // relève le bonheur sans compter comme un "soin" (ne fait pas grandir le dragon)
+function careAllDragons() {
+  const busy = busyDragonIds();
+  let caredCount = 0;
+  let grownCount = 0;
+  state.dragons.forEach(d => {
+    if (busy[d.id]) return;
+    if (d.lastCareAt && (Date.now() - d.lastCareAt) < CARE_COOLDOWN_MS) return;
+    const careCount = d.careCount + 1;
+    const newStage = computeStage(careCount);
+    if (newStage !== d.stage) grownCount += 1;
+    d.careCount = careCount;
+    d.lastCareAt = Date.now();
+    d.stage = newStage;
+    caredCount += 1;
+  });
+  if (caredCount === 0) { showToast('Aucun dragon disponible pour un câlin pour le moment'); return; }
+  addXp(caredCount);
+  bumpQuestProgress('soin', caredCount);
   saveStateDebounced();
-  showToast('Friandise offerte — bonheur retrouvé ! 🍬');
+  playCareSound();
+  haptic(30);
+  showToast(grownCount > 0
+    ? `${caredCount} dragon${caredCount > 1 ? 's' : ''} câliné${caredCount > 1 ? 's' : ''}, dont ${grownCount} qui grandi${grownCount > 1 ? 'ssent' : 't'} ! ✨`
+    : `${caredCount} dragon${caredCount > 1 ? 's' : ''} câliné${caredCount > 1 ? 's' : ''} !`);
   renderTopBar();
-  renderModals();
   if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
 }
 
 function careDragon(dragonId) {
   const d = state.dragons.find(dd => dd.id === dragonId);
   if (!d) return;
-  if (d.lastCareAt && (Date.now() - d.lastCareAt) < effectiveCooldown(d)) return;
+  if (d.lastCareAt && (Date.now() - d.lastCareAt) < CARE_COOLDOWN_MS) return;
   const careCount = d.careCount + 1;
   const newStage = computeStage(careCount);
   const grew = newStage !== d.stage;
   d.careCount = careCount;
   d.lastCareAt = Date.now();
   d.stage = newStage;
-  state.xp += 1;
-  bumpDailyQuest('soin', 1);
+  addXp(1);
+  bumpQuestProgress('soin', 1);
   saveStateDebounced();
-  if (grew) showToast(`${speciesById(d.speciesId).name} a grandi ! ✨`);
+  if (grew) { showToast(`${speciesById(d.speciesId).name} a grandi ! ✨`); playHatchSound(); }
+  else { playCareSound(); }
   renderTopBar();
   if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
   renderModals();
+}
+
+function createDragon(speciesId) {
+  return {
+    id: uid('drg'), speciesId, stage: 'bebe', careCount: 0, lastCareAt: 0,
+    temperament: TEMPERAMENTS[randInt(0, 3)], bornAt: Date.now(),
+    customName: null, favorite: false,
+  };
 }
 
 function resolveHatch() {
   const flow = ui.hatchFlow;
   const egg = flow.egg;
   const species = speciesById(egg.speciesId);
-  const newDragon = {
-    id: uid('drg'), speciesId: egg.speciesId, stage: 'bebe', careCount: 0, lastCareAt: 0, happinessBoostAt: 0,
-    temperament: TEMPERAMENTS[randInt(0, 3)], bornAt: Date.now(),
-  };
-  const discoveryList = species.legendary ? state.legendaryDiscovered : state.discovered;
-  const newlyDiscovered = !discoveryList.includes(egg.speciesId);
+  const newDragon = createDragon(egg.speciesId);
+  const newlyDiscovered = !state.discovered.includes(egg.speciesId);
   state.eggInbox = state.eggInbox.filter(e => e.id !== egg.id);
   state.dragons.push(newDragon);
-  if (newlyDiscovered) discoveryList.push(egg.speciesId);
-  state.xp += species.legendary ? 30 : 10;
-  haptic(species.legendary ? [40, 60, 40, 60, 80] : newlyDiscovered ? [30, 40, 60] : 40);
+  if (newlyDiscovered) state.discovered.push(egg.speciesId);
+  addXp(10);
+  state.statsEggsHatched = (state.statsEggsHatched || 0) + 1;
+  bumpQuestProgress('eclosion', 1);
+  haptic(newlyDiscovered ? [30, 40, 60] : 40);
+  playHatchSound();
 
-  const justCompleted = !species.legendary && newlyDiscovered && state.discovered.length === SPECIES.length && !state.collectionCompleteShown;
+  const justCompleted = newlyDiscovered && state.discovered.length === SPECIES.length && !state.collectionCompleteShown;
   if (justCompleted) {
     state.collectionCompleteShown = true;
-    showToast('Dragondex complet ! Le Laboratoire légendaire s\'ouvre à toi ✨🏆');
+    showToast('Dragondex complet ! Tu es un Maître Gardien ✨🏆');
     haptic([40, 60, 40, 60, 80]);
-  } else if (species.legendary && newlyDiscovered) {
-    showToast(`Un dragon légendaire a éclos : ${species.name} ! 🏆✨`);
   }
 
   saveStateDebounced();
-  ui.hatchFlow = { egg, taps: flow.taps, tapsNeeded: flow.tapsNeeded, revealedDragon: newDragon };
+  ui.hatchFlow = { egg, taps: flow.taps, revealedDragon: newDragon };
   renderModals();
-}
-
-/* ---- calcule les stats moyennes d'une équipe pour une zone donnée : vigueur, éclat, harmonie ----
-   Ces valeurs sont maintenant réellement utilisées dans claimExpedition (elles ne servaient
-   auparavant qu'à un affichage cosmétique en mode Stratège). */
-function computeTeamOutcome(zoneId, dragonIds) {
-  const zone = ZONES.find(z => z.id === zoneId);
-  const team = dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
-  if (team.length === 0) return { avgVig: 50, avgEclat: 50, harmonie: 0 };
-  const temperamentSet = {};
-  team.forEach(d => { temperamentSet[d.temperament] = true; });
-  const distinct = Object.keys(temperamentSet).length;
-  const harmonyBonus = distinct >= 2 ? 20 : 0;
-  const loyalBonus = team.reduce((sum, d) => sum + ((TEMPERAMENT_EFFECTS[d.temperament] || {}).harmonieBonus || 0), 0);
-  let totalVig = 0, totalEclat = 0;
-  team.forEach(d => { const st = computeDragonStats(d, zone); totalVig += st.vigueur; totalEclat += st.eclat; });
-  const avgVig = Math.round(totalVig / team.length);
-  const avgEclat = softCapStat(totalEclat / team.length + harmonyBonus * 0.3);
-  const harmonie = team.length > 1 ? Math.min(100, 30 + harmonyBonus + loyalBonus + team.length * 10) : 50;
-  return { avgVig, avgEclat, harmonie };
 }
 
 /* =========================================================================
    NOTIFICATIONS NATIVES (Capacitor uniquement — no-op silencieux ailleurs)
-   Le plugin @capacitor/local-notifications n'existe que dans l'app empaquetée ;
-   dans un navigateur classique ou en PWA web, ces fonctions ne font simplement rien,
-   donc index.html reste utilisable tel quel comme simple page/PWA hors app native.
    ========================================================================= */
 function hasNativeNotifications() {
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
     && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications);
 }
-// Capacitor exige un id numérique ; on dérive un entier stable depuis l'id texte de l'expédition.
 function notifIdForExpedition(expId) {
   let h = 0;
   for (let i = 0; i < expId.length; i++) h = (h * 31 + expId.charCodeAt(i)) >>> 0;
@@ -1715,7 +2651,7 @@ async function scheduleExpeditionNotification(exp) {
     const current = await LocalNotifications.checkPermissions();
     if (current.display !== 'granted') {
       const requested = await LocalNotifications.requestPermissions();
-      if (requested.display !== 'granted') return; // refusé : le jeu reste jouable, juste sans rappel
+      if (requested.display !== 'granted') return;
     }
     await LocalNotifications.schedule({
       notifications: [{
@@ -1725,7 +2661,7 @@ async function scheduleExpeditionNotification(exp) {
         schedule: { at: new Date(exp.endAt) },
       }],
     });
-  } catch (e) { /* plateforme/permission indisponible : silencieux, aucun impact sur le jeu */ }
+  } catch (e) {}
 }
 async function cancelExpeditionNotification(expId) {
   if (!hasNativeNotifications()) return;
@@ -1739,11 +2675,74 @@ function startExpedition(zoneId, typeId, dragonIds) {
   const newExp = { id: uid('exp'), zoneId, typeId, dragonIds, startAt: Date.now(), endAt: Date.now() + type.seconds * 1000 };
   state.expeditions.push(newExp);
   scheduleExpeditionNotification(newExp);
-  bumpDailyQuest('expe', 1);
+  bumpQuestProgress('expedition', 1);
   saveStateDebounced();
   showToast('Expédition lancée !');
   ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
   if (ui.screen === 'carte') renderScreenCarte();
+}
+
+/* =========================================================================
+   LUMIDRA — laboratoire d'élevage
+   ========================================================================= */
+
+// Coût et cooldown recalibrés (audit économie) : les quêtes/défis/série de connexion
+// injectent aujourd'hui bien plus d'écailles qu'au moment du réglage initial (80/2h).
+const BREED_COST = 120;
+const BREED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
+
+function pickBreedingSpecies(speciesA, speciesB) {
+  const sameElement = speciesA.element === speciesB.element;
+  const legendaryPool = SPECIES.filter(s => s.variant === 4 && (s.element === speciesA.element || s.element === speciesB.element));
+  if (legendaryPool.length && Math.random() < 0.04) {
+    return legendaryPool[randInt(0, legendaryPool.length - 1)];
+  }
+  const pool = SPECIES.filter(s => s.variant < 4 && (s.element === speciesA.element || s.element === speciesB.element));
+  const weighted = [];
+  pool.forEach(s => {
+    const w = s.variant <= 1 ? 4 : s.variant === 2 ? 3 : 2;
+    for (let i = 0; i < w; i++) weighted.push(s);
+  });
+  return weighted[randInt(0, weighted.length - 1)] || (sameElement ? speciesA : speciesA);
+}
+
+function breedDragons() {
+  const { parentAId, parentBId } = ui.labo;
+  if (!parentAId || !parentBId || parentAId === parentBId) return;
+  if (Date.now() < (state.laboCooldownUntil || 0)) return;
+  if (state.ecailles < BREED_COST) { showToast("Pas assez d'écailles"); return; }
+  const busy = busyDragonIds();
+  const a = state.dragons.find(d => d.id === parentAId);
+  const b = state.dragons.find(d => d.id === parentBId);
+  if (!a || !b || a.stage !== 'adulte' || b.stage !== 'adulte' || busy[a.id] || busy[b.id]) return;
+  const resultSpecies = pickBreedingSpecies(speciesById(a.speciesId), speciesById(b.speciesId));
+  state.ecailles -= BREED_COST;
+  state.laboCooldownUntil = Date.now() + BREED_COOLDOWN_MS;
+  state.statsBredCount = (state.statsBredCount || 0) + 1;
+  state.eggInbox.push({ id: uid('egg'), speciesId: resultSpecies.id, obtainedAt: Date.now() });
+  ui.labo = { parentAId: null, parentBId: null, picking: null };
+  saveStateDebounced();
+  haptic([20, 40, 20]);
+  showToast('Un œuf est apparu au Laboratoire !');
+  renderTopBar();
+  renderScreenLabo();
+}
+
+// Jusqu'ici la fiche d'équipe (harmonie de tempérament, vigueur/éclat moyens) n'était
+// qu'un aperçu décoratif au moment de lancer l'expédition. Elle influence désormais
+// vraiment la récolte : diversité de tempérament + éclat moyen de l'équipe.
+function computeTeamBonus(dragonIds, zone) {
+  if (!dragonIds || dragonIds.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0 };
+  const team = dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
+  if (team.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0 };
+  const temperamentSet = {};
+  team.forEach(d => { temperamentSet[d.temperament] = true; });
+  const harmonyBonus = Object.keys(temperamentSet).length >= 2 ? 0.08 : 0;
+  let totalEclat = 0;
+  team.forEach(d => { totalEclat += computeDragonStats(d, zone).eclat; });
+  const avgEclat = totalEclat / team.length;
+  const statBonus = Math.min(0.15, avgEclat / 500);
+  return { eggChanceBonus: harmonyBonus + statBonus, ecaillesBonus: Math.round(avgEclat * 0.4) };
 }
 
 function claimExpedition(expId) {
@@ -1751,41 +2750,29 @@ function claimExpedition(expId) {
   if (!exp || exp.endAt > Date.now()) return;
   const type = EXPEDITION_TYPES.find(t => t.id === exp.typeId);
   const zone = ZONES.find(z => z.id === exp.zoneId);
-
-  // La Vigueur et l'Éclat de l'équipe (calculés à partir des dragons réellement envoyés)
-  // modulent maintenant le gain et la chance d'œuf — ce n'est plus un simple tirage aveugle.
-  const { avgVig, avgEclat, harmonie } = computeTeamOutcome(exp.zoneId, exp.dragonIds);
-  const rewardMultiplier = 0.8 + (avgVig / 100) * 0.5;   // 0.8x à 1.3x selon la vigueur de l'équipe
-  const eggChanceBonus = (avgEclat / 100) * 0.25 + (harmonie / 100) * 0.1; // jusqu'à +35% de chance d'œuf
-  const bonusPct = Math.round((rewardMultiplier - 1) * 100); // affiché au joueur : -20 à +30
-
-  let ecaillesGain = Math.round(randInt(type.ecaillesMin, type.ecaillesMax) * rewardMultiplier);
+  const teamBonus = computeTeamBonus(exp.dragonIds, zone);
+  let ecaillesGain = randInt(type.ecaillesMin, type.ecaillesMax) + teamBonus.ecaillesBonus;
   let gotEgg = null;
   let gotLegendary = false;
-
-  // Chance de dragon légendaire : uniquement en expédition majeure, une fois le Dragondex commun complet
-  const legendaryEligible = type.id === 'majeure' && state.discovered.length >= SPECIES.length
-    && state.legendaryDiscovered.length < LEGENDARY_SPECIES.length;
-  if (legendaryEligible && Math.random() < 0.08 + (avgEclat / 100) * 0.07) {
-    const undiscoveredLegendary = LEGENDARY_SPECIES.filter(s => !state.legendaryDiscovered.includes(s.id));
-    const picked = undiscoveredLegendary[randInt(0, undiscoveredLegendary.length - 1)];
-    gotEgg = { id: uid('egg'), speciesId: picked.id, obtainedAt: Date.now() };
-    gotLegendary = true;
-  } else if (Math.random() < Math.min(0.95, type.eggChance + eggChanceBonus)) {
-    const picked = weightedSpeciesFromZone(zone);
+  if (Math.random() < Math.min(0.95, type.eggChance + teamBonus.eggChanceBonus)) {
+    const picked = weightedSpeciesFromZone(zone, type.legendaryChance || 0);
+    if (picked.variant === 4) gotLegendary = true;
     if (!state.discovered.includes(picked.id)) gotEgg = { id: uid('egg'), speciesId: picked.id, obtainedAt: Date.now() };
     else ecaillesGain += 40;
   }
-
   state.ecailles += ecaillesGain;
-  state.xp += 5;
-  bumpDailyQuest('ecaille', ecaillesGain);
+  addXp(5);
+  state.statsExpeditionsCompleted = (state.statsExpeditionsCompleted || 0) + 1;
   if (gotEgg) state.eggInbox.push(gotEgg);
   state.expeditions = state.expeditions.filter(e => e.id !== expId);
+  bumpQuestProgress('collecte', ecaillesGain);
+  state.expeditionLog = state.expeditionLog || [];
+  state.expeditionLog.unshift({ zoneName: zone.name, typeName: type.name, ecailles: ecaillesGain, gotEgg: !!gotEgg, legendary: gotLegendary, at: Date.now() });
+  if (state.expeditionLog.length > 15) state.expeditionLog.length = 15;
   saveStateDebounced();
-  haptic(gotLegendary ? [40, 60, 40, 60, 80] : gotEgg ? [25, 50, 50] : 30);
-  const bonusLabel = bonusPct > 0 ? ` (équipe : +${bonusPct}%)` : bonusPct < 0 ? ` (équipe : ${bonusPct}%)` : '';
-  showToast(gotLegendary ? `+${ecaillesGain} écailles${bonusLabel} et un œuf légendaire ! 🏆` : gotEgg ? `+${ecaillesGain} écailles${bonusLabel} et un nouvel œuf !` : `+${ecaillesGain} écailles${bonusLabel}`);
+  haptic(gotEgg ? [25, 50, 50] : 30);
+  playCoinSound();
+  showToast(gotLegendary ? `Un œuf légendaire scintille dans ta besace ! ✨` : gotEgg ? `+${ecaillesGain} écailles et un nouvel œuf !` : `+${ecaillesGain} écailles`);
   renderTopBar();
   if (ui.screen === 'carte') renderScreenCarte();
 }
@@ -1793,6 +2780,10 @@ function claimExpedition(expId) {
 function buyDecor(decorId) {
   const decor = DECOR.find(d => d.id === decorId);
   if (!decor || state.decorOwned.includes(decorId) || state.ecailles < decor.cost) return;
+  if (decor.seasonal) {
+    const ev = getActiveEvent();
+    if (!ev || ev.id !== decor.seasonal) { showToast("Cette décoration n'est pas disponible en ce moment"); return; }
+  }
   state.ecailles -= decor.cost;
   state.decorOwned.push(decorId);
   saveStateDebounced();
@@ -1812,6 +2803,7 @@ function toggleEquipDecor(decorId) {
 function doReset() {
   state.expeditions.forEach(exp => cancelExpeditionNotification(exp.id));
   state = freshDefaultState();
+  document.body.classList.remove('gentle-fx');
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
   ui.screen = 'sanctuaire';
   ui.confirmResetOpen = false;
@@ -1829,12 +2821,6 @@ setInterval(() => {
   if (ui.detailDragonId) renderModals();
 }, 1000);
 
-// Le bonheur évolue lentement (échelle de plusieurs heures) : un rafraîchissement chaque minute suffit,
-// pas besoin de re-rendre le sanctuaire à chaque seconde.
-setInterval(() => {
-  if (state.onboarded && ui.screen === 'sanctuaire') renderScreenSanctuaire();
-}, 60000);
-
 /* =========================================================================
    DÉLÉGATION D'ÉVÉNEMENTS
    ========================================================================= */
@@ -1849,7 +2835,6 @@ function dispatchAction(action, dataset, evt, el) {
   const elementKey = dataset.element;
   const screenName = dataset.screen;
   const expId = dataset.expId;
-  const questId = dataset.questId;
 
   switch (action) {
     case 'select-mode':
@@ -1871,28 +2856,123 @@ function dispatchAction(action, dataset, evt, el) {
       break;
     case 'close-dragon-detail':
       ui.detailDragonId = null;
+      ui.releaseConfirmId = null;
       renderModals();
+      break;
+    case 'set-sanctuaire-sort':
+      ui.sanctuaireSort = dataset.sort;
+      renderScreenSanctuaire();
+      break;
+    case 'labo-open-picker':
+      ui.labo.picking = dataset.slot;
+      renderScreenLabo();
+      { const closeBtn = document.querySelector('[data-action="labo-close-picker"]'); if (closeBtn) closeBtn.focus(); }
+      break;
+    case 'labo-close-picker':
+      ui.labo.picking = null;
+      renderScreenLabo();
+      break;
+    case 'labo-select-parent':
+      if (dataset.slot === 'a') ui.labo.parentAId = dataset.dragonId;
+      else ui.labo.parentBId = dataset.dragonId;
+      ui.labo.picking = null;
+      renderScreenLabo();
+      break;
+    case 'breed-dragons':
+      breedDragons();
+      break;
+    case 'care-all-dragons':
+      careAllDragons();
       break;
     case 'care-dragon':
       careDragon(dragonId);
       break;
-    case 'start-hatch-from-inbox':
-      if (state.eggInbox.length > 0) {
-        const firstEgg = state.eggInbox[0];
-        ui.hatchFlow = { egg: firstEgg, taps: 0, tapsNeeded: requiredHatchTaps(speciesById(firstEgg.speciesId)), revealedDragon: null };
+    case 'rename-dragon': {
+      const input = document.getElementById('dragon-rename-input');
+      const val = input ? input.value.trim() : '';
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d) {
+        d.customName = val || null;
+        saveStateDebounced();
+        showToast('Nom mis à jour');
         renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
       }
       break;
-    case 'hatch-tap': {
-      const needed = ui.hatchFlow.tapsNeeded || 3;
-      ui.hatchFlow.taps = Math.min(needed, ui.hatchFlow.taps + 1);
-      if (ui.hatchFlow.taps >= needed && !ui.hatchFlow.revealedDragon) resolveHatch();
-      else renderModals();
+    }
+    case 'toggle-favorite': {
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d) {
+        d.favorite = !d.favorite;
+        saveStateDebounced();
+        haptic(20);
+        renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+      }
       break;
     }
+    case 'share-dragon-card':
+      exportDragonCard(dragonId);
+      break;
+    case 'request-release-dragon':
+      ui.releaseConfirmId = dragonId;
+      renderModals();
+      break;
+    case 'cancel-release-dragon':
+      ui.releaseConfirmId = null;
+      renderModals();
+      break;
+    case 'confirm-release-dragon': {
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d && !busyDragonIds()[d.id]) {
+        const species = speciesById(d.speciesId);
+        const refund = RELEASE_REFUND[species.variant];
+        state.dragons = state.dragons.filter(dd => dd.id !== dragonId);
+        state.ecailles += refund;
+        ui.releaseConfirmId = null;
+        ui.detailDragonId = null;
+        saveStateDebounced();
+        showToast(`${dragonDisplayName(d, species)} relâché (+${refund} écailles)`);
+        renderTopBar();
+        renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+      }
+      break;
+    }
+    case 'start-hatch-from-inbox':
+      if (state.eggInbox.length > 0) { ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null }; renderModals(); }
+      break;
+    case 'hatch-tap':
+      ui.hatchFlow.taps = Math.min(3, ui.hatchFlow.taps + 1);
+      if (ui.hatchFlow.taps >= 3 && !ui.hatchFlow.revealedDragon) resolveHatch();
+      else renderModals();
+      break;
     case 'hatch-finish':
       ui.hatchFlow = null;
       renderAll();
+      if (!state.tutorialSeen) {
+        state.tutorialSeen = true;
+        saveStateDebounced();
+        ui.tutorialStep = 0;
+        setTimeout(() => renderModals(), 350);
+      }
+      break;
+    case 'hatch-finish-and-continue':
+      if (state.eggInbox.length > 0) {
+        ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null };
+        renderAll();
+      } else {
+        ui.hatchFlow = null;
+        renderAll();
+      }
+      break;
+    case 'tutorial-next':
+      if (ui.tutorialStep < TUTORIAL_SLIDES.length - 1) { ui.tutorialStep += 1; renderModals(); }
+      else { ui.tutorialStep = null; renderModals(); }
+      break;
+    case 'tutorial-skip':
+      ui.tutorialStep = null;
+      renderModals();
       break;
     case 'open-species': {
       const sp = speciesById(speciesId);
@@ -1906,6 +2986,10 @@ function dispatchAction(action, dataset, evt, el) {
       break;
     case 'dragondex-filter':
       ui.dragondexFilter = elementKey;
+      renderScreenDragondex();
+      break;
+    case 'dragondex-rarity-filter':
+      ui.dragondexRarityFilter = dataset.rarity;
       renderScreenDragondex();
       break;
     case 'carte-open-zone': {
@@ -1929,7 +3013,7 @@ function dispatchAction(action, dataset, evt, el) {
       const type = EXPEDITION_TYPES.find(t => t.id === typeId);
       ui.carte.typeId = typeId;
       ui.carte.teamIds = [];
-      ui.carte.view = (type.team && state.mode === 'stratege') ? 'team' : 'pick1';
+      ui.carte.view = type.team ? 'team' : 'pick1';
       renderScreenCarte();
       break;
     }
@@ -1955,13 +3039,64 @@ function dispatchAction(action, dataset, evt, el) {
     case 'toggle-equip-decor':
       toggleEquipDecor(decorId);
       break;
+    case 'select-title':
+      state.selectedTitle = dataset.titleId || null;
+      saveStateDebounced();
+      renderTopBar();
+      renderScreenReglages();
+      break;
     case 'toggle-parental-lock':
       state.parentalLock = !state.parentalLock;
       saveStateDebounced();
       renderScreenReglages();
       break;
+    case 'toggle-reduce-vibrations':
+      state.reduceVibrations = !state.reduceVibrations;
+      saveStateDebounced();
+      renderScreenReglages();
+      break;
+    case 'toggle-sound':
+      state.soundEnabled = !state.soundEnabled;
+      saveStateDebounced();
+      if (state.soundEnabled) playCoinSound();
+      renderScreenReglages();
+      break;
+    case 'toggle-gentle-animations':
+      state.gentleAnimations = !state.gentleAnimations;
+      document.body.classList.toggle('gentle-fx', state.gentleAnimations);
+      saveStateDebounced();
+      renderScreenReglages();
+      break;
+    case 'toggle-collection-banner':
+      state.collectionBannerCollapsed = !state.collectionBannerCollapsed;
+      saveStateDebounced();
+      renderScreenDragondex();
+      break;
+    case 'toggle-achievements-banner':
+      state.achievementsBannerCollapsed = !state.achievementsBannerCollapsed;
+      saveStateDebounced();
+      renderScreenDragondex();
+      break;
+    case 'toggle-objectives-banner':
+      ui.objectivesBannerCollapsed = !ui.objectivesBannerCollapsed;
+      renderScreenSanctuaire();
+      break;
+    case 'toggle-expedition-log':
+      ui.expeditionLogCollapsed = !ui.expeditionLogCollapsed;
+      renderScreenReglages();
+      break;
+    case 'claim-quest':
+      claimDailyQuest(dataset.questId);
+      break;
+    case 'claim-weekly-challenge':
+      claimWeeklyChallenge();
+      break;
+    case 'claim-achievement':
+      claimAchievement(dataset.achievementId);
+      break;
     case 'change-mode':
       state.mode = mode;
+      if (mode === 'eclosion' && ui.screen === 'labo') ui.screen = 'sanctuaire';
       saveStateDebounced();
       renderTopBar();
       renderScreenReglages();
@@ -1986,17 +3121,43 @@ function dispatchAction(action, dataset, evt, el) {
     case 'confirm-reset':
       doReset();
       break;
+    case 'export-save':
+      exportSave();
+      break;
+    case 'import-save-trigger': {
+      const input = document.getElementById('import-save-input');
+      if (input) input.click();
+      break;
+    }
+    case 'cancel-import':
+      ui.pendingImport = null;
+      ui.confirmImportOpen = false;
+      renderModals();
+      break;
+    case 'confirm-import':
+      applyPendingImport();
+      break;
     case 'close-lock-challenge':
       ui.lockChallenge = null;
       renderModals();
       break;
-    case 'claim-daily-quest':
-      claimDailyQuest(questId);
-      break;
-    case 'give-treat':
-      giveTreat(dragonId);
-      break;
   }
+}
+
+// Filet de sécurité générique contre la perte de focus clavier après un ré-affichage
+// complet d'écran (voir audit : le Labo avait été corrigé au cas par cas, ceci couvre
+// tous les boutons data-action sans avoir à retoucher chaque point de rendu).
+const FOCUS_DATA_KEYS = ['dragonId', 'zoneId', 'typeId', 'decorId', 'slot', 'sort', 'questId', 'achievementId', 'element', 'mode', 'screen'];
+function describeFocusTarget(el) {
+  if (!el || !el.dataset || !el.dataset.action) return null;
+  let sel = `[data-action="${el.dataset.action}"]`;
+  FOCUS_DATA_KEYS.forEach(key => {
+    if (el.dataset[key] !== undefined) {
+      const attr = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+      sel += `[data-${attr}="${CSS.escape(el.dataset[key])}"]`;
+    }
+  });
+  return sel;
 }
 
 function initEvents() {
@@ -2014,13 +3175,45 @@ function initEvents() {
     // 2) Recherche normale d'un élément actionnable
     const el = e.target.closest('[data-action]');
     if (!el || el.disabled) return;
+    const focusSelector = describeFocusTarget(el);
     dispatchAction(el.dataset.action, el.dataset, e, el);
+    // Si l'action a fait perdre le focus (ré-affichage d'écran), on tente de le
+    // restaurer sur l'équivalent du bouton cliqué dans le nouveau DOM plutôt que
+    // de le laisser retomber sur <body>. Si l'élément a disparu (ex. quête réclamée
+    // qui change d'état), on ne force rien : dégradation silencieuse, pas de régression.
+    if (focusSelector && document.activeElement === document.body) {
+      const fresh = document.querySelector(focusSelector);
+      if (fresh) fresh.focus({ preventScroll: true });
+    }
   });
 
   // saisie texte : mise à jour silencieuse (pas de re-rendu, on garde le focus)
   app.addEventListener('input', (e) => {
     const bind = e.target.dataset ? e.target.dataset.bind : null;
     if (bind === 'onboarding-name') ui.onboarding.name = e.target.value;
+    if (bind === 'dragondex-search') {
+      ui.dragondexSearch = e.target.value;
+      const caret = e.target.selectionStart;
+      renderScreenDragondex();
+      const fresh = document.getElementById('dragondex-search-input');
+      if (fresh) { fresh.focus(); try { fresh.setSelectionRange(caret, caret); } catch (err) {} }
+    }
+    if (bind === 'sanctuaire-search') {
+      ui.sanctuaireSearch = e.target.value;
+      const caret = e.target.selectionStart;
+      renderScreenSanctuaire();
+      const fresh = document.getElementById('sanctuaire-search-input');
+      if (fresh) { fresh.focus(); try { fresh.setSelectionRange(caret, caret); } catch (err) {} }
+    }
+  });
+
+  // sélection d'un fichier de sauvegarde à importer
+  app.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'import-save-input') {
+      const file = e.target.files && e.target.files[0];
+      handleImportedFile(file);
+      e.target.value = ''; // permet de réimporter le même fichier une seconde fois si besoin
+    }
   });
 
   app.addEventListener('keydown', (e) => {
@@ -2028,6 +3221,55 @@ function initEvents() {
       const bind = e.target.dataset ? e.target.dataset.bind : null;
       if (bind === 'reglages-name') document.querySelector('[data-action="save-name"]').click();
       if (e.target.id === 'onboarding-name-input') document.querySelector('[data-action="complete-onboarding"]').click();
+      if (e.target.id === 'dragon-rename-input') document.querySelector('[data-action="rename-dragon"]').click();
+    }
+
+    // ---- Échap sur des panneaux non-modaux (audit accessibilité) ----
+    if (e.key === 'Escape' && !modalIsOpen) {
+      if (ui.screen === 'labo' && ui.labo.picking) {
+        const slot = ui.labo.picking;
+        ui.labo.picking = null;
+        renderScreenLabo();
+        const btn = document.querySelector(`[data-action="labo-open-picker"][data-slot="${slot}"]`);
+        if (btn) btn.focus();
+        return;
+      }
+      if (e.target.id === 'dragondex-search-input' && ui.dragondexSearch) {
+        ui.dragondexSearch = '';
+        renderScreenDragondex();
+        const fresh = document.getElementById('dragondex-search-input');
+        if (fresh) fresh.focus();
+        return;
+      }
+      if (e.target.id === 'sanctuaire-search-input' && ui.sanctuaireSearch) {
+        ui.sanctuaireSearch = '';
+        renderScreenSanctuaire();
+        const fresh = document.getElementById('sanctuaire-search-input');
+        if (fresh) fresh.focus();
+        return;
+      }
+    }
+
+    // ---- piège de focus clavier dans les modales ----
+    if (modalIsOpen && (e.key === 'Tab' || e.key === 'Escape')) {
+      const sheet = document.querySelector('#modal-root .modal-sheet');
+      if (!sheet) return;
+
+      if (e.key === 'Escape') {
+        const overlay = document.querySelector('#modal-root .modal-overlay');
+        const closeAction = overlay ? overlay.dataset.backdropClose : null;
+        if (closeAction) dispatchAction(closeAction, overlay.dataset, e, overlay);
+        return;
+      }
+
+      const focusables = getFocusableElements(sheet);
+      if (focusables.length === 0) { e.preventDefault(); sheet.focus(); return; }
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
     }
   });
 }
@@ -2038,10 +3280,17 @@ function initEvents() {
 
 function bootLumidra() {
   loadState();
-  if (state.onboarded) ensureDailyQuests();
   state.expeditions.forEach(exp => { if (exp.endAt > Date.now()) scheduleExpeditionNotification(exp); });
+  document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
   initEvents();
   renderAll();
+  if (state.onboarded) {
+    const streakResult = checkLoginStreak();
+    if (streakResult) {
+      renderTopBar();
+      setTimeout(() => showToast(`🔥 Série de ${streakResult.streak} jour${streakResult.streak > 1 ? 's' : ''} ! +${streakResult.bonus} écailles`), 500);
+    }
+  }
 }
 
 if (document.readyState === 'loading') {
