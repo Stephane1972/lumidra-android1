@@ -87,3 +87,14 @@ jobs:
           name: lumidra-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
+
+      - name: Publier l'APK en Release GitHub (lien public, sans connexion requise, pas de zip)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk lumidra.apk
+          gh release delete lumidra-latest --yes --cleanup-tag || true
+          gh release create lumidra-latest lumidra.apk \
+            --title "Lumidra — dernière version" \
+            --notes "Construit automatiquement depuis le commit ${{ github.sha }}" \
+            --latest
