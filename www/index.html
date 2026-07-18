@@ -1146,8 +1146,8 @@ async function exportSave() {
   if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
       && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem && window.Capacitor.Plugins.Share) {
     try {
-      const { Filesystem, Directory, Encoding } = window.Capacitor.Plugins;
-      const written = await Filesystem.writeFile({ path: fileName, data: contents, directory: Directory.Cache, encoding: Encoding.UTF8 });
+      const { Filesystem } = window.Capacitor.Plugins;
+      const written = await Filesystem.writeFile({ path: fileName, data: contents, directory: 'CACHE', encoding: 'utf8' });
       await window.Capacitor.Plugins.Share.share({
         title: 'Sauvegarde Lumidra',
         text: 'Ta sauvegarde Lumidra',
