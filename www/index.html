@@ -2817,7 +2817,17 @@ function doReset() {
 
 setInterval(() => {
   now = Date.now();
-  if (state.onboarded && ui.screen === 'carte') renderScreenCarte();
+  if (state.onboarded && ui.screen === 'carte') {
+    // Ce ré-affichage périodique ne sert qu'à rafraîchir les comptes à rebours d'expédition —
+    // sans ceci, la reconstruction complète du HTML remettait le défilement à zéro chaque seconde,
+    // rendant impossible de lire l'écran en scrollant (contrairement à une vraie navigation,
+    // où repartir en haut de l'écran reste le comportement voulu).
+    const prevScrollable = document.querySelector('#screen-root .overflow-y-auto');
+    const prevScrollTop = prevScrollable ? prevScrollable.scrollTop : 0;
+    renderScreenCarte();
+    const newScrollable = document.querySelector('#screen-root .overflow-y-auto');
+    if (newScrollable) newScrollable.scrollTop = prevScrollTop;
+  }
   if (ui.detailDragonId) renderModals();
 }, 1000);
 
