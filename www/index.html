@@ -302,8 +302,8 @@ const ELEMENTS = {
 };
 
 const INK = '#3A2E2A';
-const RARITY_LABEL = ['Commun', 'Commun', 'Rare', 'Épique', 'Légendaire'];
-const RARITY_STARS = [1, 1, 2, 3, 3];
+const RARITY_LABEL = ['Commun', 'Commun', 'Rare', 'Épique', 'Légendaire', 'Mythique'];
+const RARITY_STARS = [1, 1, 2, 3, 3, 3];
 const STAGE_LABEL = { bebe: 'Bébé', juvenile: 'Juvénile', adulte: 'Adulte' };
 const TEMPERAMENTS = ['Calme', 'Joueur', 'Audacieux', 'Loyal'];
 const CARE_COOLDOWN_MS = 90000; // 1 min 30 — un vrai temps de pause, plus une boucle instantanée
@@ -341,6 +341,14 @@ const SPECIES = [
   { id:'zephyrion', name:'Zéphyrion', element:'air', variant:4, lore:"Maître des tempêtes, invisible sauf quand il choisit de se montrer." },
   { id:'aurelios', name:'Aurélios', element:'lumiere', variant:4, lore:"Dragon solaire mythique, son envol dessinerait l'aube selon les anciens récits." },
   { id:'sylvamater', name:'Sylvamater', element:'nature', variant:4, lore:"Esprit ancien de la forêt, on ne le voit qu'une fois par génération de gardiens." },
+  // Mythiques — au-delà même des légendaires. On ne les obtient qu'en unissant deux dragons
+  // légendaires au Laboratoire, ou tout en haut de la Cime, une fois tous les légendaires rencontrés.
+  { id:'ignisia', name:'Ignisia', element:'feu', variant:5, lore:"On dit qu'elle porte en elle la toute première étincelle, avant même le premier volcan." },
+  { id:'thalassor', name:'Thalassor', element:'eau', variant:5, lore:"Nul n'a vu le fond de l'océan qu'il habite — seuls ses reflets remontent parfois à la surface." },
+  { id:'terrastrum', name:'Terrastrum', element:'terre', variant:5, lore:"Ses écailles renferment, dit-on, un fragment de chaque montagne jamais formée." },
+  { id:'ouranis', name:'Ouranis', element:'air', variant:5, lore:"Il ne se pose jamais — certains gardiens jurent qu'il porte le ciel lui-même sur son dos." },
+  { id:'luminae', name:'Luminae', element:'lumiere', variant:5, lore:"Sa lumière ne projette aucune ombre — un mystère que même les plus vieux récits n'expliquent pas." },
+  { id:'gaiane', name:'Gaïane', element:'nature', variant:5, lore:"On raconte qu'elle a vu pousser le premier arbre, et qu'elle veille sur tous ceux qui ont suivi." },
 ];
 
 const ZONES = [
@@ -357,6 +365,7 @@ const EXPEDITION_TYPES = [
   { id:'explo', name:'Exploration', seconds:7200, ecaillesMin:100, ecaillesMax:160, eggChance:0.60, legendaryChance:0.04, team:false, tagline:"Idéal pour l'après-midi" },
   { id:'majeure', name:'Expédition majeure', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, legendaryChance:0.08, team:true, tagline:'À lancer avant de partir' },
   { id:'quete-legendaire', name:'Quête légendaire', seconds:21600, ecaillesMin:220, ecaillesMax:340, eggChance:0.85, legendaryChance:0.35, team:true, tagline:'Une nuit entière sur la piste d\'un dragon légendaire' },
+  { id:'quete-mythique', name:'Quête mythique', seconds:32400, ecaillesMin:320, ecaillesMax:480, eggChance:0.9, legendaryChance:0, mythicChance:0.16, team:true, requiresAllLegendary:true, tagline:'Réservée à ceux qui ont déjà rencontré tous les légendaires' },
 ];
 
 const DECOR = [
@@ -372,6 +381,8 @@ const DECOR = [
   { id:'voile-solaire', name:'Voile Solaire', cost:260, seasonal:'ete' },
   { id:'citrouille-doree', name:'Citrouille Dorée', cost:260, seasonal:'automne' },
   { id:'guirlande-etoilee', name:'Guirlande Étoilée', cost:260, seasonal:'hiver' },
+  { id:'autel-astral', name:'Autel Astral', cost:650 },
+  { id:'flamme-primordiale', name:'Flamme Primordiale', cost:720 },
 ];
 
 const DEFAULT_STATE = {
@@ -458,7 +469,13 @@ function fmtCountdown(ms) {
   return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
 }
 
-function weightedSpeciesFromZone(zone, legendaryChance) {
+function weightedSpeciesFromZone(zone, legendaryChance, mythicChance) {
+  if (mythicChance) {
+    const mythicPool = SPECIES.filter(s => s.variant === 5 && zone.elements.includes(s.element));
+    if (mythicPool.length && Math.random() < mythicChance) {
+      return mythicPool[randInt(0, mythicPool.length - 1)];
+    }
+  }
   if (legendaryChance) {
     const legendaryPool = SPECIES.filter(s => s.variant === 4 && zone.elements.includes(s.element));
     if (legendaryPool.length && Math.random() < legendaryChance) {
@@ -471,9 +488,13 @@ function weightedSpeciesFromZone(zone, legendaryChance) {
   return weighted[randInt(0, weighted.length - 1)];
 }
 
+function allLegendariesDiscovered() {
+  return SPECIES.filter(s => s.variant === 4).every(s => state.discovered.includes(s.id));
+}
+
 function computeDragonStats(dragon, zone) {
   const s = speciesById(dragon.speciesId);
-  const rarityBase = [30, 30, 45, 60, 85][s.variant];
+  const rarityBase = [30, 30, 45, 60, 85, 115][s.variant];
   const stageBonus = { bebe: 0, juvenile: 8, adulte: 16 }[dragon.stage];
   const vigueur = rarityBase + stageBonus;
   const eclat = rarityBase + stageBonus + (zone.elements.includes(s.element) ? 20 : 0);
@@ -677,7 +698,7 @@ function dragonSVG(opts) {
   const wingsOn = stage !== 'bebe';
   const wingScale = (stage === 'juvenile' ? 0.85 : 1.0) * (0.86 + variant * 0.05);
   const hornScale = (stage === 'bebe' ? 0.7 : stage === 'juvenile' ? 0.9 : 1.0) * (1 + variant * 0.12);
-  const showGlow = (variant === 3 && stage === 'adulte') || variant === 4;
+  const showGlow = (variant === 3 && stage === 'adulte') || variant >= 4;
   const spikeCount = stage === 'bebe' ? 0 : 3;
   const tailTip = { x: 178, y: 150 };
   const headAccent = { x: 122, y: 46 };
@@ -690,9 +711,14 @@ function dragonSVG(opts) {
   const legendarySparkles = variant === 4 ? `
     <circle cx="46" cy="60" r="3" fill="#FFFFFF" opacity="0.9" class="anim-pulse" style="animation-delay:0s"/>
     <circle cx="152" cy="50" r="2.4" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:.6s"/>
-    <circle cx="140" cy="150" r="2.6" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:1.1s"/>` : '';
+    <circle cx="140" cy="150" r="2.6" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:1.1s"/>` : variant === 5 ? `
+    <circle cx="40" cy="55" r="3.2" fill="#FFFFFF" opacity="0.95" class="anim-pulse" style="animation-delay:0s"/>
+    <circle cx="160" cy="46" r="2.6" fill="#FFF6DC" opacity="0.9" class="anim-pulse" style="animation-delay:.4s"/>
+    <circle cx="150" cy="155" r="2.8" fill="#FFFFFF" opacity="0.9" class="anim-pulse" style="animation-delay:.8s"/>
+    <circle cx="34" cy="140" r="2.4" fill="#FFF6DC" opacity="0.85" class="anim-pulse" style="animation-delay:1.2s"/>
+    <circle cx="100" cy="24" r="2.2" fill="#FFFFFF" opacity="0.85" class="anim-pulse" style="animation-delay:1.6s"/>` : '';
 
-  return `<svg class="dragon-anim-idle" style="animation-delay:${(Math.random() * 2.4).toFixed(2)}s" viewBox="0 0 200 200" width="${size}" height="${size}" role="img" aria-label="Dragon ${c.name}${variant === 4 ? ' légendaire' : ''}">
+  return `<svg class="dragon-anim-idle" style="animation-delay:${(Math.random() * 2.4).toFixed(2)}s" viewBox="0 0 200 200" width="${size}" height="${size}" role="img" aria-label="Dragon ${c.name}${variant === 4 ? ' légendaire' : variant === 5 ? ' mythique' : ''}">
     <defs>
       <radialGradient id="${gradId}" cx="35%" cy="30%" r="75%">
         <stop offset="0%" stop-color="${c.light}"/>
@@ -945,6 +971,11 @@ const ACHIEVEMENTS = [
   { id: 'legende-vivante', name: 'Légende Vivante', desc: 'Élève un dragon légendaire.', reward: 150, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 4) ? 1 : 0) },
   { id: 'decorateur', name: 'Décorateur', desc: 'Possède 3 décorations.', reward: 30, target: 3, progress: (s) => Math.min(3, s.decorOwned.length) },
   { id: 'genetique', name: 'Éleveur', desc: 'Réussis 3 élevages au Laboratoire.', reward: 60, target: 3, progress: (s) => Math.min(3, s.statsBredCount || 0) },
+  { id: 'grand-eleveur', name: 'Grand Éleveur', desc: 'Réussis 10 élevages au Laboratoire.', reward: 150, target: 10, progress: (s) => Math.min(10, s.statsBredCount || 0) },
+  { id: 'legendes-completes', name: 'Cercle des Légendes', desc: 'Découvre les 6 dragons légendaires.', reward: 250, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 4).length) },
+  { id: 'au-dela-des-legendes', name: 'Au-delà des Légendes', desc: 'Élève un dragon mythique.', reward: 300, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 5) ? 1 : 0) },
+  { id: 'immense-tribu', name: 'Immense Tribu', desc: 'Élève 20 dragons.', reward: 150, target: 20, progress: (s) => Math.min(20, s.dragons.length) },
+  { id: 'marathon-explorateur', name: 'Explorateur Infatigable', desc: 'Termine 50 expéditions.', reward: 200, target: 50, progress: (s) => Math.min(50, s.statsExpeditionsCompleted || 0) },
 ];
 
 // Titres cosmétiques débloqués par certains succès, affichables sous le nom du Gardien.
@@ -954,6 +985,9 @@ const TITLES = [
   { id: 'collectionneur', name: 'Collectionneur' },
   { id: 'legende-vivante', name: 'Ami des Légendes' },
   { id: 'maitre-gardien', name: 'Maître Gardien Suprême' },
+  { id: 'legendes-completes', name: 'Cercle des Légendes' },
+  { id: 'au-dela-des-legendes', name: 'Élu des Mythes' },
+  { id: 'grand-eleveur', name: 'Maître Éleveur' },
 ];
 
 function unlockedTitles() {
@@ -1244,7 +1278,8 @@ function rarityStarsHtml(variant) {
   for (let i = 0; i < 3; i++) {
     stars += icon('star', { size: 11, color: i < n ? 'var(--gold)' : '#D8CFC0' });
   }
-  return `<span class="inline-flex items-center gap-0.5">${stars}<span class="font-body font-bold fs-11 ml-0.5" style="color:var(--ink-soft)">${RARITY_LABEL[variant]}</span></span>`;
+  const mythicMark = variant === 5 ? ' <span style="color:var(--gold-deep)">✦</span>' : '';
+  return `<span class="inline-flex items-center gap-0.5">${stars}${mythicMark}<span class="font-body font-bold fs-11 ml-0.5" style="color:${variant === 5 ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${RARITY_LABEL[variant]}</span></span>`;
 }
 
 function emptyNoteHtml(text) {
@@ -1252,11 +1287,12 @@ function emptyNoteHtml(text) {
 }
 
 function statBarHtml(label, value) {
+  const displayValue = Math.min(100, value);
   const qual = value >= 70 ? 'Excellent' : value >= 40 ? 'Suffisant' : 'Faible';
   return `<div class="mb-1.5">
     <div class="flex justify-between font-body font-bold fs-11" style="color:var(--ink-soft)"><span>${label}</span><span>${qual}</span></div>
     <div class="w-full h-1\\.5 rounded-full overflow-hidden" style="background:#EEE6D8;height:6px;">
-      <div class="h-full rounded-full" style="width:${value}%;background:var(--gold)"></div>
+      <div class="h-full rounded-full" style="width:${displayValue}%;background:var(--gold)"></div>
     </div>
   </div>`;
 }
@@ -1721,7 +1757,7 @@ function renderScreenDragondex() {
     chips += `<button data-action="dragondex-filter" data-element="${key}" class="flex items-center gap-1 font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${active ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${active ? el.deep : 'transparent'}">${icon(el.icon, { size: 12, color: active ? el.deep : 'currentColor' })} ${el.name}</button>`;
   });
 
-  const rarityOptions = [{ v: 'tous', label: 'Toutes raretés' }, { v: '0', label: 'Commun' }, { v: '2', label: 'Rare' }, { v: '3', label: 'Épique' }, { v: '4', label: 'Légendaire' }];
+  const rarityOptions = [{ v: 'tous', label: 'Toutes raretés' }, { v: '0', label: 'Commun' }, { v: '2', label: 'Rare' }, { v: '3', label: 'Épique' }, { v: '4', label: 'Légendaire' }, { v: '5', label: 'Mythique' }];
   let rarityChips = rarityOptions.map(o => {
     const active = rarityFilter === o.v;
     return `<button data-action="dragondex-rarity-filter" data-rarity="${o.v}" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:${active ? 'var(--gold)' : 'var(--parchment)'};color:var(--ink)">${o.label}</button>`;
@@ -1762,7 +1798,7 @@ function renderScreenDragondex() {
 
   let legendaryBanner = `<div class="mt-4 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:#F1ECE2">
     ${icon('sparkles', { size: 20, color: 'var(--gold-deep)' })}
-    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires.</div>
+    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires. Dragons Mythiques : unis deux légendaires au Laboratoire, ou tente la quête mythique une fois les six légendaires réunis.</div>
   </div>`;
 
   document.getElementById('screen-root').innerHTML = `
@@ -1928,7 +1964,7 @@ function renderScreenCarte() {
   } else if (c.view === 'types') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     const loreHtml = zone.lore ? `<p class="font-body fs-11 italic mb-3" style="color:var(--ink-soft)">${escapeHtml(zone.lore)}</p>` : '';
-    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => !t.team || state.mode === 'stratege')));
+    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => (!t.team || state.mode === 'stratege') && (!t.requiresAllLegendary || allLegendariesDiscovered()))));
   } else if (c.view === 'pick1') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     let inner;
@@ -2042,7 +2078,7 @@ function renderScreenLabo() {
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
     <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Laboratoire</h3>
-    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Associe deux dragons adultes pour obtenir un œuf inattendu — parfois même légendaire.</p>
+    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Associe deux dragons adultes pour obtenir un œuf inattendu — parfois même légendaire. Unis deux légendaires, et le mythique n'est plus tout à fait hors de portée.</p>
     ${eligible.length < 2 && !(a && b) ? emptyNoteHtml('Il te faut au moins 2 dragons adultes, non occupés, pour tenter un élevage.') : ''}
     ${pickerHtml}
     <div class="grid grid-cols-2 gap-3 mb-3">${slotHtml(a, 'a')}${slotHtml(b, 'b')}</div>
@@ -2719,6 +2755,13 @@ const BREED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
 
 function pickBreedingSpecies(speciesA, speciesB) {
   const sameElement = speciesA.element === speciesB.element;
+  // Mythique : seulement en unissant deux dragons DÉJÀ légendaires (le vrai sommet de l'élevage).
+  if (speciesA.variant === 4 && speciesB.variant === 4) {
+    const mythicPool = SPECIES.filter(s => s.variant === 5 && (s.element === speciesA.element || s.element === speciesB.element));
+    if (mythicPool.length && Math.random() < 0.15) {
+      return mythicPool[randInt(0, mythicPool.length - 1)];
+    }
+  }
   const legendaryPool = SPECIES.filter(s => s.variant === 4 && (s.element === speciesA.element || s.element === speciesB.element));
   if (legendaryPool.length && Math.random() < 0.04) {
     return legendaryPool[randInt(0, legendaryPool.length - 1)];
@@ -2780,9 +2823,11 @@ function claimExpedition(expId) {
   let ecaillesGain = randInt(type.ecaillesMin, type.ecaillesMax) + teamBonus.ecaillesBonus;
   let gotEgg = null;
   let gotLegendary = false;
+  let gotMythic = false;
   if (Math.random() < Math.min(0.95, type.eggChance + teamBonus.eggChanceBonus)) {
-    const picked = weightedSpeciesFromZone(zone, type.legendaryChance || 0);
+    const picked = weightedSpeciesFromZone(zone, type.legendaryChance || 0, type.mythicChance || 0);
     if (picked.variant === 4) gotLegendary = true;
+    if (picked.variant === 5) gotMythic = true;
     if (!state.discovered.includes(picked.id)) gotEgg = { id: uid('egg'), speciesId: picked.id, obtainedAt: Date.now() };
     else ecaillesGain += 40;
   }
@@ -2793,12 +2838,12 @@ function claimExpedition(expId) {
   state.expeditions = state.expeditions.filter(e => e.id !== expId);
   bumpQuestProgress('collecte', ecaillesGain);
   state.expeditionLog = state.expeditionLog || [];
-  state.expeditionLog.unshift({ zoneName: zone.name, typeName: type.name, ecailles: ecaillesGain, gotEgg: !!gotEgg, legendary: gotLegendary, at: Date.now() });
+  state.expeditionLog.unshift({ zoneName: zone.name, typeName: type.name, ecailles: ecaillesGain, gotEgg: !!gotEgg, legendary: gotLegendary, mythic: gotMythic, at: Date.now() });
   if (state.expeditionLog.length > 15) state.expeditionLog.length = 15;
   saveStateDebounced();
   haptic(gotEgg ? [25, 50, 50] : 30);
   playCoinSound();
-  showToast(gotLegendary ? `Un œuf légendaire scintille dans ta besace ! ✨` : gotEgg ? `+${ecaillesGain} écailles et un nouvel œuf !` : `+${ecaillesGain} écailles`);
+  showToast(gotMythic ? `Un œuf mythique... c'est presque impossible ! ✨🌟` : gotLegendary ? `Un œuf légendaire scintille dans ta besace ! ✨` : gotEgg ? `+${ecaillesGain} écailles et un nouvel œuf !` : `+${ecaillesGain} écailles`);
   renderTopBar();
   if (ui.screen === 'carte') renderScreenCarte();
 }
