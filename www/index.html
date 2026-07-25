@@ -659,11 +659,12 @@ function elementAccentsSVG(element, variant, tailX, tailY, headX, headY) {
 }
 
 function hornsSVG(variant, fill) {
-  if (variant === 0) return `<path d="M100,34 L94,52 L106,52 Z" fill="${fill}"/>`;
-  if (variant === 1) return `<path d="M82,42 L76,58 L88,58 Z" fill="${fill}"/><path d="M118,42 L124,58 L112,58 Z" fill="${fill}"/>`;
-  if (variant === 2) return `<path d="M85,46 Q78,28 90,24 Q85,38 88,48 Z" fill="${fill}"/><path d="M115,46 Q122,28 110,24 Q115,38 112,48 Z" fill="${fill}"/>`;
-  return `<path d="M85,44 Q75,22 90,18 Q84,36 87,47 Z" fill="${fill}"/><path d="M115,44 Q125,22 110,18 Q116,36 113,47 Z" fill="${fill}"/>
-    <path d="M70,58 L62,50 L68,64 Z" fill="${fill}" opacity="0.85"/><path d="M130,58 L138,50 L132,64 Z" fill="${fill}" opacity="0.85"/>`;
+  const s = `stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"`;
+  if (variant === 0) return `<path d="M100,34 L94,52 L106,52 Z" fill="${fill}" ${s}/>`;
+  if (variant === 1) return `<path d="M82,42 L76,58 L88,58 Z" fill="${fill}" ${s}/><path d="M118,42 L124,58 L112,58 Z" fill="${fill}" ${s}/>`;
+  if (variant === 2) return `<path d="M85,46 Q78,28 90,24 Q85,38 88,48 Z" fill="${fill}" ${s}/><path d="M115,46 Q122,28 110,24 Q115,38 112,48 Z" fill="${fill}" ${s}/>`;
+  return `<path d="M85,44 Q75,22 90,18 Q84,36 87,47 Z" fill="${fill}" ${s}/><path d="M115,44 Q125,22 110,18 Q116,36 113,47 Z" fill="${fill}" ${s}/>
+    <path d="M70,58 L62,50 L68,64 Z" fill="${fill}" opacity="0.85" ${s}/><path d="M130,58 L138,50 L132,64 Z" fill="${fill}" opacity="0.85" ${s}/>`;
 }
 
 const WING_MEMBRANE_D = 'M0,0 L14,-34 Q28,-28 30,-14 L52,-6 Q54,12 39,20 Q19,25 0,6 Z';
@@ -678,7 +679,7 @@ function wingSVG(mirror, scale, fill, stroke) {
   let struts = '';
   WING_STRUTS.forEach(p => { struts += `<line x1="0" y1="0" x2="${p.x}" y2="${p.y}" stroke="${stroke}" stroke-width="1" opacity="0.55"/>`; });
   return `<g transform="scale(${scaleX},${scale})">
-    <path d="${WING_MEMBRANE_D}" fill="${fill}" opacity="0.88" stroke="${stroke}" stroke-width="1.6"/>
+    <path d="${WING_MEMBRANE_D}" fill="${fill}" opacity="0.92" stroke="${INK}" stroke-width="3"/>
     ${struts}
   </g>`;
 }
@@ -734,30 +735,30 @@ function dragonSVG(opts) {
       ${showGlow ? `<circle cx="100" cy="110" r="78" fill="${variant === 4 ? 'var(--gold)' : c.light}" opacity="0.22" class="${variant === 4 ? 'dragon-anim-legendary-halo' : ''}"/>` : ''}
       <ellipse cx="82" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
       <ellipse cx="118" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
-      <g class="dragon-tail-swish"><path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})"/></g>
+      <g class="dragon-tail-swish"><path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})" stroke="${INK}" stroke-width="3"/></g>
       ${wings}
-      <ellipse cx="100" cy="124" rx="50" ry="42" fill="url(#${gradId})"/>
+      <ellipse cx="100" cy="124" rx="50" ry="42" fill="url(#${gradId})" stroke="${INK}" stroke-width="3.5"/>
       <ellipse cx="100" cy="138" rx="30" ry="22" fill="${c.light}" opacity="0.55"/>
       ${spikes}
       ${legendarySparkles}
       ${elementAccentsSVG(element, variant, tailTip.x, tailTip.y, headAccent.x, headAccent.y)}
       <g transform="translate(100,72) scale(${headBoost}) translate(-100,-72)">
-        <ellipse cx="100" cy="76" rx="22" ry="14" fill="url(#${gradId})"/>
-        <circle cx="100" cy="72" r="33" fill="url(#${gradId})"/>
+        <ellipse cx="100" cy="76" rx="22" ry="14" fill="url(#${gradId})" stroke="${INK}" stroke-width="3"/>
+        <circle cx="100" cy="72" r="33" fill="url(#${gradId})" stroke="${INK}" stroke-width="3.5"/>
         <g transform="translate(100,72) scale(${hornScale}) translate(-100,-72)">${hornsSVG(variant, c.deep)}</g>
         <ellipse cx="76" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
         <ellipse cx="124" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
         <g class="dragon-eye-blink">
-          <ellipse cx="86" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
-          <ellipse cx="114" cy="68" rx="9" ry="10" fill="#FFFFFF"/>
-          <circle cx="88" cy="70" r="5" fill="${INK}"/>
-          <circle cx="116" cy="70" r="5" fill="${INK}"/>
-          <circle cx="90.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
-          <circle cx="118.3" cy="66.5" r="1.8" fill="#FFFFFF"/>
+          <ellipse cx="86" cy="68" rx="11" ry="12.5" fill="#FFFFFF" stroke="${INK}" stroke-width="2.2"/>
+          <ellipse cx="114" cy="68" rx="11" ry="12.5" fill="#FFFFFF" stroke="${INK}" stroke-width="2.2"/>
+          <circle cx="88" cy="71" r="6.5" fill="${INK}"/>
+          <circle cx="116" cy="71" r="6.5" fill="${INK}"/>
+          <circle cx="91" cy="66.5" r="2.2" fill="#FFFFFF"/>
+          <circle cx="119" cy="66.5" r="2.2" fill="#FFFFFF"/>
         </g>
         <circle cx="93" cy="83" r="1.3" fill="${c.deep}" opacity="0.6"/>
         <circle cx="107" cy="83" r="1.3" fill="${c.deep}" opacity="0.6"/>
-        <path d="M91,89 Q100,94 109,89" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <path d="M91,89 Q100,94 109,89" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
         <path d="M92,89 L91,94 L95,90 Z" fill="#FFFFFF"/>
       </g>
     </g>
