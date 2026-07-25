@@ -357,6 +357,7 @@ const ZONES = [
   { id:'foret', name:'Forêt de Sylvandre', elements:['nature','terre'], unlockLevel:5, lore:"Une forêt si ancienne que certains arbres seraient eux-mêmes d'anciens dragons endormis." },
   { id:'archipel', name:'Archipel des Vents', elements:['air','lumiere'], unlockLevel:8, lore:"Des îlots suspendus par les courants, où la lumière du matin attire les dragons les plus rapides." },
   { id:'cime', name:'Cime des Anciens Dragons', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:12, lore:"Le sommet que tous les éléments se partagent. On raconte que chaque dragon légendaire y revient au moins une fois." },
+  { id:'voile', name:'Le Voile Éternel', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:18, lore:"Au-delà même de la Cime, un dernier voile sépare le sanctuaire du monde des mythes. Seuls les gardiens les plus dévoués l'ont franchi." },
 ];
 
 const EXPEDITION_TYPES = [
@@ -366,6 +367,7 @@ const EXPEDITION_TYPES = [
   { id:'majeure', name:'Expédition majeure', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, legendaryChance:0.08, team:true, tagline:'À lancer avant de partir' },
   { id:'quete-legendaire', name:'Quête légendaire', seconds:21600, ecaillesMin:220, ecaillesMax:340, eggChance:0.85, legendaryChance:0.35, team:true, tagline:'Une nuit entière sur la piste d\'un dragon légendaire' },
   { id:'quete-mythique', name:'Quête mythique', seconds:32400, ecaillesMin:320, ecaillesMax:480, eggChance:0.9, legendaryChance:0, mythicChance:0.16, team:true, requiresAllLegendary:true, tagline:'Réservée à ceux qui ont déjà rencontré tous les légendaires' },
+  { id:'quete-eternelle', name:'Quête éternelle', seconds:43200, ecaillesMin:400, ecaillesMax:600, eggChance:0.95, legendaryChance:0, mythicChance:0.25, team:true, requiresMythic:true, tagline:'Réservée aux gardiens qui ont déjà croisé un dragon mythique' },
 ];
 
 const DECOR = [
@@ -490,6 +492,9 @@ function weightedSpeciesFromZone(zone, legendaryChance, mythicChance) {
 
 function allLegendariesDiscovered() {
   return SPECIES.filter(s => s.variant === 4).every(s => state.discovered.includes(s.id));
+}
+function hasAnyMythic() {
+  return state.discovered.some(id => speciesById(id).variant === 5);
 }
 
 function computeDragonStats(dragon, zone) {
@@ -976,6 +981,7 @@ const ACHIEVEMENTS = [
   { id: 'au-dela-des-legendes', name: 'Au-delà des Légendes', desc: 'Élève un dragon mythique.', reward: 300, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 5) ? 1 : 0) },
   { id: 'immense-tribu', name: 'Immense Tribu', desc: 'Élève 20 dragons.', reward: 150, target: 20, progress: (s) => Math.min(20, s.dragons.length) },
   { id: 'marathon-explorateur', name: 'Explorateur Infatigable', desc: 'Termine 50 expéditions.', reward: 200, target: 50, progress: (s) => Math.min(50, s.statsExpeditionsCompleted || 0) },
+  { id: 'pantheon-mythique', name: 'Panthéon Mythique', desc: 'Élève les 6 dragons mythiques.', reward: 500, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 5).length) },
 ];
 
 // Titres cosmétiques débloqués par certains succès, affichables sous le nom du Gardien.
@@ -988,6 +994,7 @@ const TITLES = [
   { id: 'legendes-completes', name: 'Cercle des Légendes' },
   { id: 'au-dela-des-legendes', name: 'Élu des Mythes' },
   { id: 'grand-eleveur', name: 'Maître Éleveur' },
+  { id: 'pantheon-mythique', name: 'Gardien du Voile Éternel' },
 ];
 
 function unlockedTitles() {
@@ -1798,7 +1805,7 @@ function renderScreenDragondex() {
 
   let legendaryBanner = `<div class="mt-4 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:#F1ECE2">
     ${icon('sparkles', { size: 20, color: 'var(--gold-deep)' })}
-    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires. Dragons Mythiques : unis deux légendaires au Laboratoire, ou tente la quête mythique une fois les six légendaires réunis.</div>
+    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires. Dragons Mythiques : unis deux légendaires au Laboratoire, tente la quête mythique une fois les six légendaires réunis, ou pousse jusqu'au Voile Éternel avec un premier mythique en poche.</div>
   </div>`;
 
   document.getElementById('screen-root').innerHTML = `
@@ -1827,7 +1834,7 @@ function renderScreenDragondex() {
 function zonesPathMapHtml() {
   const level = computeLevel(state.xp);
   const n = ZONES.length;
-  const xs = [76, 244, 76, 244, 160]; // alternance gauche/droite façon "parcours"
+  const xs = [76, 244, 76, 244, 160, 160]; // alternance gauche/droite façon "parcours"
   const ySpacing = 132;
   const yStart = 56;
   const points = ZONES.map((z, i) => ({ zone: z, x: xs[i % xs.length], y: yStart + i * ySpacing, unlocked: level >= z.unlockLevel }));
@@ -1964,7 +1971,7 @@ function renderScreenCarte() {
   } else if (c.view === 'types') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     const loreHtml = zone.lore ? `<p class="font-body fs-11 italic mb-3" style="color:var(--ink-soft)">${escapeHtml(zone.lore)}</p>` : '';
-    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => (!t.team || state.mode === 'stratege') && (!t.requiresAllLegendary || allLegendariesDiscovered()))));
+    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => (!t.team || state.mode === 'stratege') && (!t.requiresAllLegendary || allLegendariesDiscovered()) && (!t.requiresMythic || hasAnyMythic()))));
   } else if (c.view === 'pick1') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     let inner;
