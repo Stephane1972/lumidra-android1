@@ -92,8 +92,15 @@ jobs:
       # ---- Signature release : le keystore n'existe jamais en clair dans le dépôt.
       # S'il n'est pas configuré (secrets absents), cette étape est simplement ignorée et
       # Gradle retombe sur la signature debug (voir android/app/build.gradle). ----
+      - name: Vérifier si la signature release est configurée
+        id: checksecret
+        env:
+          KS: ${{ secrets.LUMIDRA_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
+
       - name: Préparer la signature release (si configurée)
-        if: ${{ secrets.LUMIDRA_KEYSTORE_B64 != '' }}
+        if: steps.checksecret.outputs.present == 'true'
         env:
           LUMIDRA_KEYSTORE_B64: ${{ secrets.LUMIDRA_KEYSTORE_B64 }}
         run: |
