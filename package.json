@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/game.test.js"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +16,8 @@
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/local-notifications": "^8.2.0",
     "@capacitor/share": "^8.0.1"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }

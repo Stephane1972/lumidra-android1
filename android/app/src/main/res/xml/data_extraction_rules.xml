@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Règles explicites de sauvegarde/restauration (Android 12+).
+  Objectif assumé : la sauvegarde de partie (stockée en localStorage dans la WebView)
+  DOIT être incluse, pour qu'un joueur retrouve sa partie après changement de téléphone.
+  On l'inclut donc explicitement, plutôt que de laisser faire un comportement par défaut
+  non déclaré (qui aurait inclus la même chose, mais sans que ce soit un choix visible).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="." />
+    </device-transfer>
+</data-extraction-rules>

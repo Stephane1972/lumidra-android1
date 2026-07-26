@@ -7,8 +7,11 @@ android {
         applicationId "fr.hthermie.lumidra"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Piloté par la CI (-PbuildNumber=<numéro de run>) pour que chaque construction ait un
+        // versionCode strictement croissant et distinct — jamais figé à 1 comme avant.
+        // En local (sans CI), repli sur 1 / "1.0-dev" pour ne rien casser.
+        versionCode (project.hasProperty('buildNumber') ? project.property('buildNumber').toInteger() : 1)
+        versionName (project.hasProperty('buildNumber') ? "1.0.${project.property('buildNumber')}" : "1.0-dev")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +19,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Alimenté par des variables d'environnement injectées en CI (secrets GitHub Actions),
+            // jamais commises en clair dans le dépôt. En local sans ces variables, on retombe
+            // sur la signature debug plus bas pour ne jamais casser une construction locale.
+            if (System.getenv("LUMIDRA_KEYSTORE_PATH")) {
+                storeFile file(System.getenv("LUMIDRA_KEYSTORE_PATH"))
+                storePassword System.getenv("LUMIDRA_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("LUMIDRA_KEY_ALIAS")
+                keyPassword System.getenv("LUMIDRA_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig System.getenv("LUMIDRA_KEYSTORE_PATH") ? signingConfigs.release : signingConfigs.debug
         }
     }
 }

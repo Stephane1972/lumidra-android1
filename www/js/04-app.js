@@ -1,0 +1,498 @@
+/* =========================================================================
+   MINUTEUR (comptes à rebours d'expédition et de soin)
+   ========================================================================= */
+
+setInterval(() => {
+  now = Date.now();
+  if (state.onboarded && ui.screen === 'carte') {
+    // Ce ré-affichage périodique ne sert qu'à rafraîchir les comptes à rebours d'expédition —
+    // sans ceci, la reconstruction complète du HTML remettait le défilement à zéro chaque seconde,
+    // rendant impossible de lire l'écran en scrollant (contrairement à une vraie navigation,
+    // où repartir en haut de l'écran reste le comportement voulu).
+    const prevScrollable = document.querySelector('#screen-root .overflow-y-auto');
+    const prevScrollTop = prevScrollable ? prevScrollable.scrollTop : 0;
+    renderScreenCarte();
+    const newScrollable = document.querySelector('#screen-root .overflow-y-auto');
+    if (newScrollable) newScrollable.scrollTop = prevScrollTop;
+  }
+  if (ui.detailDragonId) renderModals();
+}, 1000);
+
+/* =========================================================================
+   DÉLÉGATION D'ÉVÉNEMENTS
+   ========================================================================= */
+
+function dispatchAction(action, dataset, evt, el) {
+  const dragonId = dataset.dragonId;
+  const speciesId = dataset.speciesId;
+  const zoneId = dataset.zoneId;
+  const typeId = dataset.typeId;
+  const decorId = dataset.decorId;
+  const mode = dataset.mode;
+  const elementKey = dataset.element;
+  const screenName = dataset.screen;
+  const expId = dataset.expId;
+
+  switch (action) {
+    case 'select-mode':
+      ui.onboarding.mode = mode;
+      renderOnboarding();
+      break;
+    case 'complete-onboarding':
+      completeOnboarding();
+      break;
+    case 'open-settings':
+      requestScreen('reglages');
+      break;
+    case 'nav':
+      requestScreen(screenName);
+      break;
+    case 'open-dragon':
+      ui.detailDragonId = dragonId;
+      renderModals();
+      break;
+    case 'close-dragon-detail':
+      ui.detailDragonId = null;
+      ui.releaseConfirmId = null;
+      renderModals();
+      break;
+    case 'set-sanctuaire-sort':
+      ui.sanctuaireSort = dataset.sort;
+      renderScreenSanctuaire();
+      break;
+    case 'labo-open-picker':
+      ui.labo.picking = dataset.slot;
+      renderScreenLabo();
+      { const closeBtn = document.querySelector('[data-action="labo-close-picker"]'); if (closeBtn) closeBtn.focus(); }
+      break;
+    case 'labo-close-picker':
+      ui.labo.picking = null;
+      renderScreenLabo();
+      break;
+    case 'labo-select-parent':
+      if (dataset.slot === 'a') ui.labo.parentAId = dataset.dragonId;
+      else ui.labo.parentBId = dataset.dragonId;
+      ui.labo.picking = null;
+      renderScreenLabo();
+      break;
+    case 'breed-dragons':
+      breedDragons();
+      break;
+    case 'care-all-dragons':
+      careAllDragons();
+      break;
+    case 'care-dragon':
+      careDragon(dragonId);
+      break;
+    case 'rename-dragon': {
+      const input = document.getElementById('dragon-rename-input');
+      const val = input ? input.value.trim() : '';
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d) {
+        d.customName = val || null;
+        saveStateDebounced();
+        showToast('Nom mis à jour');
+        renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+      }
+      break;
+    }
+    case 'toggle-favorite': {
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d) {
+        d.favorite = !d.favorite;
+        saveStateDebounced();
+        haptic(20);
+        renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+      }
+      break;
+    }
+    case 'share-dragon-card':
+      exportDragonCard(dragonId);
+      break;
+    case 'request-release-dragon':
+      ui.releaseConfirmId = dragonId;
+      renderModals();
+      break;
+    case 'cancel-release-dragon':
+      ui.releaseConfirmId = null;
+      renderModals();
+      break;
+    case 'confirm-release-dragon': {
+      const d = state.dragons.find(dd => dd.id === dragonId);
+      if (d && !busyDragonIds()[d.id]) {
+        const species = speciesById(d.speciesId);
+        const refund = RELEASE_REFUND[species.variant];
+        state.dragons = state.dragons.filter(dd => dd.id !== dragonId);
+        state.ecailles += refund;
+        ui.releaseConfirmId = null;
+        ui.detailDragonId = null;
+        saveStateDebounced();
+        showToast(`${dragonDisplayName(d, species)} relâché (+${refund} écailles)`);
+        renderTopBar();
+        renderModals();
+        if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
+      }
+      break;
+    }
+    case 'start-hatch-from-inbox':
+      if (state.eggInbox.length > 0) { ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null }; renderModals(); }
+      break;
+    case 'hatch-tap':
+      ui.hatchFlow.taps = Math.min(3, ui.hatchFlow.taps + 1);
+      if (ui.hatchFlow.taps >= 3 && !ui.hatchFlow.revealedDragon) resolveHatch();
+      else renderModals();
+      break;
+    case 'hatch-finish':
+      ui.hatchFlow = null;
+      renderAll();
+      if (!state.tutorialSeen) {
+        state.tutorialSeen = true;
+        saveStateDebounced();
+        ui.tutorialStep = 0;
+        setTimeout(() => renderModals(), 350);
+      }
+      break;
+    case 'hatch-finish-and-continue':
+      if (state.eggInbox.length > 0) {
+        ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null };
+        renderAll();
+      } else {
+        ui.hatchFlow = null;
+        renderAll();
+      }
+      break;
+    case 'tutorial-next':
+      if (ui.tutorialStep < TUTORIAL_SLIDES.length - 1) { ui.tutorialStep += 1; renderModals(); }
+      else { ui.tutorialStep = null; renderModals(); }
+      break;
+    case 'tutorial-skip':
+      ui.tutorialStep = null;
+      renderModals();
+      break;
+    case 'open-species': {
+      const sp = speciesById(speciesId);
+      ui.detailSpecies = { species: sp, discovered: state.discovered.includes(speciesId) };
+      renderModals();
+      break;
+    }
+    case 'close-species-detail':
+      ui.detailSpecies = null;
+      renderModals();
+      break;
+    case 'dragondex-filter':
+      ui.dragondexFilter = elementKey;
+      renderScreenDragondex();
+      break;
+    case 'dragondex-rarity-filter':
+      ui.dragondexRarityFilter = dataset.rarity;
+      renderScreenDragondex();
+      break;
+    case 'carte-open-zone': {
+      const zone = ZONES.find(z => z.id === zoneId);
+      if (computeLevel(state.xp) < zone.unlockLevel) {
+        showToast(`Niveau ${zone.unlockLevel} requis pour débloquer cette zone`);
+        if (el) { el.classList.remove('anim-shake'); void el.offsetWidth; el.classList.add('anim-shake'); }
+        break;
+      }
+      ui.carte = { view: 'types', zoneId: zoneId, typeId: null, teamIds: [] };
+      renderScreenCarte();
+      break;
+    }
+    case 'carte-back': {
+      if (ui.carte.view === 'types') ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+      else ui.carte.view = 'types';
+      renderScreenCarte();
+      break;
+    }
+    case 'carte-choose-type': {
+      const type = EXPEDITION_TYPES.find(t => t.id === typeId);
+      ui.carte.typeId = typeId;
+      ui.carte.teamIds = [];
+      ui.carte.view = type.team ? 'team' : 'pick1';
+      renderScreenCarte();
+      break;
+    }
+    case 'carte-pick-single':
+      startExpedition(ui.carte.zoneId, ui.carte.typeId, [dragonId]);
+      break;
+    case 'carte-toggle-team-member': {
+      const ids = ui.carte.teamIds;
+      if (ids.includes(dragonId)) ui.carte.teamIds = ids.filter(x => x !== dragonId);
+      else if (ids.length < 3) ui.carte.teamIds = [...ids, dragonId];
+      renderScreenCarte();
+      break;
+    }
+    case 'carte-confirm-team':
+      if (ui.carte.teamIds.length >= 2) startExpedition(ui.carte.zoneId, ui.carte.typeId, ui.carte.teamIds);
+      break;
+    case 'carte-claim':
+      claimExpedition(expId);
+      break;
+    case 'buy-decor':
+      buyDecor(decorId);
+      break;
+    case 'toggle-equip-decor':
+      toggleEquipDecor(decorId);
+      break;
+    case 'select-title':
+      state.selectedTitle = dataset.titleId || null;
+      saveStateDebounced();
+      renderTopBar();
+      renderScreenReglages();
+      break;
+    case 'toggle-parental-lock':
+      state.parentalLock = !state.parentalLock;
+      saveStateDebounced();
+      renderScreenReglages();
+      break;
+    case 'toggle-reduce-vibrations':
+      state.reduceVibrations = !state.reduceVibrations;
+      saveStateDebounced();
+      renderScreenReglages();
+      break;
+    case 'toggle-sound':
+      state.soundEnabled = !state.soundEnabled;
+      saveStateDebounced();
+      if (state.soundEnabled) playCoinSound();
+      renderScreenReglages();
+      break;
+    case 'toggle-gentle-animations':
+      state.gentleAnimations = !state.gentleAnimations;
+      document.body.classList.toggle('gentle-fx', state.gentleAnimations);
+      saveStateDebounced();
+      renderScreenReglages();
+      break;
+    case 'toggle-collection-banner':
+      state.collectionBannerCollapsed = !state.collectionBannerCollapsed;
+      saveStateDebounced();
+      renderScreenDragondex();
+      break;
+    case 'toggle-achievements-banner':
+      state.achievementsBannerCollapsed = !state.achievementsBannerCollapsed;
+      saveStateDebounced();
+      renderScreenDragondex();
+      break;
+    case 'toggle-objectives-banner':
+      ui.objectivesBannerCollapsed = !ui.objectivesBannerCollapsed;
+      renderScreenSanctuaire();
+      break;
+    case 'toggle-expedition-log':
+      ui.expeditionLogCollapsed = !ui.expeditionLogCollapsed;
+      renderScreenReglages();
+      break;
+    case 'claim-quest':
+      claimDailyQuest(dataset.questId);
+      break;
+    case 'claim-weekly-challenge':
+      claimWeeklyChallenge();
+      break;
+    case 'claim-achievement':
+      claimAchievement(dataset.achievementId);
+      break;
+    case 'change-mode':
+      state.mode = mode;
+      if (mode === 'eclosion' && ui.screen === 'labo') ui.screen = 'sanctuaire';
+      saveStateDebounced();
+      renderTopBar();
+      renderScreenReglages();
+      break;
+    case 'save-name': {
+      const input = document.getElementById('reglages-name-input');
+      const val = input ? input.value.trim() : '';
+      if (val) state.gardienName = val;
+      saveStateDebounced();
+      renderTopBar();
+      showToast('Nom mis à jour');
+      break;
+    }
+    case 'request-reset':
+      ui.confirmResetOpen = true;
+      renderModals();
+      break;
+    case 'cancel-reset':
+      ui.confirmResetOpen = false;
+      renderModals();
+      break;
+    case 'confirm-reset':
+      doReset();
+      break;
+    case 'export-save':
+      exportSave();
+      break;
+    case 'import-save-trigger': {
+      const input = document.getElementById('import-save-input');
+      if (input) input.click();
+      break;
+    }
+    case 'cancel-import':
+      ui.pendingImport = null;
+      ui.confirmImportOpen = false;
+      renderModals();
+      break;
+    case 'confirm-import':
+      applyPendingImport();
+      break;
+    case 'close-lock-challenge':
+      ui.lockChallenge = null;
+      renderModals();
+      break;
+  }
+}
+
+// Filet de sécurité générique contre la perte de focus clavier après un ré-affichage
+// complet d'écran (voir audit : le Labo avait été corrigé au cas par cas, ceci couvre
+// tous les boutons data-action sans avoir à retoucher chaque point de rendu).
+const FOCUS_DATA_KEYS = ['dragonId', 'zoneId', 'typeId', 'decorId', 'slot', 'sort', 'questId', 'achievementId', 'element', 'mode', 'screen'];
+function describeFocusTarget(el) {
+  if (!el || !el.dataset || !el.dataset.action) return null;
+  let sel = `[data-action="${el.dataset.action}"]`;
+  FOCUS_DATA_KEYS.forEach(key => {
+    if (el.dataset[key] !== undefined) {
+      const attr = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+      sel += `[data-${attr}="${CSS.escape(el.dataset[key])}"]`;
+    }
+  });
+  return sel;
+}
+
+function initEvents() {
+  const app = document.getElementById('lumidra-app');
+
+  app.addEventListener('click', (e) => {
+    // 1) Clic direct sur le fond (backdrop) d'une modale → fermeture.
+    //    On vérifie que la cible EST l'overlay lui-même (pas un descendant),
+    //    sinon un clic sur du texte à l'intérieur de la feuille fermerait la modale par erreur.
+    if (e.target.classList && e.target.classList.contains('modal-overlay')) {
+      const closeAction = e.target.dataset.backdropClose;
+      if (closeAction) dispatchAction(closeAction, e.target.dataset, e, e.target);
+      return;
+    }
+    // 2) Recherche normale d'un élément actionnable
+    const el = e.target.closest('[data-action]');
+    if (!el || el.disabled) return;
+    const focusSelector = describeFocusTarget(el);
+    dispatchAction(el.dataset.action, el.dataset, e, el);
+    // Si l'action a fait perdre le focus (ré-affichage d'écran), on tente de le
+    // restaurer sur l'équivalent du bouton cliqué dans le nouveau DOM plutôt que
+    // de le laisser retomber sur <body>. Si l'élément a disparu (ex. quête réclamée
+    // qui change d'état), on ne force rien : dégradation silencieuse, pas de régression.
+    if (focusSelector && document.activeElement === document.body) {
+      const fresh = document.querySelector(focusSelector);
+      if (fresh) fresh.focus({ preventScroll: true });
+    }
+  });
+
+  // saisie texte : mise à jour silencieuse (pas de re-rendu, on garde le focus)
+  app.addEventListener('input', (e) => {
+    const bind = e.target.dataset ? e.target.dataset.bind : null;
+    if (bind === 'onboarding-name') ui.onboarding.name = e.target.value;
+    if (bind === 'dragondex-search') {
+      ui.dragondexSearch = e.target.value;
+      const caret = e.target.selectionStart;
+      renderScreenDragondex();
+      const fresh = document.getElementById('dragondex-search-input');
+      if (fresh) { fresh.focus(); try { fresh.setSelectionRange(caret, caret); } catch (err) {} }
+    }
+    if (bind === 'sanctuaire-search') {
+      ui.sanctuaireSearch = e.target.value;
+      const caret = e.target.selectionStart;
+      renderScreenSanctuaire();
+      const fresh = document.getElementById('sanctuaire-search-input');
+      if (fresh) { fresh.focus(); try { fresh.setSelectionRange(caret, caret); } catch (err) {} }
+    }
+  });
+
+  // sélection d'un fichier de sauvegarde à importer
+  app.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'import-save-input') {
+      const file = e.target.files && e.target.files[0];
+      handleImportedFile(file);
+      e.target.value = ''; // permet de réimporter le même fichier une seconde fois si besoin
+    }
+  });
+
+  app.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const bind = e.target.dataset ? e.target.dataset.bind : null;
+      if (bind === 'reglages-name') document.querySelector('[data-action="save-name"]').click();
+      if (e.target.id === 'onboarding-name-input') document.querySelector('[data-action="complete-onboarding"]').click();
+      if (e.target.id === 'dragon-rename-input') document.querySelector('[data-action="rename-dragon"]').click();
+    }
+
+    // ---- Échap sur des panneaux non-modaux (audit accessibilité) ----
+    if (e.key === 'Escape' && !modalIsOpen) {
+      if (ui.screen === 'labo' && ui.labo.picking) {
+        const slot = ui.labo.picking;
+        ui.labo.picking = null;
+        renderScreenLabo();
+        const btn = document.querySelector(`[data-action="labo-open-picker"][data-slot="${slot}"]`);
+        if (btn) btn.focus();
+        return;
+      }
+      if (e.target.id === 'dragondex-search-input' && ui.dragondexSearch) {
+        ui.dragondexSearch = '';
+        renderScreenDragondex();
+        const fresh = document.getElementById('dragondex-search-input');
+        if (fresh) fresh.focus();
+        return;
+      }
+      if (e.target.id === 'sanctuaire-search-input' && ui.sanctuaireSearch) {
+        ui.sanctuaireSearch = '';
+        renderScreenSanctuaire();
+        const fresh = document.getElementById('sanctuaire-search-input');
+        if (fresh) fresh.focus();
+        return;
+      }
+    }
+
+    // ---- piège de focus clavier dans les modales ----
+    if (modalIsOpen && (e.key === 'Tab' || e.key === 'Escape')) {
+      const sheet = document.querySelector('#modal-root .modal-sheet');
+      if (!sheet) return;
+
+      if (e.key === 'Escape') {
+        const overlay = document.querySelector('#modal-root .modal-overlay');
+        const closeAction = overlay ? overlay.dataset.backdropClose : null;
+        if (closeAction) dispatchAction(closeAction, overlay.dataset, e, overlay);
+        return;
+      }
+
+      const focusables = getFocusableElements(sheet);
+      if (focusables.length === 0) { e.preventDefault(); sheet.focus(); return; }
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+  });
+}
+
+/* =========================================================================
+   DÉMARRAGE
+   ========================================================================= */
+
+function bootLumidra() {
+  loadState();
+  state.expeditions.forEach(exp => { if (exp.endAt > Date.now()) scheduleExpeditionNotification(exp); });
+  document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
+  initEvents();
+  renderAll();
+  if (state.onboarded) {
+    const streakResult = checkLoginStreak();
+    if (streakResult) {
+      renderTopBar();
+      setTimeout(() => showToast(`🔥 Série de ${streakResult.streak} jour${streakResult.streak > 1 ? 's' : ''} ! +${streakResult.bonus} écailles`), 500);
+    }
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootLumidra);
+} else {
+  bootLumidra();
+}
+
