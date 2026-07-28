@@ -116,7 +116,7 @@ jobs:
           LUMIDRA_KEY_PASSWORD: ${{ secrets.LUMIDRA_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease -PbuildNumber=${{ github.run_number }} --no-daemon --stacktrace > /tmp/gradle.log 2>&1
+          ./gradlew assembleRelease bundleRelease -PbuildNumber=${{ github.run_number }} --no-daemon --stacktrace > /tmp/gradle.log 2>&1
         continue-on-error: true
 
       - name: Afficher le log Gradle (toujours)
@@ -146,14 +146,22 @@ jobs:
           path: ${{ steps.apkpath.outputs.path }}
           retention-days: 90
 
+      - name: Mettre l'AAB à disposition (pour une future publication Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumidra-aab-build-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
       # ---- Une Release versionnée par construction : l'historique est conservé (plus de
       # suppression), et "latest" continue de pointer automatiquement vers la plus récente. ----
-      - name: Publier l'APK en Release GitHub (lien public, sans connexion requise, pas de zip)
+      - name: Publier l'APK (et l'AAB) en Release GitHub
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp "${{ steps.apkpath.outputs.path }}" lumidra.apk
-          gh release create "build-${{ github.run_number }}" lumidra.apk \
+          cp android/app/build/outputs/bundle/release/app-release.aab lumidra.aab
+          gh release create "build-${{ github.run_number }}" lumidra.apk lumidra.aab \
             --title "Lumidra — version 1.0.${{ github.run_number }}" \
-            --notes "Construit automatiquement depuis le commit ${{ github.sha }}" \
+            --notes "Construit automatiquement depuis le commit ${{ github.sha }}. APK = installation directe. AAB = format pour une future publication Play Store." \
             --latest
