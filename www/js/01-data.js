@@ -818,6 +818,7 @@ function claimAchievement(id) {
 
 /* ---- état persistant + état d'interface transitoire ---- */
 let state = freshDefaultState();
+let saveWasCorrupted = false; // signalé une fois au joueur au démarrage si la sauvegarde était illisible, jamais persisté
 let now = Date.now();
 
 const ui = {
@@ -861,7 +862,11 @@ function loadState() {
       const parsed = JSON.parse(raw);
       state = Object.assign(freshDefaultState(), parsed);
     }
-  } catch (e) { /* pas de sauvegarde valide */ }
+  } catch (e) {
+    // Sauvegarde illisible (fichier corrompu) : on repart proprement plutôt que de planter,
+    // mais le joueur doit être prévenu — perdre sa partie sans un mot serait pire que l'erreur elle-même.
+    saveWasCorrupted = true;
+  }
 }
 function saveStateDebounced() {
   clearTimeout(saveTimer);

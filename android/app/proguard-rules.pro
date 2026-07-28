@@ -12,6 +12,23 @@
 #   public *;
 #}
 
+# ---- Règles ajoutées pour activer la minification (R8) sans casser le pont natif ----
+# Basées sur les recommandations officielles de Capacitor : sans elles, R8 peut renommer
+# ou supprimer des classes que le pont JavaScript<->natif appelle par réflexion, ce qui
+# casserait silencieusement les plugins (notifications, partage, fichiers) au runtime.
+-keep public class com.getcapacitor.** { *; }
+-keep public class * extends com.getcapacitor.Plugin { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * { *; }
+-keep public class com.capacitorjs.plugins.** { *; }
+-keepclassmembers class * {
+    @com.getcapacitor.PluginMethod public *;
+}
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-dontwarn com.getcapacitor.**
+
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
 #-keepattributes SourceFile,LineNumberTable

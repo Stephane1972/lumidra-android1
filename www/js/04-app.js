@@ -481,7 +481,9 @@ function bootLumidra() {
   document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
   initEvents();
   renderAll();
-  if (state.onboarded) {
+  if (saveWasCorrupted) {
+    setTimeout(() => showToast('Ta sauvegarde précédente était illisible — on repart à zéro, désolé 💛'), 500);
+  } else if (state.onboarded) {
     const streakResult = checkLoginStreak();
     if (streakResult) {
       renderTopBar();
@@ -489,6 +491,30 @@ function bootLumidra() {
     }
   }
 }
+
+/* ---- Filet de sécurité global : si une erreur inattendue survient n'importe où dans le jeu,
+   on affiche un écran de récupération plutôt que de laisser l'app figée sur un écran vide sans
+   explication. Volontairement indépendant du reste du code (DOM brut, pas de dépendance à
+   showToast/renderAll) : si CE qui casse fait partie du moteur de rendu lui-même, ce filet doit
+   quand même s'afficher. ---- */
+let crashOverlayShown = false;
+function showCrashOverlay(detail) {
+  if (crashOverlayShown) return; // n'affiche qu'une fois, pour ne pas empiler les écrans si plusieurs erreurs tombent d'affilée
+  crashOverlayShown = true;
+  const div = document.createElement('div');
+  div.setAttribute('style', 'position:fixed;inset:0;z-index:9999;background:rgba(58,46,42,0.92);display:flex;align-items:center;justify-content:center;padding:24px;font-family:sans-serif;');
+  div.innerHTML = `
+    <div style="background:#FFFCF6;border-radius:20px;padding:28px 22px;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+      <div style="font-size:40px;margin-bottom:8px;">🥚💥</div>
+      <div style="font-weight:800;font-size:17px;color:#3A2E2A;margin-bottom:8px;">Oups, un souci est survenu</div>
+      <div style="font-size:13px;color:#6B5D55;margin-bottom:18px;line-height:1.5;">Ta sauvegarde est en sécurité. Recharge simplement l'application pour continuer.</div>
+      <button id="crash-reload-btn" style="background:#EDA23C;color:#3A2E2A;font-weight:800;border:none;border-radius:14px;padding:12px 28px;font-size:14px;">Recharger</button>
+    </div>`;
+  document.body.appendChild(div);
+  document.getElementById('crash-reload-btn').addEventListener('click', () => location.reload());
+}
+window.addEventListener('error', (e) => showCrashOverlay(e.error ? e.error.message : e.message));
+window.addEventListener('unhandledrejection', (e) => showCrashOverlay(e.reason ? String(e.reason) : 'promesse rejetée'));
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bootLumidra);

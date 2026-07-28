@@ -32,7 +32,11 @@ function check(label, cond) {
   window.CSS = { escape: (s) => String(s) };
   window.navigator.vibrate = () => {};
   Object.defineProperty(window, 'localStorage', { value: new FakeStorage() });
-  await new Promise((r) => setTimeout(r, 250));
+  // Attend que les 4 fichiers JS externes soient réellement chargés et exécutés, plutôt qu'un
+  // délai fixe qui peut s'avérer trop court selon la charge de la machine (source de flakiness).
+  for (let i = 0; i < 100 && !window.document.getElementById('onboarding-name-input'); i++) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
 
   const errors = [];
   window.addEventListener('error', (e) => errors.push(e.error ? e.error.stack : e.message));
