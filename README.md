@@ -4,6 +4,14 @@ Ce dossier contient tout ce qu'il faut pour obtenir un `.apk` de Lumidra avec
 notifications natives (rappel quand une expédition est terminée), sans jamais
 installer Android Studio.
 
+## Signature
+
+Les constructions sont maintenant signées en "release" (plus en "debug") grâce
+aux secrets configurés dans Settings → Secrets and variables → Actions :
+`LUMIDRA_KEYSTORE_B64`, `LUMIDRA_KEYSTORE_PASSWORD`, `LUMIDRA_KEY_ALIAS`,
+`LUMIDRA_KEY_PASSWORD`. Ne les supprime jamais — sans eux, il serait impossible
+de publier une mise à jour compatible avec les installations existantes.
+
 ## Mise en route (une seule fois)
 
 1. Crée un nouveau dépôt sur GitHub (public ou privé, les deux fonctionnent).
