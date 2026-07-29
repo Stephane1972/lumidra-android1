@@ -118,6 +118,23 @@ function check(label, cond) {
   clickAction('dragondex-rarity-filter', { rarity: '5' });
   check('filtre "Mythique" montre exactement 6 cartes', doc.querySelectorAll('[data-action="open-species"]').length === 6);
 
+  console.log('--- partage de carte de dragon : PNG + natif (pas le SVG/téléchargement cassé d\'avant) ---');
+  ev(window, `svgStringToPngDataUrl = async () => "data:image/png;base64,RkFVWA==";`);
+  let sharedCard = null, writtenCard = null;
+  ev(window, `
+    window.Capacitor = { isNativePlatform: () => true, Plugins: {
+      Filesystem: { writeFile: async (o) => { window.__written = o; return { uri: 'file:///x/'+o.path }; } },
+      Share: { share: async (o) => { window.__shared = o; } },
+    }};
+  `);
+  await ev(window, `exportDragonCard('${starterId}')`);
+  await new Promise((r) => setTimeout(r, 150));
+  writtenCard = ev(window, 'window.__written');
+  sharedCard = ev(window, 'window.__shared');
+  check('carte exportée en .png (pas .svg)', writtenCard && writtenCard.path.endsWith('.png'));
+  check('partage natif déclenché avec le bon fichier', sharedCard && sharedCard.url === writtenCard ? true : (sharedCard && sharedCard.url && sharedCard.url.includes(writtenCard.path)));
+  ev(window, 'delete window.Capacitor;');
+
   console.log('--- réinitialisation ---');
   clickAction('nav', { screen: 'sanctuaire' });
   clickAction('open-settings');

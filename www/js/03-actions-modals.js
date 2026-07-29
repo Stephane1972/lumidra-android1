@@ -172,23 +172,68 @@ function buildDragonCardSVG(dragon, species) {
   </svg>`;
 }
 
-function exportDragonCard(dragonId) {
+function svgStringToPngDataUrl(svgStr, width, height) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+    img.src = url;
+  });
+}
+
+async function exportDragonCard(dragonId) {
   const dragon = state.dragons.find(d => d.id === dragonId);
   if (!dragon) return;
   const species = speciesById(dragon.speciesId);
+  const displayName = dragonDisplayName(dragon, species);
+  const slug = displayName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'dragon';
   try {
     const svgStr = buildDragonCardSVG(dragon, species);
-    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const slug = dragonDisplayName(dragon, species).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `lumidra-${slug || 'dragon'}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    showToast('Carte du dragon téléchargée !');
+    // PNG plutôt que SVG : la plupart des messageries (WhatsApp, Instagram...) affichent mal
+    // un .svg en pièce jointe "photo", alors qu'un PNG s'affiche partout sans surprise.
+    const pngDataUrl = await svgStringToPngDataUrl(svgStr, 640, 900);
+
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+      && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem && window.Capacitor.Plugins.Share;
+
+    if (isNative) {
+      // Dans l'app native, un lien de téléchargement classique ne marche pas (pas de gestionnaire
+      // de téléchargements dans la WebView) — même correctif que pour l'export de sauvegarde :
+      // un vrai fichier via Filesystem, puis le partage natif pour choisir où l'envoyer.
+      const base64 = pngDataUrl.split(',')[1];
+      const { Filesystem } = window.Capacitor.Plugins;
+      const written = await Filesystem.writeFile({ path: `lumidra-${slug}.png`, data: base64, directory: 'CACHE' });
+      await window.Capacitor.Plugins.Share.share({
+        title: 'Mon dragon Lumidra',
+        text: `Regarde mon dragon ${displayName} !`,
+        url: written.uri,
+        dialogTitle: 'Partager ta carte de dragon',
+      });
+    } else {
+      // Navigateur / PWA classique : le téléchargement direct fonctionne normalement.
+      const a = document.createElement('a');
+      a.href = pngDataUrl;
+      a.download = `lumidra-${slug}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('Carte du dragon téléchargée !');
+    }
     haptic(20);
   } catch (e) {
     showToast('Impossible de générer la carte');
