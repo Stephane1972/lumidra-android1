@@ -3,98 +3,104 @@
    ========================================================================= */
 
 const ELEMENTS = {
-  feu:     { name: 'Feu',     base: '#E8734A', light: '#F7B98C', deep: '#B54F2C', icon: 'flame' },
-  eau:     { name: 'Eau',     base: '#4A9BB0', light: '#9CD6E3', deep: '#2D6B7D', icon: 'droplet' },
-  terre:   { name: 'Terre',   base: '#B08552', light: '#D9BC8C', deep: '#7A5A34', icon: 'mountain' },
-  air:     { name: 'Air',     base: '#9B8FC9', light: '#CFC6EA', deep: '#6B5F99', icon: 'wind' },
-  lumiere: { name: 'Lumière', base: '#E0AA3E', light: '#F5D888', deep: '#A8781E', icon: 'sun' },
-  nature:  { name: 'Nature',  base: '#6FA05C', light: '#A8CD8F', deep: '#436B37', icon: 'leaf' },
+  feu:     { nameFr: 'Feu',     nameEn: 'Fire',   base: '#E8734A', light: '#F7B98C', deep: '#B54F2C', icon: 'flame' },
+  eau:     { nameFr: 'Eau',     nameEn: 'Water',  base: '#4A9BB0', light: '#9CD6E3', deep: '#2D6B7D', icon: 'droplet' },
+  terre:   { nameFr: 'Terre',   nameEn: 'Earth',  base: '#B08552', light: '#D9BC8C', deep: '#7A5A34', icon: 'mountain' },
+  air:     { nameFr: 'Air',     nameEn: 'Air',    base: '#9B8FC9', light: '#CFC6EA', deep: '#6B5F99', icon: 'wind' },
+  lumiere: { nameFr: 'Lumière', nameEn: 'Light',  base: '#E0AA3E', light: '#F5D888', deep: '#A8781E', icon: 'sun' },
+  nature:  { nameFr: 'Nature',  nameEn: 'Nature', base: '#6FA05C', light: '#A8CD8F', deep: '#436B37', icon: 'leaf' },
 };
 
 const INK = '#3A2E2A';
-const RARITY_LABEL = ['Commun', 'Commun', 'Rare', 'Épique', 'Légendaire', 'Mythique'];
+const RARITY_LABEL_FR = ['Commun', 'Commun', 'Rare', 'Épique', 'Légendaire', 'Mythique'];
+const RARITY_LABEL_EN = ['Common', 'Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
+let RARITY_LABEL = RARITY_LABEL_FR;
 const RARITY_STARS = [1, 1, 2, 3, 3, 3];
-const STAGE_LABEL = { bebe: 'Bébé', juvenile: 'Juvénile', adulte: 'Adulte' };
-const TEMPERAMENTS = ['Calme', 'Joueur', 'Audacieux', 'Loyal'];
+const STAGE_LABEL_FR = { bebe: 'Bébé', juvenile: 'Juvénile', adulte: 'Adulte' };
+const STAGE_LABEL_EN = { bebe: 'Baby', juvenile: 'Juvenile', adulte: 'Adult' };
+let STAGE_LABEL = STAGE_LABEL_FR;
+const TEMPERAMENTS_FR = ['Calme', 'Joueur', 'Audacieux', 'Loyal'];
+const TEMPERAMENTS_EN = ['Calm', 'Playful', 'Bold', 'Loyal'];
+let TEMPERAMENTS = TEMPERAMENTS_FR;
 const CARE_COOLDOWN_MS = 90000; // 1 min 30 — un vrai temps de pause, plus une boucle instantanée
 const SAVE_KEY = 'lumidra-save-v1';
 
 const SPECIES = [
-  { id:'braisor', name:'Braisor', element:'feu', variant:0, lore:"Petit dragon trapu qui traîne une fumée joueuse derrière lui." },
-  { id:'cendrelle', name:'Cendrelle', element:'feu', variant:1, lore:"Ailes fines couvertes de cendres dorées, toujours en mouvement." },
-  { id:'pyrhelios', name:'Pyrhélios', element:'feu', variant:2, lore:"Sa crête flamboyante réagit à son humeur." },
-  { id:'magmaroth', name:'Magmaroth', element:'feu', variant:3, lore:"Carapace de roche volcanique craquelée, chaleur rassurante." },
-  { id:'goutelin', name:'Goutelin', element:'eau', variant:0, lore:"Translucide, il rebondit comme une bulle." },
-  { id:'nageoline', name:'Nageoline', element:'eau', variant:1, lore:"Ses nageoires en éventail changent de teinte avec la météo." },
-  { id:'brumael', name:'Brumael', element:'eau', variant:2, lore:"Enveloppé d'une brume permanente, curieux et discret." },
-  { id:'abyssia', name:'Abyssia', element:'eau', variant:3, lore:"Serpentin bioluminescent, plus actif la nuit." },
-  { id:'argilon', name:'Argilon', element:'terre', variant:0, lore:"Peau craquelée façon argile séchée au soleil." },
-  { id:'mousselin', name:'Mousselin', element:'terre', variant:1, lore:"Recouvert de mousse vivante, doux au toucher." },
-  { id:'racinelle', name:'Racinelle', element:'terre', variant:2, lore:"Sa queue en racines se couvre de fleurs au printemps." },
-  { id:'gravalor', name:'Gravalor', element:'terre', variant:3, lore:"Écailles de granit, ses pas résonnent légèrement." },
-  { id:'brisalys', name:'Brisalys', element:'air', variant:0, lore:"Ailes en feuille, il plane plus qu'il ne vole." },
-  { id:'voltine', name:"Vol'tine", element:'air', variant:1, lore:"Vive et joueuse, elle adore les loopings." },
-  { id:'cirrusca', name:'Cirrusca', element:'air', variant:2, lore:"Son corps semble fait de nuages compressés." },
-  { id:'plumzephyr', name:'Plumzéphyr', element:'air', variant:3, lore:"Ailes immenses qui chantent avec le vent." },
-  { id:'lumeo', name:'Lumeo', element:'lumiere', variant:0, lore:"Sa lueur douce sert de veilleuse vivante." },
-  { id:'clarinelle', name:'Clarinelle', element:'lumiere', variant:1, lore:"Écailles iridescentes qui projettent de petits arcs-en-ciel." },
-  { id:'auralia', name:'Auralia', element:'lumiere', variant:2, lore:"Un halo doré permanent l'entoure." },
-  { id:'solarys', name:'Solarys', element:'lumiere', variant:3, lore:"Son motif rayonne à midi, gardien du jour selon la légende." },
-  { id:'feuillon', name:'Feuillon', element:'nature', variant:0, lore:"Écailles façon jeunes pousses, il grandit avec le printemps." },
-  { id:'bourgette', name:'Bourgette', element:'nature', variant:1, lore:"De petites fleurs éclosent sur son dos." },
-  { id:'lianor', name:'Lianor', element:'nature', variant:2, lore:"Sa queue en liane fleurie ne cesse jamais de pousser." },
-  { id:'sylvandre', name:'Sylvandre', element:'nature', variant:3, lore:"Allure de vieux chêne vivant, mémoire de la forêt." },
+  { id:'braisor', nameFr:'Braisor', nameEn:'Braisor', element:'feu', variant:0, loreFr:"Petit dragon trapu qui traîne une fumée joueuse derrière lui.", loreEn:"A stocky little dragon that trails a playful wisp of smoke behind it." },
+  { id:'cendrelle', nameFr:'Cendrelle', nameEn:'Cendrelle', element:'feu', variant:1, loreFr:"Ailes fines couvertes de cendres dorées, toujours en mouvement.", loreEn:"Thin wings dusted with golden ash, forever on the move." },
+  { id:'pyrhelios', nameFr:'Pyrhélios', nameEn:'Pyrhelios', element:'feu', variant:2, loreFr:"Sa crête flamboyante réagit à son humeur.", loreEn:"Its blazing crest flares up and down with its mood." },
+  { id:'magmaroth', nameFr:'Magmaroth', nameEn:'Magmaroth', element:'feu', variant:3, loreFr:"Carapace de roche volcanique craquelée, chaleur rassurante.", loreEn:"A shell of cracked volcanic rock, radiating a comforting warmth." },
+  { id:'goutelin', nameFr:'Goutelin', nameEn:'Droplin', element:'eau', variant:0, loreFr:"Translucide, il rebondit comme une bulle.", loreEn:"Translucent, it bounces about like a soap bubble." },
+  { id:'nageoline', nameFr:'Nageoline', nameEn:'Finnelle', element:'eau', variant:1, loreFr:"Ses nageoires en éventail changent de teinte avec la météo.", loreEn:"Its fan-shaped fins shift colour with the weather." },
+  { id:'brumael', nameFr:'Brumael', nameEn:'Mistael', element:'eau', variant:2, loreFr:"Enveloppé d'une brume permanente, curieux et discret.", loreEn:"Wrapped in a permanent mist, curious yet shy." },
+  { id:'abyssia', nameFr:'Abyssia', nameEn:'Abyssia', element:'eau', variant:3, loreFr:"Serpentin bioluminescent, plus actif la nuit.", loreEn:"A bioluminescent ribbon, most active after dark." },
+  { id:'argilon', nameFr:'Argilon', nameEn:'Clayon', element:'terre', variant:0, loreFr:"Peau craquelée façon argile séchée au soleil.", loreEn:"Skin cracked like sun-baked clay." },
+  { id:'mousselin', nameFr:'Mousselin', nameEn:'Mossling', element:'terre', variant:1, loreFr:"Recouvert de mousse vivante, doux au toucher.", loreEn:"Covered in living moss, soft to the touch." },
+  { id:'racinelle', nameFr:'Racinelle', nameEn:'Rootelle', element:'terre', variant:2, loreFr:"Sa queue en racines se couvre de fleurs au printemps.", loreEn:"Its root-like tail blooms with flowers every spring." },
+  { id:'gravalor', nameFr:'Gravalor', nameEn:'Gravalor', element:'terre', variant:3, loreFr:"Écailles de granit, ses pas résonnent légèrement.", loreEn:"Granite scales — its footsteps echo faintly." },
+  { id:'brisalys', nameFr:'Brisalys', nameEn:'Brisalys', element:'air', variant:0, loreFr:"Ailes en feuille, il plane plus qu'il ne vole.", loreEn:"Leaf-shaped wings — it glides more than it flies." },
+  { id:'voltine', nameFr:"Vol'tine", nameEn:"Voltine", element:'air', variant:1, loreFr:"Vive et joueuse, elle adore les loopings.", loreEn:"Quick and playful, she loves a good loop-the-loop." },
+  { id:'cirrusca', nameFr:'Cirrusca', nameEn:'Cirrusca', element:'air', variant:2, loreFr:"Son corps semble fait de nuages compressés.", loreEn:"Its body seems woven from compressed clouds." },
+  { id:'plumzephyr', nameFr:'Plumzéphyr', nameEn:'Plumzephyr', element:'air', variant:3, loreFr:"Ailes immenses qui chantent avec le vent.", loreEn:"Enormous wings that sing with the wind." },
+  { id:'lumeo', nameFr:'Lumeo', nameEn:'Lumeo', element:'lumiere', variant:0, loreFr:"Sa lueur douce sert de veilleuse vivante.", loreEn:"Its gentle glow works as a living night light." },
+  { id:'clarinelle', nameFr:'Clarinelle', nameEn:'Clarinelle', element:'lumiere', variant:1, loreFr:"Écailles iridescentes qui projettent de petits arcs-en-ciel.", loreEn:"Iridescent scales that cast tiny rainbows." },
+  { id:'auralia', nameFr:'Auralia', nameEn:'Auralia', element:'lumiere', variant:2, loreFr:"Un halo doré permanent l'entoure.", loreEn:"A permanent golden halo surrounds it." },
+  { id:'solarys', nameFr:'Solarys', nameEn:'Solarys', element:'lumiere', variant:3, loreFr:"Son motif rayonne à midi, gardien du jour selon la légende.", loreEn:"Its pattern glows brightest at noon — legend calls it the keeper of the day." },
+  { id:'feuillon', nameFr:'Feuillon', nameEn:'Leaflet', element:'nature', variant:0, loreFr:"Écailles façon jeunes pousses, il grandit avec le printemps.", loreEn:"Scales like fresh shoots — it grows along with spring." },
+  { id:'bourgette', nameFr:'Bourgette', nameEn:'Buddette', element:'nature', variant:1, loreFr:"De petites fleurs éclosent sur son dos.", loreEn:"Tiny flowers bloom along its back." },
+  { id:'lianor', nameFr:'Lianor', nameEn:'Vinor', element:'nature', variant:2, loreFr:"Sa queue en liane fleurie ne cesse jamais de pousser.", loreEn:"Its flowering vine tail never stops growing." },
+  { id:'sylvandre', nameFr:'Sylvandre', nameEn:'Sylvandre', element:'nature', variant:3, loreFr:"Allure de vieux chêne vivant, mémoire de la forêt.", loreEn:"Looks like a living old oak — a memory of the forest itself." },
   // Légendaires — extrêmement rares, aperçus surtout lors des quêtes légendaires et à la Cime des Anciens Dragons.
-  { id:'ignarok', name:'Ignarok', element:'feu', variant:4, lore:"Dragon de braise ancestrale, on dit qu'il dort au cœur des volcans depuis des siècles." },
-  { id:'leviatriss', name:'Léviatriss', element:'eau', variant:4, lore:"Créature abyssale légendaire, ses écailles scintillent comme des étoiles sous l'eau." },
-  { id:'terragorn', name:'Terragorn', element:'terre', variant:4, lore:"Géant de pierre vivante, chaque pas fait naître une nouvelle montagne, dit la légende." },
-  { id:'zephyrion', name:'Zéphyrion', element:'air', variant:4, lore:"Maître des tempêtes, invisible sauf quand il choisit de se montrer." },
-  { id:'aurelios', name:'Aurélios', element:'lumiere', variant:4, lore:"Dragon solaire mythique, son envol dessinerait l'aube selon les anciens récits." },
-  { id:'sylvamater', name:'Sylvamater', element:'nature', variant:4, lore:"Esprit ancien de la forêt, on ne le voit qu'une fois par génération de gardiens." },
+  { id:'ignarok', nameFr:'Ignarok', nameEn:'Ignarok', element:'feu', variant:4, loreFr:"Dragon de braise ancestrale, on dit qu'il dort au cœur des volcans depuis des siècles.", loreEn:"An ancestral ember dragon, said to have slept inside volcanoes for centuries." },
+  { id:'leviatriss', nameFr:'Léviatriss', nameEn:'Leviatriss', element:'eau', variant:4, loreFr:"Créature abyssale légendaire, ses écailles scintillent comme des étoiles sous l'eau.", loreEn:"A legendary deep-sea creature whose scales glimmer like underwater stars." },
+  { id:'terragorn', nameFr:'Terragorn', nameEn:'Terragorn', element:'terre', variant:4, loreFr:"Géant de pierre vivante, chaque pas fait naître une nouvelle montagne, dit la légende.", loreEn:"A giant of living stone — legend says a new mountain rises with every step it takes." },
+  { id:'zephyrion', nameFr:'Zéphyrion', nameEn:'Zephyrion', element:'air', variant:4, loreFr:"Maître des tempêtes, invisible sauf quand il choisit de se montrer.", loreEn:"Master of storms, invisible unless it chooses to be seen." },
+  { id:'aurelios', nameFr:'Aurélios', nameEn:'Aurelios', element:'lumiere', variant:4, loreFr:"Dragon solaire mythique, son envol dessinerait l'aube selon les anciens récits.", loreEn:"A mythical sun dragon — old tales say its flight paints the dawn itself." },
+  { id:'sylvamater', nameFr:'Sylvamater', nameEn:'Sylvamater', element:'nature', variant:4, loreFr:"Esprit ancien de la forêt, on ne le voit qu'une fois par génération de gardiens.", loreEn:"An ancient forest spirit, glimpsed only once per generation of Guardians." },
   // Mythiques — au-delà même des légendaires. On ne les obtient qu'en unissant deux dragons
   // légendaires au Laboratoire, ou tout en haut de la Cime, une fois tous les légendaires rencontrés.
-  { id:'ignisia', name:'Ignisia', element:'feu', variant:5, lore:"On dit qu'elle porte en elle la toute première étincelle, avant même le premier volcan." },
-  { id:'thalassor', name:'Thalassor', element:'eau', variant:5, lore:"Nul n'a vu le fond de l'océan qu'il habite — seuls ses reflets remontent parfois à la surface." },
-  { id:'terrastrum', name:'Terrastrum', element:'terre', variant:5, lore:"Ses écailles renferment, dit-on, un fragment de chaque montagne jamais formée." },
-  { id:'ouranis', name:'Ouranis', element:'air', variant:5, lore:"Il ne se pose jamais — certains gardiens jurent qu'il porte le ciel lui-même sur son dos." },
-  { id:'luminae', name:'Luminae', element:'lumiere', variant:5, lore:"Sa lumière ne projette aucune ombre — un mystère que même les plus vieux récits n'expliquent pas." },
-  { id:'gaiane', name:'Gaïane', element:'nature', variant:5, lore:"On raconte qu'elle a vu pousser le premier arbre, et qu'elle veille sur tous ceux qui ont suivi." },
+  { id:'ignisia', nameFr:'Ignisia', nameEn:'Ignisia', element:'feu', variant:5, loreFr:"On dit qu'elle porte en elle la toute première étincelle, avant même le premier volcan.", loreEn:"Said to carry the very first spark, from before the first volcano ever formed." },
+  { id:'thalassor', nameFr:'Thalassor', nameEn:'Thalassor', element:'eau', variant:5, loreFr:"Nul n'a vu le fond de l'océan qu'il habite — seuls ses reflets remontent parfois à la surface.", loreEn:"No one has seen the bottom of the ocean it calls home — only its glimmer ever reaches the surface." },
+  { id:'terrastrum', nameFr:'Terrastrum', nameEn:'Terrastrum', element:'terre', variant:5, loreFr:"Ses écailles renferment, dit-on, un fragment de chaque montagne jamais formée.", loreEn:"Its scales are said to hold a fragment of every mountain that has ever formed." },
+  { id:'ouranis', nameFr:'Ouranis', nameEn:'Ouranis', element:'air', variant:5, loreFr:"Il ne se pose jamais — certains gardiens jurent qu'il porte le ciel lui-même sur son dos.", loreEn:"It never lands — some Guardians swear it carries the sky itself on its back." },
+  { id:'luminae', nameFr:'Luminae', nameEn:'Luminae', element:'lumiere', variant:5, loreFr:"Sa lumière ne projette aucune ombre — un mystère que même les plus vieux récits n'expliquent pas.", loreEn:"Its light casts no shadow — a mystery even the oldest tales cannot explain." },
+  { id:'gaiane', nameFr:'Gaïane', nameEn:'Gaiane', element:'nature', variant:5, loreFr:"On raconte qu'elle a vu pousser le premier arbre, et qu'elle veille sur tous ceux qui ont suivi.", loreEn:"Said to have watched the very first tree grow, and to have watched over every one since." },
 ];
 
 const ZONES = [
-  { id:'plaine', name:'Plaine des Premières Écailles', elements:['feu','terre'], unlockLevel:1, lore:"Là où les tout premiers gardiens ont appris à marcher aux côtés des dragons. Le sol y garde encore une chaleur tranquille." },
-  { id:'golfe', name:'Golfe de Brume', elements:['eau','air'], unlockLevel:3, lore:"Une côte toujours voilée d'un brouillard léger, où les dragons d'eau et d'air se croisent au lever du jour." },
-  { id:'foret', name:'Forêt de Sylvandre', elements:['nature','terre'], unlockLevel:5, lore:"Une forêt si ancienne que certains arbres seraient eux-mêmes d'anciens dragons endormis." },
-  { id:'archipel', name:'Archipel des Vents', elements:['air','lumiere'], unlockLevel:8, lore:"Des îlots suspendus par les courants, où la lumière du matin attire les dragons les plus rapides." },
-  { id:'cime', name:'Cime des Anciens Dragons', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:12, lore:"Le sommet que tous les éléments se partagent. On raconte que chaque dragon légendaire y revient au moins une fois." },
-  { id:'voile', name:'Le Voile Éternel', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:18, lore:"Au-delà même de la Cime, un dernier voile sépare le sanctuaire du monde des mythes. Seuls les gardiens les plus dévoués l'ont franchi." },
+  { id:'plaine', nameFr:'Plaine des Premières Écailles', nameEn:'Plain of First Scales', elements:['feu','terre'], unlockLevel:1, loreFr:"Là où les tout premiers gardiens ont appris à marcher aux côtés des dragons. Le sol y garde encore une chaleur tranquille.", loreEn:"Where the very first Guardians learned to walk alongside dragons. The ground still holds a quiet warmth." },
+  { id:'golfe', nameFr:'Golfe de Brume', nameEn:'Gulf of Mist', elements:['eau','air'], unlockLevel:3, loreFr:"Une côte toujours voilée d'un brouillard léger, où les dragons d'eau et d'air se croisent au lever du jour.", loreEn:"A coastline forever veiled in a light fog, where water and air dragons cross paths at daybreak." },
+  { id:'foret', nameFr:'Forêt de Sylvandre', nameEn:'Sylvandre Forest', elements:['nature','terre'], unlockLevel:5, loreFr:"Une forêt si ancienne que certains arbres seraient eux-mêmes d'anciens dragons endormis.", loreEn:"A forest so ancient that some of its trees are said to be sleeping dragons themselves." },
+  { id:'archipel', nameFr:'Archipel des Vents', nameEn:'Archipelago of Winds', elements:['air','lumiere'], unlockLevel:8, loreFr:"Des îlots suspendus par les courants, où la lumière du matin attire les dragons les plus rapides.", loreEn:"Islets held aloft by the currents, where the morning light draws in the swiftest dragons." },
+  { id:'cime', nameFr:'Cime des Anciens Dragons', nameEn:'Peak of the Ancient Dragons', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:12, loreFr:"Le sommet que tous les éléments se partagent. On raconte que chaque dragon légendaire y revient au moins une fois.", loreEn:"The summit shared by every element. Legend says every legendary dragon returns here at least once." },
+  { id:'voile', nameFr:'Le Voile Éternel', nameEn:'The Eternal Veil', elements:['feu','eau','terre','air','lumiere','nature'], unlockLevel:18, loreFr:"Au-delà même de la Cime, un dernier voile sépare le sanctuaire du monde des mythes. Seuls les gardiens les plus dévoués l'ont franchi.", loreEn:"Beyond even the Peak, one last veil separates the sanctuary from the realm of myths. Only the most devoted Guardians have crossed it." },
 ];
 
 const EXPEDITION_TYPES = [
-  { id:'reco', name:'Reconnaissance', seconds:180, ecaillesMin:30, ecaillesMax:50, eggChance:0.30, legendaryChance:0, team:false, tagline:'Pour une petite pause' },
-  { id:'collecte', name:'Collecte', seconds:480, ecaillesMin:60, ecaillesMax:100, eggChance:0.45, legendaryChance:0.01, team:false, tagline:"Le temps d'un goûter" },
-  { id:'explo', name:'Exploration', seconds:7200, ecaillesMin:100, ecaillesMax:160, eggChance:0.60, legendaryChance:0.04, team:false, tagline:"Idéal pour l'après-midi" },
-  { id:'majeure', name:'Expédition majeure', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, legendaryChance:0.08, team:true, tagline:'À lancer avant de partir' },
-  { id:'quete-legendaire', name:'Quête légendaire', seconds:21600, ecaillesMin:220, ecaillesMax:340, eggChance:0.85, legendaryChance:0.35, team:true, tagline:'Une nuit entière sur la piste d\'un dragon légendaire' },
-  { id:'quete-mythique', name:'Quête mythique', seconds:32400, ecaillesMin:320, ecaillesMax:480, eggChance:0.9, legendaryChance:0, mythicChance:0.16, team:true, requiresAllLegendary:true, tagline:'Réservée à ceux qui ont déjà rencontré tous les légendaires' },
-  { id:'quete-eternelle', name:'Quête éternelle', seconds:43200, ecaillesMin:400, ecaillesMax:600, eggChance:0.95, legendaryChance:0, mythicChance:0.25, team:true, requiresMythic:true, tagline:'Réservée aux gardiens qui ont déjà croisé un dragon mythique' },
+  { id:'reco', nameFr:'Reconnaissance', nameEn:'Scouting', seconds:180, ecaillesMin:30, ecaillesMax:50, eggChance:0.30, legendaryChance:0, team:false, taglineFr:'Pour une petite pause', taglineEn:'A quick little break' },
+  { id:'collecte', nameFr:'Collecte', nameEn:'Gathering', seconds:480, ecaillesMin:60, ecaillesMax:100, eggChance:0.45, legendaryChance:0.01, team:false, taglineFr:"Le temps d'un goûter", taglineEn:'About as long as a snack break' },
+  { id:'explo', nameFr:'Exploration', nameEn:'Exploration', seconds:7200, ecaillesMin:100, ecaillesMax:160, eggChance:0.60, legendaryChance:0.04, team:false, taglineFr:"Idéal pour l'après-midi", taglineEn:'Perfect for an afternoon' },
+  { id:'majeure', nameFr:'Expédition majeure', nameEn:'Major expedition', seconds:14400, ecaillesMin:150, ecaillesMax:240, eggChance:0.70, legendaryChance:0.08, team:true, taglineFr:'À lancer avant de partir', taglineEn:'Launch it before you head out' },
+  { id:'quete-legendaire', nameFr:'Quête légendaire', nameEn:'Legendary quest', seconds:21600, ecaillesMin:220, ecaillesMax:340, eggChance:0.85, legendaryChance:0.35, team:true, taglineFr:'Une nuit entière sur la piste d\'un dragon légendaire', taglineEn:'A whole night tracking a legendary dragon' },
+  { id:'quete-mythique', nameFr:'Quête mythique', nameEn:'Mythic quest', seconds:32400, ecaillesMin:320, ecaillesMax:480, eggChance:0.9, legendaryChance:0, mythicChance:0.16, team:true, requiresAllLegendary:true, taglineFr:'Réservée à ceux qui ont déjà rencontré tous les légendaires', taglineEn:'Reserved for those who have already met every legendary' },
+  { id:'quete-eternelle', nameFr:'Quête éternelle', nameEn:'Eternal quest', seconds:43200, ecaillesMin:400, ecaillesMax:600, eggChance:0.95, legendaryChance:0, mythicChance:0.25, team:true, requiresMythic:true, taglineFr:'Réservée aux gardiens qui ont déjà croisé un dragon mythique', taglineEn:'Reserved for Guardians who have already met a mythic dragon' },
 ];
 
 const DECOR = [
-  { id:'lanterne', name:'Lanterne de Papier', cost:150 },
-  { id:'bassin', name:'Bassin de Nénuphars', cost:220 },
-  { id:'cristal', name:'Cristal Lumineux', cost:300 },
-  { id:'banc', name:'Banc de Pierre', cost:180 },
-  { id:'arche', name:'Arche Fleurie', cost:260 },
-  { id:'carillon', name:'Carillon de Vent', cost:340 },
-  { id:'autel', name:'Autel Ancien', cost:420 },
-  { id:'statue-ancien', name:'Statue de Gardien', cost:480 },
-  { id:'flamme-eternelle', name:'Flamme Éternelle', cost:520 },
-  { id:'voile-solaire', name:'Voile Solaire', cost:260, seasonal:'ete' },
-  { id:'citrouille-doree', name:'Citrouille Dorée', cost:260, seasonal:'automne' },
-  { id:'guirlande-etoilee', name:'Guirlande Étoilée', cost:260, seasonal:'hiver' },
-  { id:'autel-astral', name:'Autel Astral', cost:650 },
-  { id:'flamme-primordiale', name:'Flamme Primordiale', cost:720 },
+  { id:'lanterne', nameFr:'Lanterne de Papier', nameEn:'Paper Lantern', cost:150 },
+  { id:'bassin', nameFr:'Bassin de Nénuphars', nameEn:'Lily Pond', cost:220 },
+  { id:'cristal', nameFr:'Cristal Lumineux', nameEn:'Glowing Crystal', cost:300 },
+  { id:'banc', nameFr:'Banc de Pierre', nameEn:'Stone Bench', cost:180 },
+  { id:'arche', nameFr:'Arche Fleurie', nameEn:'Flowered Arch', cost:260 },
+  { id:'carillon', nameFr:'Carillon de Vent', nameEn:'Wind Chime', cost:340 },
+  { id:'autel', nameFr:'Autel Ancien', nameEn:'Ancient Altar', cost:420 },
+  { id:'statue-ancien', nameFr:'Statue de Gardien', nameEn:'Guardian Statue', cost:480 },
+  { id:'flamme-eternelle', nameFr:'Flamme Éternelle', nameEn:'Eternal Flame', cost:520 },
+  { id:'voile-solaire', nameFr:'Voile Solaire', nameEn:'Solar Sail', cost:260, seasonal:'ete' },
+  { id:'citrouille-doree', nameFr:'Citrouille Dorée', nameEn:'Golden Pumpkin', cost:260, seasonal:'automne' },
+  { id:'guirlande-etoilee', nameFr:'Guirlande Étoilée', nameEn:'Starry Garland', cost:260, seasonal:'hiver' },
+  { id:'autel-astral', nameFr:'Autel Astral', nameEn:'Astral Altar', cost:650 },
+  { id:'flamme-primordiale', nameFr:'Flamme Primordiale', nameEn:'Primordial Flame', cost:720 },
 ];
 
 const DEFAULT_STATE = {
@@ -129,6 +135,9 @@ const DEFAULT_STATE = {
   tutorialSeen: false,
   selectedTitle: null,
   expeditionLog: [],
+  // Détection simple à la première ouverture : français par défaut sauf si l'appareil est
+  // clairement réglé sur une autre langue. Modifiable ensuite dans les réglages.
+  language: (typeof navigator !== 'undefined' && navigator.language && navigator.language.slice(0, 2).toLowerCase() === 'fr') ? 'fr' : 'en',
 };
 
 // Retourne une copie de DEFAULT_STATE avec des tableaux/objets neufs à chaque appel.
@@ -145,8 +154,105 @@ function freshDefaultState() {
 /* ---- utilitaires purs ---- */
 
 function uid(prefix) { return prefix + '_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+// Traductions du texte d'interface (boutons, titres, messages) — rempli au fil des écrans.
+// Utilisation : t('cle') ou t('cle', {nom: 'valeur'}) pour insérer une valeur dans le texte.
+const T = {
+  fr: {
+    'common.ok': 'OK',
+    'settings.title': 'Réglages',
+    'settings.guardianName': 'Nom du Gardien',
+    'settings.language': 'Langue',
+    'settings.gameMode': 'Mode de jeu',
+    'settings.modeHatching': 'Éclosion',
+    'settings.modeStrategist': 'Stratège',
+    'settings.modeHint': "Ta collection est commune aux deux modes. Stratège ajoute les équipes d'expédition et le tempérament des dragons.",
+    'settings.preferences': 'Préférences',
+    'settings.parentalLock': 'Verrouillage parental',
+    'settings.parentalLockHint': "Protège l'accès aux réglages par une question simple.",
+    'settings.reduceVibrations': 'Réduire les vibrations',
+    'settings.reduceVibrationsHint': 'Désactive le retour haptique (éclosion, déverrouillage, récompenses).',
+    'settings.sound': 'Sons',
+    'settings.soundHint': "Petites mélodies pour l'éclosion, les soins et les récompenses.",
+    'settings.gentleAnimations': 'Animations douces',
+    'settings.gentleAnimationsHint': "Réduit l'intensité des rebonds des dragons, sans les désactiver complètement.",
+    'settings.saveTitle': 'Sauvegarde',
+    'settings.saveHint': 'Exporte un fichier pour garder ta progression avant une mise à jour, ou importe-le pour la restaurer.',
+    'settings.export': 'Exporter',
+    'settings.import': 'Importer',
+    'settings.statsTitle': 'Statistiques',
+    'settings.statDragons': 'Dragons actuels',
+    'settings.statEggs': 'Œufs éclos au total',
+    'settings.statExpeditions': 'Expéditions terminées',
+    'settings.statBreeding': 'Élevages réussis',
+    'settings.statStreak': 'Meilleure série de connexion',
+    'settings.statStreakValue': '{n} jour{s}',
+    'settings.statFavElement': 'Élément favori',
+    'settings.aboutTitle': 'À propos',
+    'settings.aboutText': 'Lumidra ne contient aucune publicité, aucune messagerie libre entre joueurs, et se joue sans connexion (hors polices). Version HTML autonome.',
+    'settings.resetButton': 'Réinitialiser ma progression',
+  },
+  en: {
+    'common.ok': 'OK',
+    'settings.title': 'Settings',
+    'settings.guardianName': 'Guardian name',
+    'settings.language': 'Language',
+    'settings.gameMode': 'Game mode',
+    'settings.modeHatching': 'Hatching',
+    'settings.modeStrategist': 'Strategist',
+    'settings.modeHint': 'Your collection is shared across both modes. Strategist adds expedition teams and dragon temperaments.',
+    'settings.preferences': 'Preferences',
+    'settings.parentalLock': 'Parental lock',
+    'settings.parentalLockHint': 'Protects access to settings with a simple question.',
+    'settings.reduceVibrations': 'Reduce vibrations',
+    'settings.reduceVibrationsHint': 'Turns off haptic feedback (hatching, unlocks, rewards).',
+    'settings.sound': 'Sound',
+    'settings.soundHint': 'Small tunes for hatching, care, and rewards.',
+    'settings.gentleAnimations': 'Gentle animations',
+    'settings.gentleAnimationsHint': "Reduces the dragons' bounce intensity, without disabling it completely.",
+    'settings.saveTitle': 'Save data',
+    'settings.saveHint': 'Export a file to keep your progress before an update, or import it to restore it.',
+    'settings.export': 'Export',
+    'settings.import': 'Import',
+    'settings.statsTitle': 'Statistics',
+    'settings.statDragons': 'Current dragons',
+    'settings.statEggs': 'Total eggs hatched',
+    'settings.statExpeditions': 'Expeditions completed',
+    'settings.statBreeding': 'Successful breedings',
+    'settings.statStreak': 'Best login streak',
+    'settings.statStreakValue': '{n} day{s}',
+    'settings.statFavElement': 'Favourite element',
+    'settings.aboutTitle': 'About',
+    'settings.aboutText': 'Lumidra has no ads, no free messaging between players, and works with no connection (fonts aside). Standalone HTML version.',
+    'settings.resetButton': 'Reset my progress',
+  },
+};
+function t(key, vars) {
+  const dict = T[state.language] || T.fr;
+  let str = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : (T.fr[key] !== undefined ? T.fr[key] : key);
+  if (vars) Object.keys(vars).forEach((k) => { str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), vars[k]); });
+  return str;
+}
+
 const SPECIES_BY_ID = new Map(SPECIES.map(s => [s.id, s]));
 function speciesById(id) { return SPECIES_BY_ID.get(id); }
+
+// Bascule TOUTES les données (espèces, zones, expéditions, décor, succès, titres) sur la
+// langue demandée, en dérivant .name/.lore/.desc/.tagline depuis les paires Fr/En stockées.
+// Zéro changement nécessaire ailleurs dans le code : tout continue de lire .name/.lore
+// comme avant, ce sont juste les valeurs qui changent.
+function applyLanguage(lang) {
+  const en = lang === 'en';
+  RARITY_LABEL = en ? RARITY_LABEL_EN : RARITY_LABEL_FR;
+  STAGE_LABEL = en ? STAGE_LABEL_EN : STAGE_LABEL_FR;
+  TEMPERAMENTS = en ? TEMPERAMENTS_EN : TEMPERAMENTS_FR;
+  Object.values(ELEMENTS).forEach(e => { e.name = en ? e.nameEn : e.nameFr; });
+  SPECIES.forEach(s => { s.name = en ? s.nameEn : s.nameFr; s.lore = en ? s.loreEn : s.loreFr; });
+  ZONES.forEach(z => { z.name = en ? z.nameEn : z.nameFr; z.lore = en ? z.loreEn : z.loreFr; });
+  EXPEDITION_TYPES.forEach(t => { t.name = en ? t.nameEn : t.nameFr; t.tagline = en ? t.taglineEn : t.taglineFr; });
+  DECOR.forEach(d => { d.name = en ? d.nameEn : d.nameFr; });
+  ACHIEVEMENTS.forEach(a => { a.name = en ? a.nameEn : a.nameFr; a.desc = en ? a.descEn : a.descFr; });
+  TITLES.forEach(t => { t.name = en ? t.nameEn : t.nameFr; });
+}
 function dragonDisplayName(dragon, species) { return (dragon.customName && dragon.customName.trim()) || species.name; }
 function computeStage(careCount) { return careCount >= 12 ? 'adulte' : careCount >= 5 ? 'juvenile' : 'bebe'; }
 function computeLevel(xp) { return Math.floor(xp / 60) + 1; }
@@ -663,49 +769,49 @@ function playAchievementSound() {
    ========================================================================= */
 
 const QUEST_POOL = [
-  { type: 'soin', desc: 'Soigne 3 dragons', target: 3, reward: 25 },
-  { type: 'expedition', desc: 'Lance 1 expédition', target: 1, reward: 20 },
-  { type: 'eclosion', desc: 'Fais éclore 1 œuf', target: 1, reward: 30 },
-  { type: 'collecte', desc: 'Gagne 60 écailles en expédition', target: 60, reward: 20 },
+  { type: 'soin', descFr: 'Soigne 3 dragons', descEn: 'Care for 3 dragons', target: 3, reward: 25 },
+  { type: 'expedition', descFr: 'Lance 1 expédition', descEn: 'Launch 1 expedition', target: 1, reward: 20 },
+  { type: 'eclosion', descFr: 'Fais éclore 1 œuf', descEn: 'Hatch 1 egg', target: 1, reward: 30 },
+  { type: 'collecte', descFr: 'Gagne 60 écailles en expédition', descEn: 'Earn 60 scales from expeditions', target: 60, reward: 20 },
 ];
 
 const WEEKLY_POOL = [
-  { type: 'expedition', desc: 'Termine 8 expéditions cette semaine', target: 8, reward: 100 },
-  { type: 'soin', desc: 'Soigne 15 dragons cette semaine', target: 15, reward: 90 },
-  { type: 'eclosion', desc: 'Fais éclore 5 œufs cette semaine', target: 5, reward: 110 },
-  { type: 'collecte', desc: 'Gagne 400 écailles en expédition cette semaine', target: 400, reward: 80 },
+  { type: 'expedition', descFr: 'Termine 8 expéditions cette semaine', descEn: 'Complete 8 expeditions this week', target: 8, reward: 100 },
+  { type: 'soin', descFr: 'Soigne 15 dragons cette semaine', descEn: 'Care for 15 dragons this week', target: 15, reward: 90 },
+  { type: 'eclosion', descFr: 'Fais éclore 5 œufs cette semaine', descEn: 'Hatch 5 eggs this week', target: 5, reward: 110 },
+  { type: 'collecte', descFr: 'Gagne 400 écailles en expédition cette semaine', descEn: 'Earn 400 scales from expeditions this week', target: 400, reward: 80 },
 ];
 
 const ACHIEVEMENTS = [
-  { id: 'premier-envol', name: 'Premier Envol', desc: 'Fais éclore ton premier dragon.', reward: 20, target: 1, progress: (s) => Math.min(1, s.dragons.length) },
-  { id: 'petite-tribu', name: 'Petite Tribu', desc: 'Élève 5 dragons.', reward: 40, target: 5, progress: (s) => Math.min(5, s.dragons.length) },
-  { id: 'grande-tribu', name: 'Grande Tribu', desc: 'Élève 10 dragons.', reward: 80, target: 10, progress: (s) => Math.min(10, s.dragons.length) },
-  { id: 'collectionneur', name: 'Collectionneur', desc: 'Découvre 10 espèces.', reward: 60, target: 10, progress: (s) => Math.min(10, s.discovered.length) },
-  { id: 'maitre-gardien', name: 'Maître Gardien', desc: 'Découvre toutes les espèces.', reward: 200, target: SPECIES.length, progress: (s) => Math.min(SPECIES.length, s.discovered.length) },
-  { id: 'explorateur', name: 'Explorateur', desc: 'Termine 5 expéditions.', reward: 50, target: 5, progress: (s) => Math.min(5, s.statsExpeditionsCompleted || 0) },
-  { id: 'grand-explorateur', name: 'Grand Explorateur', desc: 'Termine 20 expéditions.', reward: 120, target: 20, progress: (s) => Math.min(20, s.statsExpeditionsCompleted || 0) },
-  { id: 'legende-vivante', name: 'Légende Vivante', desc: 'Élève un dragon légendaire.', reward: 150, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 4) ? 1 : 0) },
-  { id: 'decorateur', name: 'Décorateur', desc: 'Possède 3 décorations.', reward: 30, target: 3, progress: (s) => Math.min(3, s.decorOwned.length) },
-  { id: 'genetique', name: 'Éleveur', desc: 'Réussis 3 élevages au Laboratoire.', reward: 60, target: 3, progress: (s) => Math.min(3, s.statsBredCount || 0) },
-  { id: 'grand-eleveur', name: 'Grand Éleveur', desc: 'Réussis 10 élevages au Laboratoire.', reward: 150, target: 10, progress: (s) => Math.min(10, s.statsBredCount || 0) },
-  { id: 'legendes-completes', name: 'Cercle des Légendes', desc: 'Découvre les 6 dragons légendaires.', reward: 250, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 4).length) },
-  { id: 'au-dela-des-legendes', name: 'Au-delà des Légendes', desc: 'Élève un dragon mythique.', reward: 300, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 5) ? 1 : 0) },
-  { id: 'immense-tribu', name: 'Immense Tribu', desc: 'Élève 20 dragons.', reward: 150, target: 20, progress: (s) => Math.min(20, s.dragons.length) },
-  { id: 'marathon-explorateur', name: 'Explorateur Infatigable', desc: 'Termine 50 expéditions.', reward: 200, target: 50, progress: (s) => Math.min(50, s.statsExpeditionsCompleted || 0) },
-  { id: 'pantheon-mythique', name: 'Panthéon Mythique', desc: 'Élève les 6 dragons mythiques.', reward: 500, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 5).length) },
+  { id: 'premier-envol', nameFr: 'Premier Envol', nameEn: 'First Flight', descFr: 'Fais éclore ton premier dragon.', descEn: 'Hatch your first dragon.', reward: 20, target: 1, progress: (s) => Math.min(1, s.dragons.length) },
+  { id: 'petite-tribu', nameFr: 'Petite Tribu', nameEn: 'Small Tribe', descFr: 'Élève 5 dragons.', descEn: 'Raise 5 dragons.', reward: 40, target: 5, progress: (s) => Math.min(5, s.dragons.length) },
+  { id: 'grande-tribu', nameFr: 'Grande Tribu', nameEn: 'Large Tribe', descFr: 'Élève 10 dragons.', descEn: 'Raise 10 dragons.', reward: 80, target: 10, progress: (s) => Math.min(10, s.dragons.length) },
+  { id: 'collectionneur', nameFr: 'Collectionneur', nameEn: 'Collector', descFr: 'Découvre 10 espèces.', descEn: 'Discover 10 species.', reward: 60, target: 10, progress: (s) => Math.min(10, s.discovered.length) },
+  { id: 'maitre-gardien', nameFr: 'Maître Gardien', nameEn: 'Master Guardian', descFr: 'Découvre toutes les espèces.', descEn: 'Discover every species.', reward: 200, target: SPECIES.length, progress: (s) => Math.min(SPECIES.length, s.discovered.length) },
+  { id: 'explorateur', nameFr: 'Explorateur', nameEn: 'Explorer', descFr: 'Termine 5 expéditions.', descEn: 'Complete 5 expeditions.', reward: 50, target: 5, progress: (s) => Math.min(5, s.statsExpeditionsCompleted || 0) },
+  { id: 'grand-explorateur', nameFr: 'Grand Explorateur', nameEn: 'Great Explorer', descFr: 'Termine 20 expéditions.', descEn: 'Complete 20 expeditions.', reward: 120, target: 20, progress: (s) => Math.min(20, s.statsExpeditionsCompleted || 0) },
+  { id: 'legende-vivante', nameFr: 'Légende Vivante', nameEn: 'Living Legend', descFr: 'Élève un dragon légendaire.', descEn: 'Raise a legendary dragon.', reward: 150, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 4) ? 1 : 0) },
+  { id: 'decorateur', nameFr: 'Décorateur', nameEn: 'Decorator', descFr: 'Possède 3 décorations.', descEn: 'Own 3 decorations.', reward: 30, target: 3, progress: (s) => Math.min(3, s.decorOwned.length) },
+  { id: 'genetique', nameFr: 'Éleveur', nameEn: 'Breeder', descFr: 'Réussis 3 élevages au Laboratoire.', descEn: 'Succeed at 3 breedings in the Laboratory.', reward: 60, target: 3, progress: (s) => Math.min(3, s.statsBredCount || 0) },
+  { id: 'grand-eleveur', nameFr: 'Grand Éleveur', nameEn: 'Great Breeder', descFr: 'Réussis 10 élevages au Laboratoire.', descEn: 'Succeed at 10 breedings in the Laboratory.', reward: 150, target: 10, progress: (s) => Math.min(10, s.statsBredCount || 0) },
+  { id: 'legendes-completes', nameFr: 'Cercle des Légendes', nameEn: 'Circle of Legends', descFr: 'Découvre les 6 dragons légendaires.', descEn: 'Discover all 6 legendary dragons.', reward: 250, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 4).length) },
+  { id: 'au-dela-des-legendes', nameFr: 'Au-delà des Légendes', nameEn: 'Beyond Legends', descFr: 'Élève un dragon mythique.', descEn: 'Raise a mythic dragon.', reward: 300, target: 1, progress: (s) => (s.dragons.some(d => speciesById(d.speciesId).variant === 5) ? 1 : 0) },
+  { id: 'immense-tribu', nameFr: 'Immense Tribu', nameEn: 'Immense Tribe', descFr: 'Élève 20 dragons.', descEn: 'Raise 20 dragons.', reward: 150, target: 20, progress: (s) => Math.min(20, s.dragons.length) },
+  { id: 'marathon-explorateur', nameFr: 'Explorateur Infatigable', nameEn: 'Tireless Explorer', descFr: 'Termine 50 expéditions.', descEn: 'Complete 50 expeditions.', reward: 200, target: 50, progress: (s) => Math.min(50, s.statsExpeditionsCompleted || 0) },
+  { id: 'pantheon-mythique', nameFr: 'Panthéon Mythique', nameEn: 'Mythic Pantheon', descFr: 'Élève les 6 dragons mythiques.', descEn: 'Raise all 6 mythic dragons.', reward: 500, target: 6, progress: (s) => Math.min(6, s.discovered.filter(id => speciesById(id).variant === 5).length) },
 ];
 
 // Titres cosmétiques débloqués par certains succès, affichables sous le nom du Gardien.
 const TITLES = [
-  { id: 'petite-tribu', name: 'Éleveur' },
-  { id: 'grand-explorateur', name: 'Grand Explorateur' },
-  { id: 'collectionneur', name: 'Collectionneur' },
-  { id: 'legende-vivante', name: 'Ami des Légendes' },
-  { id: 'maitre-gardien', name: 'Maître Gardien Suprême' },
-  { id: 'legendes-completes', name: 'Cercle des Légendes' },
-  { id: 'au-dela-des-legendes', name: 'Élu des Mythes' },
-  { id: 'grand-eleveur', name: 'Maître Éleveur' },
-  { id: 'pantheon-mythique', name: 'Gardien du Voile Éternel' },
+  { id: 'petite-tribu', nameFr: 'Éleveur', nameEn: 'Breeder' },
+  { id: 'grand-explorateur', nameFr: 'Grand Explorateur', nameEn: 'Great Explorer' },
+  { id: 'collectionneur', nameFr: 'Collectionneur', nameEn: 'Collector' },
+  { id: 'legende-vivante', nameFr: 'Ami des Légendes', nameEn: 'Friend of Legends' },
+  { id: 'maitre-gardien', nameFr: 'Maître Gardien Suprême', nameEn: 'Supreme Master Guardian' },
+  { id: 'legendes-completes', nameFr: 'Cercle des Légendes', nameEn: 'Circle of Legends' },
+  { id: 'au-dela-des-legendes', nameFr: 'Élu des Mythes', nameEn: 'Chosen of Myths' },
+  { id: 'grand-eleveur', nameFr: 'Maître Éleveur', nameEn: 'Master Breeder' },
+  { id: 'pantheon-mythique', nameFr: 'Gardien du Voile Éternel', nameEn: 'Guardian of the Eternal Veil' },
 ];
 
 function unlockedTitles() {
@@ -728,7 +834,7 @@ function ensureDailyQuests() {
     const j = randInt(0, i);
     const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
   }
-  const picked = pool.slice(0, 3).map(q => ({ id: q.type, type: q.type, desc: q.desc, target: q.target, reward: q.reward, progress: 0, claimed: false }));
+  const picked = pool.slice(0, 3).map(q => ({ id: q.type, type: q.type, desc: (state.language === 'en' ? q.descEn : q.descFr), target: q.target, reward: q.reward, progress: 0, claimed: false }));
   state.dailyQuests = { date: todayDateStr(), quests: picked };
   saveStateDebounced();
 }
@@ -737,7 +843,7 @@ function ensureWeeklyChallenge() {
   const wk = weekKeyStr();
   if (state.weeklyChallenge && state.weeklyChallenge.weekKey === wk) return;
   const pick = WEEKLY_POOL[randInt(0, WEEKLY_POOL.length - 1)];
-  state.weeklyChallenge = { weekKey: wk, type: pick.type, desc: pick.desc, target: pick.target, reward: pick.reward, progress: 0, claimed: false };
+  state.weeklyChallenge = { weekKey: wk, type: pick.type, desc: (state.language === 'en' ? pick.descEn : pick.descFr), target: pick.target, reward: pick.reward, progress: 0, claimed: false };
   saveStateDebounced();
 }
 

@@ -29,6 +29,7 @@ function dispatchAction(action, dataset, evt, el) {
   const typeId = dataset.typeId;
   const decorId = dataset.decorId;
   const mode = dataset.mode;
+  const lang = dataset.lang;
   const elementKey = dataset.element;
   const screenName = dataset.screen;
   const expId = dataset.expId;
@@ -298,6 +299,12 @@ function dispatchAction(action, dataset, evt, el) {
       renderTopBar();
       renderScreenReglages();
       break;
+    case 'change-language':
+      state.language = lang;
+      applyLanguage(lang);
+      saveStateDebounced();
+      renderAll();
+      break;
     case 'save-name': {
       const input = document.getElementById('reglages-name-input');
       const val = input ? input.value.trim() : '';
@@ -477,6 +484,7 @@ function initEvents() {
 
 function bootLumidra() {
   loadState();
+  applyLanguage(state.language);
   state.expeditions.forEach(exp => { if (exp.endAt > Date.now()) scheduleExpeditionNotification(exp); });
   document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
   initEvents();

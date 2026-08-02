@@ -712,69 +712,77 @@ function renderScreenReglages() {
   ui.reglagesName = state.gardienName;
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
-    <h3 class="font-display font-bold text-sm mb-3" style="color:var(--ink)">Réglages</h3>
+    <h3 class="font-display font-bold text-sm mb-3" style="color:var(--ink)">${t('settings.title')}</h3>
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <label class="font-body font-bold fs-11 block mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">Nom du Gardien</label>
+      <label class="font-body font-bold fs-11 block mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">${t('settings.guardianName')}</label>
       <div class="flex gap-2">
-        <input id="reglages-name-input" data-bind="reglages-name" value="${escapeHtml(state.gardienName)}" maxlength="16" aria-label="Nom du Gardien" autocomplete="given-name" class="flex-1 font-body font-bold rounded-xl px-3 py-2" style="background:var(--sky);color:var(--ink)"/>
-        <button data-action="save-name" class="font-display font-bold text-xs px-3 rounded-xl" style="background:var(--gold);color:var(--ink)">OK</button>
+        <input id="reglages-name-input" data-bind="reglages-name" value="${escapeHtml(state.gardienName)}" maxlength="16" aria-label="${t('settings.guardianName')}" autocomplete="given-name" class="flex-1 font-body font-bold rounded-xl px-3 py-2" style="background:var(--sky);color:var(--ink)"/>
+        <button data-action="save-name" class="font-display font-bold text-xs px-3 rounded-xl" style="background:var(--gold);color:var(--ink)">${t('common.ok')}</button>
       </div>
     </div>
 
     ${titlePickerCardHtml()}
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <div class="font-body font-bold fs-11 mb-2" style="color:var(--ink-soft)">Mode de jeu</div>
+      <div class="font-body font-bold fs-11 mb-2" style="color:var(--ink-soft)">${t('settings.language')}</div>
+      <div class="flex gap-2">
+        <button data-action="change-language" data-lang="fr" aria-pressed="${state.language === 'fr'}" class="flex-1 rounded-xl py-2\\.5 font-display font-bold text-sm" style="padding:10px 0;background:${state.language === 'fr' ? 'var(--gold)' : 'var(--sky)'};color:var(--ink)">Français</button>
+        <button data-action="change-language" data-lang="en" aria-pressed="${state.language === 'en'}" class="flex-1 rounded-xl py-2\\.5 font-display font-bold text-sm" style="padding:10px 0;background:${state.language === 'en' ? 'var(--gold)' : 'var(--sky)'};color:var(--ink)">English</button>
+      </div>
+    </div>
+
+    <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+      <div class="font-body font-bold fs-11 mb-2" style="color:var(--ink-soft)">${t('settings.gameMode')}</div>
       <div class="flex gap-2">
         <button data-action="change-mode" data-mode="eclosion" aria-pressed="${state.mode === 'eclosion'}" class="flex-1 rounded-xl py-2\\.5 flex flex-col items-center" style="padding:10px 0;background:${state.mode === 'eclosion' ? 'var(--gold)' : 'var(--sky)'}">
-          <span class="font-display font-bold text-sm" style="color:var(--ink)">Éclosion</span>
+          <span class="font-display font-bold text-sm" style="color:var(--ink)">${t('settings.modeHatching')}</span>
           <span class="font-display font-bold fs-10" style="color:${state.mode === 'eclosion' ? 'var(--ink)' : 'var(--ink-soft)'}">10+</span>
         </button>
         <button data-action="change-mode" data-mode="stratege" aria-pressed="${state.mode === 'stratege'}" class="flex-1 rounded-xl py-2\\.5 flex flex-col items-center" style="padding:10px 0;background:${state.mode === 'stratege' ? 'var(--gold)' : 'var(--sky)'}">
-          <span class="font-display font-bold text-sm" style="color:var(--ink)">Stratège</span>
+          <span class="font-display font-bold text-sm" style="color:var(--ink)">${t('settings.modeStrategist')}</span>
           <span class="font-display font-bold fs-10" style="color:${state.mode === 'stratege' ? 'var(--ink)' : 'var(--ink-soft)'}">14+</span>
         </button>
       </div>
-      <p class="font-body fs-11 mt-2 leading-relaxed" style="color:var(--ink-soft)">Ta collection est commune aux deux modes. Stratège ajoute les équipes d'expédition et le tempérament des dragons.</p>
+      <p class="font-body fs-11 mt-2 leading-relaxed" style="color:var(--ink-soft)">${t('settings.modeHint')}</p>
     </div>
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">Préférences</div>
-      ${preferenceRowHtml('toggle-parental-lock', state.parentalLock, 'Verrouillage parental', "Protège l'accès aux réglages par une question simple.")}
-      ${preferenceRowHtml('toggle-reduce-vibrations', state.reduceVibrations, 'Réduire les vibrations', 'Désactive le retour haptique (éclosion, déverrouillage, récompenses).')}
-      ${preferenceRowHtml('toggle-sound', state.soundEnabled, 'Sons', "Petites mélodies pour l'éclosion, les soins et les récompenses.")}
-      ${preferenceRowHtml('toggle-gentle-animations', state.gentleAnimations, 'Animations douces', "Réduit l'intensité des rebonds des dragons, sans les désactiver complètement.", true)}
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">${t('settings.preferences')}</div>
+      ${preferenceRowHtml('toggle-parental-lock', state.parentalLock, t('settings.parentalLock'), t('settings.parentalLockHint'))}
+      ${preferenceRowHtml('toggle-reduce-vibrations', state.reduceVibrations, t('settings.reduceVibrations'), t('settings.reduceVibrationsHint'))}
+      ${preferenceRowHtml('toggle-sound', state.soundEnabled, t('settings.sound'), t('settings.soundHint'))}
+      ${preferenceRowHtml('toggle-gentle-animations', state.gentleAnimations, t('settings.gentleAnimations'), t('settings.gentleAnimationsHint'), true)}
     </div>
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">Sauvegarde</div>
-      <p class="font-body fs-11 leading-relaxed mb-3" style="color:var(--ink-soft)">Exporte un fichier pour garder ta progression avant une mise à jour, ou importe-le pour la restaurer.</p>
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">${t('settings.saveTitle')}</div>
+      <p class="font-body fs-11 leading-relaxed mb-3" style="color:var(--ink-soft)">${t('settings.saveHint')}</p>
       <div class="flex gap-2">
-        <button data-action="export-save" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('download', { size: 14 })} Exporter</button>
-        <button data-action="import-save-trigger" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('upload', { size: 14 })} Importer</button>
+        <button data-action="export-save" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('download', { size: 14 })} ${t('settings.export')}</button>
+        <button data-action="import-save-trigger" class="flex-1 flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">${icon('upload', { size: 14 })} ${t('settings.import')}</button>
       </div>
       <input type="file" id="import-save-input" accept="application/json,.json" style="display:none" aria-hidden="true"/>
     </div>
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <div class="font-body font-bold fs-13 mb-2" style="color:var(--ink)">Statistiques</div>
-      ${statRowHtml('Dragons actuels', state.dragons.length)}
-      ${statRowHtml('Œufs éclos au total', state.statsEggsHatched || 0)}
-      ${statRowHtml('Expéditions terminées', state.statsExpeditionsCompleted || 0)}
-      ${statRowHtml('Élevages réussis', state.statsBredCount || 0)}
-      ${statRowHtml('Meilleure série de connexion', `${state.longestStreak || 0} jour${(state.longestStreak || 0) > 1 ? 's' : ''}`)}
-      ${statRowHtml('Élément favori', favoriteElementLabel(), true)}
+      <div class="font-body font-bold fs-13 mb-2" style="color:var(--ink)">${t('settings.statsTitle')}</div>
+      ${statRowHtml(t('settings.statDragons'), state.dragons.length)}
+      ${statRowHtml(t('settings.statEggs'), state.statsEggsHatched || 0)}
+      ${statRowHtml(t('settings.statExpeditions'), state.statsExpeditionsCompleted || 0)}
+      ${statRowHtml(t('settings.statBreeding'), state.statsBredCount || 0)}
+      ${statRowHtml(t('settings.statStreak'), t('settings.statStreakValue', { n: state.longestStreak || 0, s: (state.longestStreak || 0) > 1 ? (state.language === 'en' ? 's' : 's') : '' }))}
+      ${statRowHtml(t('settings.statFavElement'), favoriteElementLabel(), true)}
     </div>
 
     ${expeditionLogCardHtml()}
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
-      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">À propos</div>
-      <p class="font-body fs-11 leading-relaxed" style="color:var(--ink-soft)">Lumidra ne contient aucune publicité, aucune messagerie libre entre joueurs, et se joue sans connexion (hors polices). Version HTML autonome.</p>
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">${t('settings.aboutTitle')}</div>
+      <p class="font-body fs-11 leading-relaxed" style="color:var(--ink-soft)">${t('settings.aboutText')}</p>
     </div>
 
-    <button data-action="request-reset" class="w-full flex items-center justify-center gap-2 font-display font-bold text-xs py-3 rounded-2xl" style="background:#FBEAE4;color:#B5502C">${icon('rotate-ccw', { size: 14 })} Réinitialiser ma progression</button>
+    <button data-action="request-reset" class="w-full flex items-center justify-center gap-2 font-display font-bold text-xs py-3 rounded-2xl" style="background:#FBEAE4;color:#B5502C">${icon('rotate-ccw', { size: 14 })} ${t('settings.resetButton')}</button>
   </div>`;
 }
 
