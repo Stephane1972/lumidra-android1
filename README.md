@@ -26,27 +26,32 @@ de publier une mise à jour compatible avec les installations existantes.
    ```
 3. Va dans l'onglet **Actions** de ton dépôt GitHub — la construction démarre
    automatiquement (~3-5 minutes).
-4. Une fois terminé (coche verte), clique sur le run → tout en bas, section
-   **Artifacts** → télécharge `lumidra-apk`. C'est un `.zip` qui contient le
-   `.apk` prêt à installer.
+4. Une fois terminé (coche verte), va dans l'onglet **Releases** du dépôt :
+   une nouvelle Release versionnée (`build-N`) y est publiée automatiquement,
+   avec le `.apk` (installation directe) et le `.aab` (format Play Store) en
+   pièces jointes. Le lien `releases/latest` pointe toujours vers la plus
+   récente.
 
 ## Pour chaque mise à jour du jeu
 
-Remplace `www/index.html` par la nouvelle version, puis :
+Modifie les fichiers dans `www/`, puis :
 ```
 git add .
 git commit -m "mise à jour"
 git push
 ```
-GitHub reconstruit l'APK automatiquement — tu n'as plus qu'à retélécharger
-l'artefact `lumidra-apk` dans l'onglet Actions.
+GitHub reconstruit l'APK/AAB automatiquement et publie une nouvelle Release —
+tu n'as plus qu'à retélécharger depuis l'onglet Releases.
 
 ## Installer sur le téléphone
 
 Transfère le `.apk` (Drive, email, câble...), ouvre-le, autorise "sources
-inconnues" si demandé, installe. C'est un APK **debug** (signature de test) :
-suffisant pour une installation directe, mais pas pour publier sur le Play
-Store — ça, c'est une étape à part si tu la souhaites un jour.
+inconnues" si demandé, installe. Si les secrets de signature release sont
+configurés (voir section Signature ci-dessus), l'APK est signé release et
+les mises à jour successives s'installent par-dessus l'existante sans
+désinstallation. Sans ces secrets, la construction retombe sur une
+signature debug, suffisante pour une installation directe mais pas pour
+publier sur le Play Store.
 
 ## Ce que ce projet ajoute par rapport à la version web/PWA
 

@@ -357,6 +357,17 @@ const T = {
     'toast.zoneLevelRequired': 'Niveau {n} requis pour débloquer cette zone',
     'toast.corruptedSave': 'Ta sauvegarde précédente était illisible — on repart à zéro, désolé 💛',
     'toast.streakBonus': '🔥 Série de {n} jour{s} ! +{bonus} écailles',
+    'toast.levelUp': '🎉 Niveau {n} atteint !',
+    'toast.weeklyChallengeDone': 'Défi hebdomadaire réussi ! +{n} écailles',
+    'toast.questReward': '+{n} écailles !',
+    'toast.achievementUnlocked': 'Succès débloqué : {name} (+{n} écailles)',
+    'toast.exportChooseDestination': 'Choisis où enregistrer ta sauvegarde',
+    'toast.exportFailed': "Impossible d'exporter la sauvegarde",
+    'toast.exportSuccess': 'Sauvegarde exportée !',
+    'toast.importInvalid': 'Fichier de sauvegarde invalide',
+    'toast.importUnreadable': 'Fichier de sauvegarde illisible',
+    'toast.importReadError': 'Impossible de lire le fichier',
+    'toast.importSuccess': 'Sauvegarde importée !',
     'crash.title': 'Oups, un souci est survenu',
     'crash.message': "Ta sauvegarde est en sécurité. Recharge simplement l'application pour continuer.",
     'crash.reload': 'Recharger',
@@ -561,6 +572,17 @@ const T = {
     'toast.zoneLevelRequired': 'Level {n} required to unlock this zone',
     'toast.corruptedSave': 'Your previous save could not be read — starting fresh, sorry 💛',
     'toast.streakBonus': '🔥 {n}-day streak! +{bonus} scales',
+    'toast.levelUp': '🎉 Level {n} reached!',
+    'toast.weeklyChallengeDone': 'Weekly challenge completed! +{n} scales',
+    'toast.questReward': '+{n} scales!',
+    'toast.achievementUnlocked': 'Achievement unlocked: {name} (+{n} scales)',
+    'toast.exportChooseDestination': 'Choose where to save your save file',
+    'toast.exportFailed': 'Unable to export the save',
+    'toast.exportSuccess': 'Save exported!',
+    'toast.importInvalid': 'Invalid save file',
+    'toast.importUnreadable': 'Unreadable save file',
+    'toast.importReadError': 'Unable to read the file',
+    'toast.importSuccess': 'Save imported!',
     'crash.title': 'Oops, something went wrong',
     'crash.message': 'Your save is safe. Just reload the app to continue.',
     'crash.reload': 'Reload',
@@ -606,7 +628,7 @@ function addXp(amount) {
   const after = computeLevel(state.xp);
   if (after > before) {
     setTimeout(() => {
-      showToast(`🎉 Niveau ${after} atteint !`);
+      showToast(t('toast.levelUp', { n: after }));
       playAchievementSound();
       haptic([30, 50, 30, 50, 80]);
     }, 350);
@@ -1193,7 +1215,7 @@ function claimWeeklyChallenge() {
   w.claimed = true;
   state.ecailles += w.reward;
   saveStateDebounced();
-  showToast(`Défi hebdomadaire réussi ! +${w.reward} écailles`);
+  showToast(t('toast.weeklyChallengeDone', { n: w.reward }));
   haptic([30, 40, 60]);
   playAchievementSound();
   renderTopBar();
@@ -1241,7 +1263,7 @@ function claimDailyQuest(questId) {
   q.claimed = true;
   state.ecailles += q.reward;
   saveStateDebounced();
-  showToast(`+${q.reward} écailles !`);
+  showToast(t('toast.questReward', { n: q.reward }));
   haptic(30);
   playCoinSound();
   renderTopBar();
@@ -1255,7 +1277,7 @@ function claimAchievement(id) {
   state.achievementsClaimed.push(id);
   state.ecailles += ach.reward;
   saveStateDebounced();
-  showToast(`Succès débloqué : ${ach.name} (+${ach.reward} écailles)`);
+  showToast(t('toast.achievementUnlocked', { name: ach.name, n: ach.reward }));
   haptic([30, 40, 60]);
   playAchievementSound();
   renderTopBar();
@@ -1357,9 +1379,9 @@ async function exportSave() {
         url: written.uri,
         dialogTitle: 'Enregistrer ou partager ta sauvegarde',
       });
-      showToast('Choisis où enregistrer ta sauvegarde');
+      showToast(t('toast.exportChooseDestination'));
     } catch (e) {
-      showToast("Impossible d'exporter la sauvegarde");
+      showToast(t('toast.exportFailed'));
     }
     return;
   }
@@ -1375,9 +1397,9 @@ async function exportSave() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    showToast('Sauvegarde exportée !');
+    showToast(t('toast.exportSuccess'));
   } catch (e) {
-    showToast("Impossible d'exporter la sauvegarde");
+    showToast(t('toast.exportFailed'));
   }
 }
 
@@ -1401,17 +1423,17 @@ function handleImportedFile(file) {
       // Le fichier peut être soit une enveloppe { app, formatVersion, state }, soit un état brut.
       const candidate = (parsed && typeof parsed === 'object' && parsed.state) ? parsed.state : parsed;
       if (!looksLikeValidState(candidate)) {
-        showToast('Fichier de sauvegarde invalide');
+        showToast(t('toast.importInvalid'));
         return;
       }
       ui.pendingImport = candidate;
       ui.confirmImportOpen = true;
       renderModals();
     } catch (e) {
-      showToast('Fichier de sauvegarde illisible');
+      showToast(t('toast.importUnreadable'));
     }
   };
-  reader.onerror = () => showToast('Impossible de lire le fichier');
+  reader.onerror = () => showToast(t('toast.importReadError'));
   reader.readAsText(file);
 }
 
@@ -1427,7 +1449,7 @@ function applyPendingImport() {
   ui.screen = 'sanctuaire';
   ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
   renderAll();
-  showToast('Sauvegarde importée !');
+  showToast(t('toast.importSuccess'));
 }
 
 /* ---- petites briques HTML réutilisées ---- */
