@@ -9,27 +9,27 @@ function renderOnboarding() {
   <div class="absolute inset-0 flex flex-col items-center justify-center px-6 text-center safe-top safe-bottom" style="background:linear-gradient(180deg,#FFF6E0,var(--sky) 60%)">
     <div class="anim-pulse mb-2">${eggSVG({ element: 'lumiere', size: 84, cracks: 0 })}</div>
     <h1 class="font-display font-extrabold text-3xl" style="color:var(--ink)">Lumidra</h1>
-    <p class="font-body font-bold text-sm mt-1 mb-6" style="color:var(--ink-soft)">Fais éclore ta légende.</p>
+    <p class="font-body font-bold text-sm mt-1 mb-6" style="color:var(--ink-soft)">${t('onboarding.tagline')}</p>
 
-    <input id="onboarding-name-input" data-bind="onboarding-name" value="${escapeHtml(d.name)}" placeholder="Ton prénom de Gardien" maxlength="16"
-      aria-label="Ton prénom de Gardien" autocomplete="given-name"
+    <input id="onboarding-name-input" data-bind="onboarding-name" value="${escapeHtml(d.name)}" placeholder="${t('onboarding.namePlaceholder')}" maxlength="16"
+      aria-label="${t('onboarding.namePlaceholder')}" autocomplete="given-name"
       class="w-full font-body font-bold rounded-2xl px-4 py-3 text-center mb-4" style="background:var(--parchment);color:var(--ink)"/>
 
     <div class="w-full flex gap-3 mb-6">
       <button data-action="select-mode" data-mode="eclosion" aria-pressed="${d.mode === 'eclosion'}" class="flex-1 rounded-2xl p-3\\.5 flex flex-col items-center" style="padding:14px;background:${d.mode === 'eclosion' ? 'var(--gold)' : 'var(--parchment)'};outline:${d.mode === 'eclosion' ? '2px solid var(--gold-deep)' : 'none'}">
-        <span class="font-display font-extrabold text-base" style="color:var(--ink)">Éclosion</span>
+        <span class="font-display font-extrabold text-base" style="color:var(--ink)">${t('onboarding.modeEclosion')}</span>
         <span class="font-display font-bold fs-10 px-2 py-0.5 rounded-full mt-1" style="background:${d.mode === 'eclosion' ? 'rgba(58,46,42,.16)' : 'var(--sky)'};color:var(--ink)">10+</span>
-        <span class="font-body font-semibold fs-10 mt-1\\.5 text-center" style="margin-top:6px;color:${d.mode === 'eclosion' ? 'var(--ink)' : 'var(--ink-soft)'}">Simple, doux, rassurant</span>
+        <span class="font-body font-semibold fs-10 mt-1\\.5 text-center" style="margin-top:6px;color:${d.mode === 'eclosion' ? 'var(--ink)' : 'var(--ink-soft)'}">${t('onboarding.modeEclosionDesc')}</span>
       </button>
       <button data-action="select-mode" data-mode="stratege" aria-pressed="${d.mode === 'stratege'}" class="flex-1 rounded-2xl p-3\\.5 flex flex-col items-center" style="padding:14px;background:${d.mode === 'stratege' ? 'var(--gold)' : 'var(--parchment)'};outline:${d.mode === 'stratege' ? '2px solid var(--gold-deep)' : 'none'}">
-        <span class="font-display font-extrabold text-base" style="color:var(--ink)">Stratège</span>
+        <span class="font-display font-extrabold text-base" style="color:var(--ink)">${t('onboarding.modeStratege')}</span>
         <span class="font-display font-bold fs-10 px-2 py-0.5 rounded-full mt-1" style="background:${d.mode === 'stratege' ? 'rgba(58,46,42,.16)' : 'var(--sky)'};color:var(--ink)">14+</span>
-        <span class="font-body font-semibold fs-10 mt-1\\.5 text-center" style="margin-top:6px;color:${d.mode === 'stratege' ? 'var(--ink)' : 'var(--ink-soft)'}">Équipes, statistiques</span>
+        <span class="font-body font-semibold fs-10 mt-1\\.5 text-center" style="margin-top:6px;color:${d.mode === 'stratege' ? 'var(--ink)' : 'var(--ink-soft)'}">${t('onboarding.modeStrategeDesc')}</span>
       </button>
     </div>
 
-    <button data-action="complete-onboarding" class="btn-primary full">✨ Commencer l'aventure</button>
-    <p class="font-body fs-10 mt-4" style="color:var(--ink-soft)">Tu pourras changer de mode plus tard dans les réglages.</p>
+    <button data-action="complete-onboarding" class="btn-primary full">${t('onboarding.start')}</button>
+    <p class="font-body fs-10 mt-4" style="color:var(--ink-soft)">${t('onboarding.hint')}</p>
   </div>`;
 }
 
@@ -49,9 +49,9 @@ function renderTopBar() {
       <div>
         <div class="font-display font-bold text-sm leading-tight flex items-center gap-1\\.5" style="color:var(--ink)">${escapeHtml(state.gardienName)}${currentTitleName() ? `<span class="font-body font-bold" style="font-size:9px;padding:2px 6px;border-radius:9999px;background:var(--sky);color:var(--ink-soft)">${escapeHtml(currentTitleName())}</span>` : ''}</div>
         <div class="font-body font-bold fs-11" style="color:var(--ink-soft)">
-          Niveau ${computeLevel(state.xp)} · ${state.mode === 'eclosion' ? 'Gardien' : 'Stratège'}${complete ? ` ${icon('star', { size: 11, color: 'var(--gold-deep)' })}` : ''}
+          ${t('topbar.level', { n: computeLevel(state.xp) })} · ${state.mode === 'eclosion' ? t('topbar.roleGardien') : t('onboarding.modeStratege')}${complete ? ` ${icon('star', { size: 11, color: 'var(--gold-deep)' })}` : ''}
         </div>
-        <div class="rounded-full overflow-hidden mt-0\\.5" role="progressbar" aria-label="Progression vers le niveau suivant" aria-valuenow="${xpIntoLevel(state.xp)}" aria-valuemin="0" aria-valuemax="60" style="width:84px;height:4px;background:#E6DFD3;margin-top:2px">
+        <div class="rounded-full overflow-hidden mt-0\\.5" role="progressbar" aria-label="${t('topbar.progressAria')}" aria-valuenow="${xpIntoLevel(state.xp)}" aria-valuemin="0" aria-valuemax="60" style="width:84px;height:4px;background:#E6DFD3;margin-top:2px">
           <div class="h-full rounded-full" style="width:${Math.round((xpIntoLevel(state.xp) / 60) * 100)}%;background:var(--gold)"></div>
         </div>
       </div>
@@ -60,7 +60,7 @@ function renderTopBar() {
       <div class="flex items-center gap-1\\.5 rounded-full px-3 py-1\\.5 font-display font-bold text-sm shadow-sm" style="gap:6px;background:var(--parchment);color:var(--ink)">
         ${coinIconHtml()} ${state.ecailles}
       </div>
-      <button data-action="open-settings" aria-label="Réglages" class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--parchment)">
+      <button data-action="open-settings" aria-label="${t('topbar.settingsAria')}" class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--parchment)">
         ${icon('settings', { size: 17, color: 'var(--ink-soft)' })}
       </button>
     </div>
@@ -84,12 +84,12 @@ function navBadgeHtml(count) {
 function renderNavBar() {
   const root = document.getElementById('navbar-root');
   const items = [
-    { id: 'sanctuaire', label: 'Sanctuaire', ic: 'home' },
-    { id: 'dragondex', label: 'Dragondex', ic: 'book-open' },
-    { id: 'carte', label: 'Carte', ic: 'map' },
-    { id: 'boutique', label: 'Boutique', ic: 'shopping-bag' },
+    { id: 'sanctuaire', label: t('nav.sanctuaire'), ic: 'home' },
+    { id: 'dragondex', label: t('nav.dragondex'), ic: 'book-open' },
+    { id: 'carte', label: t('nav.carte'), ic: 'map' },
+    { id: 'boutique', label: t('nav.boutique'), ic: 'shopping-bag' },
   ];
-  if (state.mode === 'stratege') items.push({ id: 'labo', label: 'Labo', ic: 'flask' });
+  if (state.mode === 'stratege') items.push({ id: 'labo', label: t('nav.labo'), ic: 'flask' });
   const rewards = claimableRewardsByScreen();
   root.innerHTML = `
   <div class="flex justify-around items-center px-2 pt-2 safe-bottom" style="background:var(--parchment);border-top:1px solid #EEE6D8">
@@ -128,8 +128,8 @@ function dailyQuestsCardHtml() {
   }).join('');
   return `<div class="rounded-2xl p-3\\.5 mb-3" style="padding:14px;background:var(--parchment)">
     <div class="flex items-center justify-between mb-1">
-      <div class="font-display font-bold fs-13" style="color:var(--ink)">Objectifs du jour</div>
-      ${state.loginStreak > 1 ? `<span class="font-body font-bold fs-11 flex items-center gap-1" style="color:var(--gold-deep)">🔥 ${state.loginStreak} jours</span>` : ''}
+      <div class="font-display font-bold fs-13" style="color:var(--ink)">${t('objectives.dailyTitle')}</div>
+      ${state.loginStreak > 1 ? `<span class="font-body font-bold fs-11 flex items-center gap-1" style="color:var(--gold-deep)">${t('objectives.dayStreak', { n: state.loginStreak, s: state.loginStreak > 1 ? 's' : '' })}</span>` : ''}
     </div>
     ${rows}
   </div>`;
@@ -148,7 +148,7 @@ function weeklyChallengeCardHtml() {
   return `<div class="rounded-2xl p-3\\.5 mb-3 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#EDE7F6,#E3DAF0)">
     <span style="font-size:22px" aria-hidden="true">🗓️</span>
     <div class="flex-1">
-      <div class="font-display font-bold fs-12" style="color:var(--ink)">Défi de la semaine</div>
+      <div class="font-display font-bold fs-12" style="color:var(--ink)">${t('objectives.weeklyTitle')}</div>
       <div class="font-body font-bold fs-11 mb-1" style="color:${w.claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(w.desc)}</div>
       <div class="w-full rounded-full overflow-hidden" role="progressbar" aria-valuenow="${w.progress}" aria-valuemin="0" aria-valuemax="${w.target}" aria-label="${escapeHtml(w.desc)}" style="background:rgba(255,255,255,.6);height:5px;">
         <div class="h-full rounded-full" style="width:${pct}%;background:#8A6FBF"></div>
@@ -163,10 +163,13 @@ function weeklyChallengeCardHtml() {
    ========================================================================= */
 
 const EVENTS = [
-  { id: 'ete', name: "Festival d'Été", emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', tagline: 'Décoration exclusive en boutique : Voile Solaire !' },
-  { id: 'automne', name: "Récolte d'Automne", emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', tagline: 'Décoration exclusive en boutique : Citrouille Dorée !' },
-  { id: 'hiver', name: "Veillée d'Hiver", emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', tagline: 'Décoration exclusive en boutique : Guirlande Étoilée !' },
+  { id: 'ete', nameFr: "Festival d'Été", nameEn: 'Summer Festival', emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', taglineFr: 'Décoration exclusive en boutique : Voile Solaire !', taglineEn: 'Exclusive shop decoration: Solar Veil!' },
+  { id: 'automne', nameFr: "Récolte d'Automne", nameEn: 'Autumn Harvest', emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', taglineFr: 'Décoration exclusive en boutique : Citrouille Dorée !', taglineEn: 'Exclusive shop decoration: Golden Pumpkin!' },
+  { id: 'hiver', nameFr: "Veillée d'Hiver", nameEn: 'Winter Vigil', emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', taglineFr: 'Décoration exclusive en boutique : Guirlande Étoilée !', taglineEn: 'Exclusive shop decoration: Starry Garland!' },
 ];
+function eventDisplay(ev) {
+  return { name: state.language === 'en' ? ev.nameEn : ev.nameFr, tagline: state.language === 'en' ? ev.taglineEn : ev.taglineFr };
+}
 
 function getActiveEvent() {
   const now = new Date();
@@ -183,11 +186,12 @@ function getActiveEvent() {
 function seasonalEventBannerHtml() {
   const ev = getActiveEvent();
   if (!ev) return '';
+  const disp = eventDisplay(ev);
   return `<div class="rounded-2xl p-3\\.5 mb-3 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FDEDD3,#FBDCC0)">
     <div style="font-size:26px" aria-hidden="true">${ev.emoji}</div>
     <div class="flex-1">
-      <div class="font-display font-bold fs-12" style="color:var(--ink)">${escapeHtml(ev.name)}</div>
-      <div class="font-body fs-11" style="color:var(--ink-soft)">${escapeHtml(ev.tagline)}</div>
+      <div class="font-display font-bold fs-12" style="color:var(--ink)">${escapeHtml(disp.name)}</div>
+      <div class="font-body fs-11" style="color:var(--ink-soft)">${escapeHtml(disp.tagline)}</div>
     </div>
   </div>`;
 }
@@ -198,7 +202,7 @@ function dragonHabitatCardHtml(dragon, busy) {
   let dots = '';
   for (let i = 0; i < 4; i++) dots += `<span class="w-1\\.5 h-1\\.5 rounded-full" style="width:6px;height:6px;background:${i < happyDots ? 'var(--gold)' : '#E6DFD3'}"></span>`;
   return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
-    ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">en expédition</span>` : ''}
+    ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">${t('sanctuaire.busyExpedition')}</span>` : ''}
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
     <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
@@ -228,10 +232,10 @@ function sortedDragonsForDisplay() {
 
 function sanctuaireSortChipsHtml() {
   const options = [
-    { id: 'recent', label: 'Récents' },
-    { id: 'favoris', label: 'Favoris' },
-    { id: 'alpha', label: 'A-Z' },
-    { id: 'rarete', label: 'Rareté' },
+    { id: 'recent', label: t('sanctuaire.sortRecent') },
+    { id: 'favoris', label: t('sanctuaire.sortFavorites') },
+    { id: 'alpha', label: t('sanctuaire.sortAlpha') },
+    { id: 'rarete', label: t('sanctuaire.sortRarity') },
   ];
   const cur = ui.sanctuaireSort || 'recent';
   return `<div class="flex gap-1\\.5 mb-2\\.5 overflow-x-auto" style="gap:6px;margin-bottom:10px">${options.map(o => `
@@ -246,20 +250,21 @@ function objectivesSummaryHtml() {
 
   if (ui.objectivesBannerCollapsed) {
     const bits = [];
-    if (state.dailyQuests) bits.push(`${state.dailyQuests.quests.filter(q => !q.claimed).length} objectif${state.dailyQuests.quests.filter(q => !q.claimed).length > 1 ? 's' : ''} du jour`);
-    if (state.weeklyChallenge && !state.weeklyChallenge.claimed) bits.push('1 défi de la semaine');
-    const summary = bits.length ? bits.join(' · ') : 'Tout est à jour';
+    const dailyUnclaimed = state.dailyQuests ? state.dailyQuests.quests.filter(q => !q.claimed).length : 0;
+    if (dailyUnclaimed) bits.push(t('objectives.dailyCount', { n: dailyUnclaimed, s: dailyUnclaimed > 1 ? 's' : '' }));
+    if (state.weeklyChallenge && !state.weeklyChallenge.claimed) bits.push(t('objectives.weeklyCount'));
+    const summary = bits.length ? bits.join(' · ') : t('objectives.allDone');
     return `<button data-action="toggle-objectives-banner" aria-expanded="false" class="w-full flex items-center gap-2\\.5 rounded-2xl mb-3" style="gap:10px;padding:10px 14px;background:var(--parchment)">
       <span style="font-size:18px" aria-hidden="true">${activeEvent ? activeEvent.emoji : '🎯'}</span>
       <span class="flex-1 text-left font-body font-bold fs-12" style="color:var(--ink)">${summary}</span>
-      ${readyCount > 0 ? `<span class="font-display font-bold fs-10 rounded-full" style="padding:3px 8px;background:var(--gold);color:var(--ink)">${readyCount} à réclamer</span>` : ''}
+      ${readyCount > 0 ? `<span class="font-display font-bold fs-10 rounded-full" style="padding:3px 8px;background:var(--gold);color:var(--ink)">${t('objectives.toClaim', { n: readyCount })}</span>` : ''}
       ${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}
     </button>`;
   }
 
   return `<div class="mb-1">
     <button data-action="toggle-objectives-banner" aria-expanded="true" class="w-full flex items-center gap-2 mb-2" style="color:var(--gold-deep)">
-      <span class="font-display font-bold fs-12 flex-1 text-left">Objectifs</span>
+      <span class="font-display font-bold fs-12 flex-1 text-left">${t('objectives.title')}</span>
       <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
     </button>
     ${dailyQuestsCardHtml()}
@@ -279,32 +284,32 @@ function renderScreenSanctuaire() {
     html += `<button data-action="start-hatch-from-inbox" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 mb-3 text-left" style="background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
       <div class="text-3xl" style="font-size:30px">🥚</div>
       <div class="flex-1">
-        <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">${state.eggInbox.length} œuf${state.eggInbox.length > 1 ? 's' : ''} prêt${state.eggInbox.length > 1 ? 's' : ''} à éclore</div>
-        <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Rapporté d'expédition</div>
+        <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">${t('sanctuaire.eggsReady', { n: state.eggInbox.length, s: state.eggInbox.length > 1 ? 's' : '' })}</div>
+        <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('sanctuaire.fromExpedition')}</div>
       </div>
-      <div class="font-display font-bold text-xs px-3 py-2 rounded-xl" style="background:var(--gold);color:var(--ink)">Ouvrir</div>
+      <div class="font-display font-bold text-xs px-3 py-2 rounded-xl" style="background:var(--gold);color:var(--ink)">${t('sanctuaire.open')}</div>
     </button>`;
   }
 
   html += `<div class="rounded-3xl p-4" style="background:linear-gradient(180deg,#E7F0FA,#DCEBF6)">
     <div class="flex items-center justify-between mb-2\\.5" style="margin-bottom:10px">
-      <h3 class="font-display font-semibold fs-13" style="color:var(--ink-soft)">Ton sanctuaire</h3>
+      <h3 class="font-display font-semibold fs-13" style="color:var(--ink-soft)">${t('sanctuaire.title')}</h3>
       ${equippedDecor.length ? `<div class="flex gap-1">${equippedDecor.map(d => decorIconSVG(d.id, 18)).join('')}</div>` : ''}
     </div>`;
 
   if (state.dragons.length === 0) {
-    html += emptyNoteHtml("Ton sanctuaire est vide pour l'instant. Fais éclore ton premier œuf !");
+    html += emptyNoteHtml(t('sanctuaire.empty'));
   } else {
     if (state.dragons.length > 1) {
-      html += `<button data-action="care-all-dragons" class="w-full flex items-center justify-center gap-1\\.5 font-body font-bold fs-11 rounded-xl mb-2\\.5" style="padding:8px;margin-bottom:10px;background:rgba(255,255,255,.55);color:var(--ink)">${icon('heart', { size: 13, color: '#D9634A' })} Soigner tous les dragons disponibles</button>`;
+      html += `<button data-action="care-all-dragons" class="w-full flex items-center justify-center gap-1\\.5 font-body font-bold fs-11 rounded-xl mb-2\\.5" style="padding:8px;margin-bottom:10px;background:rgba(255,255,255,.55);color:var(--ink)">${icon('heart', { size: 13, color: '#D9634A' })} ${t('sanctuaire.careAll')}</button>`;
     }
     if (state.dragons.length > 5) {
-      html += `<input id="sanctuaire-search-input" data-bind="sanctuaire-search" value="${escapeHtml(ui.sanctuaireSearch || '')}" placeholder="Chercher un de tes dragons…" aria-label="Chercher un dragon"
+      html += `<input id="sanctuaire-search-input" data-bind="sanctuaire-search" value="${escapeHtml(ui.sanctuaireSearch || '')}" placeholder="${t('sanctuaire.searchPlaceholder')}" aria-label="${t('sanctuaire.searchAria')}"
         class="w-full font-body font-semibold fs-12 rounded-xl px-3 py-2\\.5 mb-2\\.5" style="padding:10px 12px;margin-bottom:10px;background:rgba(255,255,255,.6);color:var(--ink)"/>`;
     }
     html += sanctuaireSortChipsHtml();
     html += sortedDragonsForDisplay().length === 0
-      ? emptyNoteHtml('Aucun dragon ne correspond à cette recherche.')
+      ? emptyNoteHtml(t('sanctuaire.noSearchResults'))
       : `<div class="grid grid-cols-2 gap-3">${sortedDragonsForDisplay().map(d => dragonHabitatCardHtml(d, !!busy[d.id])).join('')}</div>`;
   }
   html += `</div></div>`;
@@ -321,7 +326,7 @@ function achievementsCardHtml() {
   if (state.achievementsBannerCollapsed) {
     return `<button data-action="toggle-achievements-banner" aria-expanded="false" class="mb-3 rounded-2xl w-full flex items-center gap-2" style="padding:8px 12px;background:#F1ECE2">
       <span style="display:inline-flex">${icon('sparkles', { size: 16, color: 'var(--gold-deep)' })}</span>
-      <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--ink)">Succès${unclaimedReady ? ` · ${unclaimedReady} à réclamer` : ''}</span>
+      <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--ink)">${unclaimedReady ? t('achievements.titleWithClaim', { n: unclaimedReady }) : t('achievements.title')}</span>
       <span style="display:inline-flex">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
     </button>`;
   }
@@ -345,7 +350,7 @@ function achievementsCardHtml() {
   return `<div class="mb-3 rounded-2xl p-3\\.5" style="padding:14px;background:#F1ECE2">
     <button data-action="toggle-achievements-banner" aria-expanded="true" class="w-full flex items-center gap-2 mb-1" style="margin-bottom:4px;">
       <span style="display:inline-flex">${icon('sparkles', { size: 16, color: 'var(--gold-deep)' })}</span>
-      <span class="flex-1 text-left font-display font-bold fs-12" style="color:var(--ink)">Succès${unclaimedReady ? ` · ${unclaimedReady} à réclamer` : ''}</span>
+      <span class="flex-1 text-left font-display font-bold fs-12" style="color:var(--ink)">${unclaimedReady ? t('achievements.titleWithClaim', { n: unclaimedReady }) : t('achievements.title')}</span>
       <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--ink-soft)' })}</span>
     </button>
     ${rows}
@@ -367,13 +372,13 @@ function renderScreenDragondex() {
     filtered = filtered.filter(s => state.discovered.includes(s.id) && normalizeSearch(s.name).includes(q));
   }
 
-  let chips = `<button data-action="dragondex-filter" data-element="tous" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${filter === 'tous' ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${filter === 'tous' ? 'var(--gold-deep-btn)' : 'transparent'}">Tous</button>`;
+  let chips = `<button data-action="dragondex-filter" data-element="tous" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${filter === 'tous' ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${filter === 'tous' ? 'var(--gold-deep-btn)' : 'transparent'}">${t('dragondex.filterAll')}</button>`;
   Object.entries(ELEMENTS).forEach(([key, el]) => {
     const active = filter === key;
     chips += `<button data-action="dragondex-filter" data-element="${key}" class="flex items-center gap-1 font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:var(--parchment);color:${active ? 'var(--ink)' : 'var(--ink-soft)'};border:2px solid ${active ? el.deep : 'transparent'}">${icon(el.icon, { size: 12, color: active ? el.deep : 'currentColor' })} ${el.name}</button>`;
   });
 
-  const rarityOptions = [{ v: 'tous', label: 'Toutes raretés' }, { v: '0', label: 'Commun' }, { v: '2', label: 'Rare' }, { v: '3', label: 'Épique' }, { v: '4', label: 'Légendaire' }, { v: '5', label: 'Mythique' }];
+  const rarityOptions = [{ v: 'tous', label: t('dragondex.rarityAll') }, { v: '0', label: t('dragondex.rarityCommon') }, { v: '2', label: t('dragondex.rarityRare') }, { v: '3', label: t('dragondex.rarityEpic') }, { v: '4', label: t('dragondex.rarityLegendary') }, { v: '5', label: t('dragondex.rarityMythic') }];
   let rarityChips = rarityOptions.map(o => {
     const active = rarityFilter === o.v;
     return `<button data-action="dragondex-rarity-filter" data-rarity="${o.v}" class="font-display font-bold fs-11 px-2\\.5 py-1\\.5 rounded-full whitespace-nowrap shrink-0" style="padding:6px 10px;background:${active ? 'var(--gold)' : 'var(--parchment)'};color:var(--ink)">${o.label}</button>`;
@@ -395,17 +400,17 @@ function renderScreenDragondex() {
     if (state.collectionBannerCollapsed) {
       completeBanner = `<button data-action="toggle-collection-banner" aria-expanded="false" class="mb-3 rounded-2xl w-full flex items-center gap-2" style="padding:8px 12px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
         <span style="font-size:18px;line-height:1;">🏆</span>
-        <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--gold-deep)">Collection complète</span>
+        <span class="flex-1 text-left font-display font-bold fs-11" style="color:var(--gold-deep)">${t('dragondex.collectionComplete')}</span>
         <span style="display:inline-flex">${icon('chevron-down', { size: 14, color: 'var(--gold-deep)' })}</span>
       </button>`;
     } else {
       completeBanner = `<div class="mb-3 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
         <div style="font-size:26px;line-height:1;">🏆</div>
         <div class="flex-1">
-          <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">Maître Gardien</div>
-          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Les ${SPECIES.length} espèces sont découvertes. Collection complète !</div>
+          <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">${t('dragondex.masterGuardian')}</div>
+          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('dragondex.collectionCompleteDesc', { n: SPECIES.length })}</div>
         </div>
-        <button data-action="toggle-collection-banner" aria-expanded="true" aria-label="Réduire la bannière" class="shrink-0 rounded-full flex items-center justify-center" style="width:28px;height:28px;background:rgba(255,255,255,.55)">
+        <button data-action="toggle-collection-banner" aria-expanded="true" aria-label="${t('dragondex.collapseBannerAria')}" class="shrink-0 rounded-full flex items-center justify-center" style="width:28px;height:28px;background:rgba(255,255,255,.55)">
           <span style="display:inline-flex;transform:rotate(180deg)">${icon('chevron-down', { size: 14, color: 'var(--gold-deep)' })}</span>
         </button>
       </div>`;
@@ -414,24 +419,24 @@ function renderScreenDragondex() {
 
   let legendaryBanner = `<div class="mt-4 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:#F1ECE2">
     ${icon('sparkles', { size: 20, color: 'var(--gold-deep)' })}
-    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">Dragons Légendaires : une chance rare de les croiser lors des expéditions, surtout à la Cime des Anciens Dragons et lors des quêtes légendaires. Dragons Mythiques : unis deux légendaires au Laboratoire, tente la quête mythique une fois les six légendaires réunis, ou pousse jusqu'au Voile Éternel avec un premier mythique en poche.</div>
+    <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('dragondex.legendaryBannerText')}</div>
   </div>`;
 
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
     <div class="flex items-center justify-between mb-3">
-      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">Dragondex</h3>
-      <span class="font-body font-bold text-xs" style="color:var(--ink-soft)">${state.discovered.length}/${SPECIES.length} découverts</span>
+      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">${t('nav.dragondex')}</h3>
+      <span class="font-body font-bold text-xs" style="color:var(--ink-soft)">${t('dragondex.discoveredCount', { n: state.discovered.length, total: SPECIES.length })}</span>
     </div>
     ${completeBanner}
     ${achievementsCardHtml()}
     <div class="relative mb-3">
-      <input id="dragondex-search-input" data-bind="dragondex-search" value="${escapeHtml(ui.dragondexSearch || '')}" placeholder="Chercher un dragon découvert…" aria-label="Chercher un dragon"
+      <input id="dragondex-search-input" data-bind="dragondex-search" value="${escapeHtml(ui.dragondexSearch || '')}" placeholder="${t('dragondex.searchPlaceholder')}" aria-label="${t('dragondex.searchAria')}"
         class="w-full font-body font-semibold fs-12 rounded-xl px-3 py-2\.5" style="padding:10px 12px;background:var(--parchment);color:var(--ink)"/>
     </div>
     <div class="flex gap-2 mb-2 overflow-x-auto pb-1">${chips}</div>
     <div class="flex gap-2 mb-3 overflow-x-auto pb-1">${rarityChips}</div>
-    ${filtered.length === 0 ? emptyNoteHtml('Aucun dragon découvert ne correspond à cette recherche.') : `<div class="grid grid-cols-3 gap-2\\.5" style="gap:10px">${cards}</div>`}
+    ${filtered.length === 0 ? emptyNoteHtml(t('dragondex.noResults')) : `<div class="grid grid-cols-3 gap-2\\.5" style="gap:10px">${cards}</div>`}
     ${legendaryBanner}
   </div>`;
 }
@@ -469,13 +474,13 @@ function zonesPathMapHtml() {
     }).join('');
     return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
       ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
-      <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : ' (verrouillé)'}"
+      <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : t('dragondex.lockedSuffix')}"
         class="rounded-full flex items-center justify-center relative ${unlocked ? 'dragon-anim-idle' : ''}"
         style="width:66px;height:66px;margin:0 auto;background:${unlocked ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : '#D8CFC0'};box-shadow:0 4px 0 ${unlocked ? 'var(--gold-deep)' : '#B7AF9E'};border:3px solid #fff;animation-delay:${(i * 0.35).toFixed(2)}s">
         ${unlocked ? `<span style="display:flex;gap:1px">${chips}</span>` : icon('lock', { size: 18, color: '#8C8371' })}
       </button>
       <div class="font-display font-bold" style="font-size:10px;margin-top:6px;color:${unlocked ? 'var(--ink)' : 'var(--ink-soft)'};line-height:1.2">${escapeHtml(zone.name)}</div>
-      ${!unlocked ? `<div class="font-body font-bold" style="font-size:9px;color:var(--ink-soft)">Niveau ${zone.unlockLevel}</div>` : ''}
+      ${!unlocked ? `<div class="font-body font-bold" style="font-size:9px;color:var(--ink-soft)">${t('carte.zoneLevel', { n: zone.unlockLevel })}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -491,7 +496,7 @@ function zonesPathMapHtml() {
 
 function typesPathHtml(types) {
   const stepColors = ['#8FBF7F', '#E0AA3E', '#E8734A', '#B5502C', '#8A6FBF'];
-  return `<div class="flex flex-col">${types.map((t, i) => {
+  return `<div class="flex flex-col">${types.map((et, i) => {
     const color = stepColors[i % stepColors.length];
     const isLast = i === types.length - 1;
     return `<div style="display:flex;gap:10px;align-items:stretch">
@@ -499,11 +504,11 @@ function typesPathHtml(types) {
         <div class="font-display font-bold shrink-0" style="width:28px;height:28px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-size:12px">${i + 1}</div>
         ${!isLast ? `<div style="flex:1;width:3px;min-height:18px;background:#E6DFD3;margin:2px 0"></div>` : ''}
       </div>
-      <button data-action="carte-choose-type" data-type-id="${t.id}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left flex-1" style="padding:14px;margin-bottom:14px;background:var(--parchment)">
+      <button data-action="carte-choose-type" data-type-id="${et.id}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left flex-1" style="padding:14px;margin-bottom:14px;background:var(--parchment)">
         <div class="flex-1">
-          <div class="font-display font-bold fs-13" style="color:var(--ink)">${t.name}</div>
-          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">~${fmtCountdown(t.seconds * 1000)} · ${t.ecaillesMin}-${t.ecaillesMax} écailles${t.team ? ' · équipe' : ''}</div>
-          ${t.tagline ? `<div class="font-body fs-10 mt-1" style="color:var(--gold-deep)">${escapeHtml(t.tagline)}</div>` : ''}
+          <div class="font-display font-bold fs-13" style="color:var(--ink)">${et.name}</div>
+          <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">~${fmtCountdown(et.seconds * 1000)} · ${et.ecaillesMin}-${et.ecaillesMax} ${t('carte.scalesUnit')}${et.team ? t('carte.teamSuffix') : ''}</div>
+          ${et.tagline ? `<div class="font-body fs-10 mt-1" style="color:var(--gold-deep)">${escapeHtml(et.tagline)}</div>` : ''}
         </div>
         ${icon('chevron-right', { size: 16, color: 'var(--ink-soft)' })}
       </button>
@@ -518,9 +523,9 @@ function activeExpeditionCardHtml(exp) {
   return `<div class="rounded-2xl p-3 flex items-center gap-3" style="background:${ready ? 'linear-gradient(135deg,#FFF3DC,#FCE3B8)' : 'var(--parchment)'}">
     <div class="flex-1">
       <div class="font-display font-bold text-xs" style="color:var(--ink)">${escapeHtml(zone.name)}</div>
-      <div class="font-body font-bold fs-11" style="color:${ready ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${ready ? 'Expédition terminée !' : `Retour dans ${fmtCountdown(remaining)}`}</div>
+      <div class="font-body font-bold fs-11" style="color:${ready ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${ready ? t('carte.expeditionDone') : t('carte.returnIn', { time: fmtCountdown(remaining) })}</div>
     </div>
-    ${ready ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">Récupérer</button>` : icon('clock', { size: 18, color: 'var(--ink-soft)' })}
+    ${ready ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>` : icon('clock', { size: 18, color: 'var(--ink-soft)' })}
   </div>`;
 }
 
@@ -540,7 +545,7 @@ function teamPickerHtml(zone, availableDragons) {
 
   let grid;
   if (availableDragons.length === 0) {
-    grid = emptyNoteHtml('Aucun dragon disponible pour une équipe.');
+    grid = emptyNoteHtml(t('carte.noTeamDragons'));
   } else {
     grid = `<div class="grid grid-cols-4 gap-2 mb-3">${availableDragons.map(d => {
       const s = speciesById(d.speciesId);
@@ -554,12 +559,12 @@ function teamPickerHtml(zone, availableDragons) {
 
   return `<div>
     ${grid}
-    <div class="font-display font-bold text-xs mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">Équipe (${teamIds.length}/3)</div>
-    ${statBarHtml('Vigueur', avgVig)}
-    ${statBarHtml('Éclat', avgEclat)}
-    ${statBarHtml('Harmonie', harmonie)}
-    ${harmonyBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-1" style="color:var(--gold-deep)">💡 Tempéraments variés : bonus d'harmonie actif</div>` : ''}
-    <button data-action="carte-confirm-team" ${teamIds.length < 2 ? 'disabled' : ''} class="btn-primary full mt-3" style="margin-top:12px;">Lancer l'expédition</button>
+    <div class="font-display font-bold text-xs mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">${t('carte.team', { n: teamIds.length })}</div>
+    ${statBarHtml(t('carte.statVigueur'), avgVig)}
+    ${statBarHtml(t('carte.statEclat'), avgEclat)}
+    ${statBarHtml(t('carte.statHarmonie'), harmonie)}
+    ${harmonyBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-1" style="color:var(--gold-deep)">${t('carte.harmonyBonus')}</div>` : ''}
+    <button data-action="carte-confirm-team" ${teamIds.length < 2 ? 'disabled' : ''} class="btn-primary full mt-3" style="margin-top:12px;">${t('carte.launchExpedition')}</button>
   </div>`;
 }
 
@@ -574,28 +579,28 @@ function renderScreenCarte() {
   }
 
   if (c.view === 'zones') {
-    html += `<h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Parcours d'expédition</h3>
-      <p class="font-body font-semibold fs-11 mb-2" style="color:var(--ink-soft)">Avance de zone en zone à mesure que ton niveau grandit.</p>
+    html += `<h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">${t('carte.pathTitle')}</h3>
+      <p class="font-body font-semibold fs-11 mb-2" style="color:var(--ink-soft)">${t('carte.pathSubtitle')}</p>
       ${zonesPathMapHtml()}`;
   } else if (c.view === 'types') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     const loreHtml = zone.lore ? `<p class="font-body fs-11 italic mb-3" style="color:var(--ink-soft)">${escapeHtml(zone.lore)}</p>` : '';
-    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(t => (!t.team || state.mode === 'stratege') && (!t.requiresAllLegendary || allLegendariesDiscovered()) && (!t.requiresMythic || hasAnyMythic()))));
+    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(et => (!et.team || state.mode === 'stratege') && (!et.requiresAllLegendary || allLegendariesDiscovered()) && (!et.requiresMythic || hasAnyMythic()))));
   } else if (c.view === 'pick1') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     let inner;
     if (availableDragons.length === 0) {
-      inner = emptyNoteHtml(state.dragons.length === 0 ? "Fais d'abord éclore un dragon dans ton sanctuaire." : 'Tous tes dragons sont déjà en expédition.');
+      inner = emptyNoteHtml(state.dragons.length === 0 ? t('carte.noDragonAtAll') : t('carte.noDragonAvailable'));
     } else {
       inner = `<div class="grid grid-cols-4 gap-2">${availableDragons.map(d => {
         const s = speciesById(d.speciesId);
         return `<button data-action="carte-pick-single" data-dragon-id="${d.id}" class="rounded-xl p-1\\.5 flex flex-col items-center" style="padding:6px;background:var(--parchment)">${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size: 48 })}</button>`;
       }).join('')}</div>`;
     }
-    html += flowPanelHtml('Choisis un dragon', inner);
+    html += flowPanelHtml(t('carte.chooseDragon'), inner);
   } else if (c.view === 'team') {
     const zone = ZONES.find(z => z.id === c.zoneId);
-    html += flowPanelHtml('Compose ton équipe', teamPickerHtml(zone, availableDragons));
+    html += flowPanelHtml(t('carte.buildTeam'), teamPickerHtml(zone, availableDragons));
   }
 
   html += `</div>`;
@@ -604,7 +609,7 @@ function renderScreenCarte() {
 
 function flowPanelHtml(title, innerHtml) {
   return `<div>
-    <button data-action="carte-back" class="flex items-center gap-1 font-display font-bold text-xs mb-2\\.5" style="margin-bottom:10px;color:var(--gold-deep)">${icon('chevron-left', { size: 15 })} Retour</button>
+    <button data-action="carte-back" class="flex items-center gap-1 font-display font-bold text-xs mb-2\\.5" style="margin-bottom:10px;color:var(--gold-deep)">${icon('chevron-left', { size: 15 })} ${t('carte.back')}</button>
     <h3 class="font-display font-bold text-sm mb-2\\.5" style="margin-bottom:10px;color:var(--ink)">${escapeHtml(title)}</h3>
     <div class="flex flex-col gap-2\\.5" style="gap:10px">${innerHtml}</div>
   </div>`;
@@ -624,7 +629,7 @@ function renderScreenBoutique() {
     const canAfford = state.ecailles >= d.cost && !seasonLocked;
     const action = !owned
       ? `<button data-action="buy-decor" data-decor-id="${d.id}" ${canAfford ? '' : 'disabled'} class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full flex items-center justify-center gap-1" style="padding:6px 12px;background:${canAfford ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">${coinIconHtml()} ${d.cost}</button>`
-      : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? 'Équipé ✓' : 'Équiper'}</button>`;
+      : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? t('boutique.equipped') : t('boutique.equip')}</button>`;
     return `<div class="rounded-2xl p-3 flex flex-col items-center relative" style="background:var(--parchment)">
       ${d.seasonal ? `<span class="absolute font-display font-bold" style="top:6px;right:6px;font-size:14px" aria-hidden="true">${EVENTS.find(e => e.id === d.seasonal)?.emoji || ''}</span>` : ''}
       <div class="mb-1 flex items-center justify-center" style="height:34px">${decorIconSVG(d.id, 34)}</div>
@@ -635,8 +640,8 @@ function renderScreenBoutique() {
 
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
-    <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Décorations</h3>
-    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Personnalise ton sanctuaire avec des écailles gagnées en jouant — jamais d'argent réel ici.</p>
+    <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">${t('boutique.title')}</h3>
+    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">${t('boutique.subtitle')}</p>
     ${seasonalEventBannerHtml()}
     <div class="grid grid-cols-2 gap-2\\.5" style="gap:10px">${cards}</div>
   </div>`;
@@ -657,7 +662,7 @@ function renderScreenLabo() {
     if (!dragon) {
       return `<button data-action="labo-open-picker" data-slot="${slot}" class="rounded-2xl flex flex-col items-center justify-center gap-1" style="height:120px;border:2px dashed #D8CFC0;background:rgba(255,255,255,.4)">
         ${icon('plus', { size: 22, color: 'var(--ink-soft)' })}
-        <span class="font-body font-bold fs-11" style="color:var(--ink-soft)">Choisir</span>
+        <span class="font-body font-bold fs-11" style="color:var(--ink-soft)">${t('labo.choose')}</span>
       </button>`;
     }
     const species = speciesById(dragon.speciesId);
@@ -677,10 +682,10 @@ function renderScreenLabo() {
     const options = eligible.filter(d => d.id !== already);
     pickerHtml = `<div class="rounded-2xl p-3 mb-3" style="background:var(--parchment)">
       <div class="flex items-center justify-between mb-2">
-        <div class="font-display font-bold fs-12" style="color:var(--ink)">Choisir un parent</div>
-        <button data-action="labo-close-picker" aria-label="Fermer" class="w-7 h-7 rounded-full flex items-center justify-center" style="background:#F1ECE2">${icon('x', { size: 14, color: 'var(--ink-soft)' })}</button>
+        <div class="font-display font-bold fs-12" style="color:var(--ink)">${t('labo.choosePicker')}</div>
+        <button data-action="labo-close-picker" aria-label="${t('labo.closeAria')}" class="w-7 h-7 rounded-full flex items-center justify-center" style="background:#F1ECE2">${icon('x', { size: 14, color: 'var(--ink-soft)' })}</button>
       </div>
-      ${options.length === 0 ? emptyNoteHtml('Aucun autre dragon adulte disponible.') : `
+      ${options.length === 0 ? emptyNoteHtml(t('labo.noOtherAdult')) : `
       <div class="grid grid-cols-3 gap-2">${options.map(d => {
         const species = speciesById(d.speciesId);
         return `<button data-action="labo-select-parent" data-slot="${picking}" data-dragon-id="${d.id}" class="rounded-xl flex flex-col items-center p-1\\.5" style="background:var(--sky)">
@@ -693,13 +698,13 @@ function renderScreenLabo() {
 
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
-    <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">Laboratoire</h3>
-    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">Associe deux dragons adultes pour obtenir un œuf inattendu — parfois même légendaire. Unis deux légendaires, et le mythique n'est plus tout à fait hors de portée.</p>
-    ${eligible.length < 2 && !(a && b) ? emptyNoteHtml('Il te faut au moins 2 dragons adultes, non occupés, pour tenter un élevage.') : ''}
+    <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">${t('labo.title')}</h3>
+    <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">${t('labo.subtitle')}</p>
+    ${eligible.length < 2 && !(a && b) ? emptyNoteHtml(t('labo.needTwo')) : ''}
     ${pickerHtml}
     <div class="grid grid-cols-2 gap-3 mb-3">${slotHtml(a, 'a')}${slotHtml(b, 'b')}</div>
     <button data-action="breed-dragons" ${canBreed ? '' : 'disabled'} class="w-full font-display font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2" style="background:${canBreed ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">
-      ${onCooldown ? `Disponible dans ${fmtCountdown(cooldownLeft)}` : `${coinIconHtml()} Élever (${BREED_COST})`}
+      ${onCooldown ? t('labo.availableIn', { time: fmtCountdown(cooldownLeft) }) : `${coinIconHtml()} ${t('labo.breed', { cost: BREED_COST })}`}
     </button>
   </div>`;
 }

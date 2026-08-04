@@ -66,19 +66,19 @@ function hatchModalHtml(flow) {
 
   const body = !revealed ? `
     <div style="position:relative;z-index:1" class="${flow.taps > 0 ? 'anim-shake' : ''}">${eggSVG({ element: species.element, size: 170, cracks: flow.taps })}</div>
-    <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? 'Un œuf mystérieux…' : flow.taps < 3 ? 'Ça bouge…' : 'Ça y est !'}</p>
-    <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">✨ Appuie pour faire éclore (${flow.taps}/3)</button>
+    <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? t('modal.hatchMysterious') : flow.taps < 3 ? t('modal.hatchMoving') : t('modal.hatchReady')}</p>
+    <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">${t('modal.hatchTapButton', { n: flow.taps })}</button>
   ` : `
     <div class="relative anim-pop" style="position:relative;z-index:1">${dragonSVG({ element: species.element, variant: species.variant, stage: 'bebe', size: 170 })}</div>
-    ${species.variant === 4 ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">✨ DRAGON LÉGENDAIRE ✨</div>` : ''}
+    ${species.variant === 4 ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">${t('modal.legendaryBadge')}</div>` : ''}
     <h2 class="font-display font-extrabold text-xl mt-2" style="position:relative;z-index:1;color:var(--ink)">${escapeHtml(species.name.toUpperCase())}</h2>
     <div class="flex items-center gap-2 mt-1" style="position:relative;z-index:1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     <p class="font-body fs-13 text-center mt-3 leading-relaxed rounded-2xl px-4 py-3" style="position:relative;z-index:1;color:var(--ink);background:var(--sky)">${escapeHtml(species.lore)}</p>
-    <button data-action="hatch-finish" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">Accueillir ${escapeHtml(species.name)} ✨</button>
-    ${state.eggInbox.length > 0 ? `<button data-action="hatch-finish-and-continue" class="w-full font-body font-bold fs-11 mt-2\\.5 py-2" style="position:relative;z-index:1;margin-top:10px;color:var(--gold-deep)">Faire éclore le suivant (${state.eggInbox.length} restant${state.eggInbox.length > 1 ? 's' : ''})</button>` : ''}
+    <button data-action="hatch-finish" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">${t('modal.welcome', { name: escapeHtml(species.name) })}</button>
+    ${state.eggInbox.length > 0 ? `<button data-action="hatch-finish-and-continue" class="w-full font-body font-bold fs-11 mt-2\\.5 py-2" style="position:relative;z-index:1;margin-top:10px;color:var(--gold-deep)">${t('modal.hatchNext', { n: state.eggInbox.length, s: state.eggInbox.length > 1 ? 's' : '' })}</button>` : ''}
   `;
 
-  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Éclosion"><div class="modal-sheet hatch-sheet safe-bottom-sheet" tabindex="-1">
+  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="${t('modal.hatchAria')}"><div class="modal-sheet hatch-sheet safe-bottom-sheet" tabindex="-1">
     <div class="hatch-glow" style="background:radial-gradient(circle, ${revealed && species.variant === 4 ? 'var(--gold)' : c.light}66, transparent 70%)"></div>
     ${body}
   </div></div>`;
@@ -91,24 +91,24 @@ function dragonDetailModalHtml(dragon) {
   const canCare = cooldownLeft <= 0 && !busy;
   const nextStageAt = dragon.stage === 'bebe' ? 5 : dragon.stage === 'juvenile' ? 12 : null;
   const progressPct = nextStageAt ? Math.min(100, (dragon.careCount / nextStageAt) * 100) : 100;
-  const cooldownLabel = cooldownLeft >= 60000 ? `Encore ${Math.ceil(cooldownLeft / 60000)} min` : `Encore ${Math.ceil(cooldownLeft / 1000)}s`;
+  const cooldownLabel = cooldownLeft >= 60000 ? t('modal.cooldownMin', { n: Math.ceil(cooldownLeft / 60000) }) : t('modal.cooldownSec', { n: Math.ceil(cooldownLeft / 1000) });
 
   return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(dragonDisplayName(dragon, species))}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
-    <button data-action="close-dragon-detail" aria-label="Fermer" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
-    <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
+    <button data-action="close-dragon-detail" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+    <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? t('modal.removeFavorite') : t('modal.addFavorite')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}
     <div class="flex items-center gap-2 mt-2 w-full justify-center">
-      <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="Renommer ce dragon"
+      <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="${t('modal.renameAria')}"
         class="font-display font-extrabold text-lg text-center rounded-xl px-2 py-1" style="color:var(--ink);background:var(--sky);max-width:180px"/>
-      <button data-action="rename-dragon" data-dragon-id="${dragon.id}" aria-label="Valider le nom" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--gold)">${icon('check', { size: 15, color: 'var(--ink)' })}</button>
+      <button data-action="rename-dragon" data-dragon-id="${dragon.id}" aria-label="${t('modal.confirmNameAria')}" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--gold)">${icon('check', { size: 15, color: 'var(--ink)' })}</button>
     </div>
     <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     ${dragonStatsRowHtml(dragon, species)}
     <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
-    ${state.mode === 'stratege' ? `<div class="w-full mt-3 flex justify-center gap-4 font-body font-bold fs-11" style="color:var(--ink-soft)"><span>Tempérament : ${dragon.temperament}</span></div>` : ''}
+    ${state.mode === 'stratege' ? `<div class="w-full mt-3 flex justify-center gap-4 font-body font-bold fs-11" style="color:var(--ink-soft)"><span>${t('modal.temperamentLabel', { t: dragon.temperament })}</span></div>` : ''}
     <div class="w-full mt-4">
       <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)">
-        <span>Stade : ${STAGE_LABEL[dragon.stage]}</span>${nextStageAt ? `<span>${dragon.careCount}/${nextStageAt} soins</span>` : ''}
+        <span>${t('modal.stageLabel', { s: STAGE_LABEL[dragon.stage] })}</span>${nextStageAt ? `<span>${t('modal.careCount', { n: dragon.careCount, total: nextStageAt })}</span>` : ''}
       </div>
       <div class="w-full h-2 rounded-full overflow-hidden" style="background:#EEE6D8">
         <div class="h-full rounded-full" style="width:${progressPct}%;background:var(--gold)"></div>
@@ -116,10 +116,10 @@ function dragonDetailModalHtml(dragon) {
     </div>
     <button data-action="care-dragon" data-dragon-id="${dragon.id}" ${canCare ? '' : 'disabled'} class="btn-primary full mt-4 flex items-center justify-center gap-2" style="margin-top:16px;">
       ${icon('heart', { size: 16, color: canCare ? 'var(--ink)' : 'currentColor' })}
-      ${busy ? 'En expédition' : canCare ? 'Câliner' : cooldownLabel}
+      ${busy ? t('modal.inExpedition') : canCare ? t('modal.pet') : cooldownLabel}
     </button>
     <button data-action="share-dragon-card" data-dragon-id="${dragon.id}" class="w-full font-body font-bold fs-11 mt-2\\.5 py-2 flex items-center justify-center gap-1\\.5" style="margin-top:10px;color:var(--gold-deep)">
-      ${icon('download', { size: 13, color: 'var(--gold-deep)' })} Télécharger sa carte
+      ${icon('download', { size: 13, color: 'var(--gold-deep)' })} ${t('modal.downloadCard')}
     </button>
     ${releaseButtonHtml(dragon, species, busy)}
   </div></div>`;
@@ -232,11 +232,11 @@ async function exportDragonCard(dragonId) {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      showToast('Carte du dragon téléchargée !');
+      showToast(t('toast.cardDownloaded'));
     }
     haptic(20);
   } catch (e) {
-    showToast('Impossible de générer la carte');
+    showToast(t('toast.cardError'));
   }
 }
 
@@ -249,34 +249,34 @@ function dragonStatsRowHtml(dragon, species) {
     <div class="flex items-center justify-between font-body font-bold" style="font-size:9.5px;color:var(--ink-soft)"><span>${label}</span><span>${value}</span></div>
     <div class="w-full rounded-full overflow-hidden mt-0\\.5" style="background:#EEE6D8;height:4px;"><div class="h-full rounded-full" style="width:${Math.min(100, value)}%;background:${color}"></div></div>
   </div>`;
-  return `<div class="flex gap-3 w-full mt-3" style="max-width:220px">${bar('Vigueur', vigueur, '#B5502C')}${bar('Éclat', eclat, 'var(--gold)')}</div>`;
+  return `<div class="flex gap-3 w-full mt-3" style="max-width:220px">${bar(t('carte.statVigueur'), vigueur, '#B5502C')}${bar(t('carte.statEclat'), eclat, 'var(--gold)')}</div>`;
 }
 
 function releaseButtonHtml(dragon, species, busy) {
   if (species.variant === 4) {
-    return `<p class="font-body fs-10 text-center mt-3" style="color:var(--ink-soft)">Les dragons légendaires ne peuvent pas être relâchés.</p>`;
+    return `<p class="font-body fs-10 text-center mt-3" style="color:var(--ink-soft)">${t('modal.legendaryNoRelease')}</p>`;
   }
   const refund = RELEASE_REFUND[species.variant];
   if (ui.releaseConfirmId === dragon.id) {
     return `<div class="w-full mt-3 rounded-2xl p-3" style="background:#FBEAE4">
-      <p class="font-body fs-11 text-center mb-2" style="color:#B5502C">Relâcher ${escapeHtml(dragonDisplayName(dragon, species))} définitivement ? (+${refund} écailles)</p>
+      <p class="font-body fs-11 text-center mb-2" style="color:#B5502C">${t('modal.confirmReleaseText', { name: escapeHtml(dragonDisplayName(dragon, species)), n: refund })}</p>
       <div class="flex gap-2">
-        <button data-action="cancel-release-dragon" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl" style="background:#F1ECE2;color:var(--ink-soft)">Annuler</button>
-        <button data-action="confirm-release-dragon" data-dragon-id="${dragon.id}" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl text-white" style="background:#B5502C">Confirmer</button>
+        <button data-action="cancel-release-dragon" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl" style="background:#F1ECE2;color:var(--ink-soft)">${t('modal.cancel')}</button>
+        <button data-action="confirm-release-dragon" data-dragon-id="${dragon.id}" class="flex-1 font-display font-bold fs-11 py-2 rounded-xl text-white" style="background:#B5502C">${t('modal.confirm')}</button>
       </div>
     </div>`;
   }
-  return `<button data-action="request-release-dragon" data-dragon-id="${dragon.id}" ${busy ? 'disabled' : ''} class="w-full font-body font-bold fs-11 mt-3 py-2" style="color:${busy ? '#D8CFC0' : 'var(--ink-soft)'}">Relâcher dans la nature (+${refund} écailles)</button>`;
+  return `<button data-action="request-release-dragon" data-dragon-id="${dragon.id}" ${busy ? 'disabled' : ''} class="w-full font-body font-bold fs-11 mt-3 py-2" style="color:${busy ? '#D8CFC0' : 'var(--ink-soft)'}">${t('modal.releaseButton', { n: refund })}</button>`;
 }
 
 function speciesDetailModalHtml(entry) {
   const { species, discovered } = entry;
-  return `<div class="modal-overlay" data-backdrop-close="close-species-detail" role="dialog" aria-modal="true" aria-label="${discovered ? escapeHtml(species.name) : 'Dragon non découvert'}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
-    <button data-action="close-species-detail" aria-label="Fermer" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+  return `<div class="modal-overlay" data-backdrop-close="close-species-detail" role="dialog" aria-modal="true" aria-label="${discovered ? escapeHtml(species.name) : t('modal.speciesUnknownAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <button data-action="close-species-detail" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
     <div style="filter:${discovered ? 'none' : 'grayscale(1) brightness(0.4)'}">${dragonSVG({ element: species.element, variant: species.variant, stage: 'adulte', size: 140 })}</div>
     <h2 class="font-display font-extrabold text-xl mt-2" style="color:var(--ink)">${discovered ? escapeHtml(species.name) : '???'}</h2>
     <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${discovered ? rarityStarsHtml(species.variant) : ''}</div>
-    <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${discovered ? escapeHtml(species.lore) : "Découvre ce dragon en expédition pour révéler sa fiche."}</p>
+    <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${discovered ? escapeHtml(species.lore) : t('modal.discoverToReveal')}</p>
   </div></div>`;
 }
 
@@ -284,11 +284,11 @@ const HOLD_GATE_DURATION_MS = 3500;
 const HOLD_GATE_CIRCUMFERENCE = 213.6; // 2 * PI * 34
 
 function lockChallengeModalHtml(challenge) {
-  return `<div class="modal-overlay" data-backdrop-close="close-lock-challenge" role="dialog" aria-modal="true" aria-label="Verrouillage parental"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+  return `<div class="modal-overlay" data-backdrop-close="close-lock-challenge" role="dialog" aria-modal="true" aria-label="${t('modal.parentalLockAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     ${icon('shield', { size: 28, color: 'var(--gold-deep)' })}
-    <h3 class="font-display font-bold text-base mt-2 text-center" style="color:var(--ink)">Zone réservée à un adulte</h3>
-    <p id="hold-gate-instructions" class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Maintiens le bouton appuyé quelques secondes pour continuer.</p>
-    <button id="hold-gate-btn" aria-label="Maintenir appuyé pour déverrouiller" class="hold-gate mt-4" style="margin-top:16px;">
+    <h3 class="font-display font-bold text-base mt-2 text-center" style="color:var(--ink)">${t('modal.adultZoneTitle')}</h3>
+    <p id="hold-gate-instructions" class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">${t('modal.holdInstructions')}</p>
+    <button id="hold-gate-btn" aria-label="${t('modal.holdAria')}" class="hold-gate mt-4" style="margin-top:16px;">
       <svg class="hold-gate-ring" viewBox="0 0 80 80" width="80" height="80" aria-hidden="true">
         <circle cx="40" cy="40" r="34" fill="none" stroke="#EEE6D8" stroke-width="7"/>
         <circle id="hold-gate-progress" cx="40" cy="40" r="34" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round"
@@ -300,36 +300,39 @@ function lockChallengeModalHtml(challenge) {
 }
 
 function confirmResetModalHtml() {
-  return `<div class="modal-overlay" data-backdrop-close="cancel-reset" role="dialog" aria-modal="true" aria-label="Confirmation"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
-    <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">Réinitialiser ta progression ?</h3>
-    <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Tous tes dragons et ta progression seront définitivement perdus.</p>
+  return `<div class="modal-overlay" data-backdrop-close="cancel-reset" role="dialog" aria-modal="true" aria-label="${t('modal.resetConfirmAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">${t('modal.resetTitle')}</h3>
+    <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">${t('modal.resetText')}</p>
     <div class="flex gap-2 w-full mt-4" style="margin-top:16px;">
-      <button data-action="cancel-reset" class="btn-ghost flex-1">Annuler</button>
-      <button data-action="confirm-reset" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:#B5502C">Confirmer</button>
+      <button data-action="cancel-reset" class="btn-ghost flex-1">${t('modal.cancel')}</button>
+      <button data-action="confirm-reset" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:#B5502C">${t('modal.confirm')}</button>
     </div>
   </div></div>`;
 }
 
-const TUTORIAL_SLIDES = [
-  { emoji: '🏡', title: 'Ton Sanctuaire', text: "C'est ici que vivent tes dragons. Câline-les régulièrement pour les aider à grandir, et garde un œil sur tes objectifs du jour tout en haut." },
-  { emoji: '🗺️', title: 'La Carte', text: "Avance de zone en zone à mesure que tu montes de niveau, et lance des expéditions pour ramener des écailles et de nouveaux œufs." },
-  { emoji: '📖', title: 'Le Dragondex', text: 'Ta collection complète : espèces découvertes, succès à débloquer, et une recherche pour retrouver un dragon précis.' },
-  { emoji: '🧪', title: 'Boutique & Labo', text: 'La Boutique te permet de décorer ton sanctuaire. En mode Stratège, le Laboratoire te permet aussi de croiser deux dragons adultes.' },
-];
+function tutorialSlides() {
+  return [
+    { emoji: '🏡', title: t('tutorial.slide1Title'), text: t('tutorial.slide1Text') },
+    { emoji: '🗺️', title: t('tutorial.slide2Title'), text: t('tutorial.slide2Text') },
+    { emoji: '📖', title: t('tutorial.slide3Title'), text: t('tutorial.slide3Text') },
+    { emoji: '🧪', title: t('tutorial.slide4Title'), text: t('tutorial.slide4Text') },
+  ];
+}
 
 function tutorialModalHtml() {
   const i = ui.tutorialStep;
-  const slide = TUTORIAL_SLIDES[i];
-  const isLast = i === TUTORIAL_SLIDES.length - 1;
-  const dots = TUTORIAL_SLIDES.map((_, idx) => `<span class="rounded-full" style="width:${idx === i ? 16 : 6}px;height:6px;background:${idx === i ? 'var(--gold)' : '#E6DFD3'};transition:width .15s ease"></span>`).join('');
-  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Découverte de Lumidra"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+  const slides = tutorialSlides();
+  const slide = slides[i];
+  const isLast = i === slides.length - 1;
+  const dots = slides.map((_, idx) => `<span class="rounded-full" style="width:${idx === i ? 16 : 6}px;height:6px;background:${idx === i ? 'var(--gold)' : '#E6DFD3'};transition:width .15s ease"></span>`).join('');
+  return `<div class="modal-overlay" role="dialog" aria-modal="true" aria-label="${t('tutorial.discoverAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <div style="font-size:48px" aria-hidden="true">${slide.emoji}</div>
     <h2 class="font-display font-extrabold text-lg mt-2" style="color:var(--ink)">${escapeHtml(slide.title)}</h2>
     <p class="font-body fs-13 text-center mt-2 leading-relaxed" style="color:var(--ink-soft)">${escapeHtml(slide.text)}</p>
     <div class="flex items-center gap-1\\.5 mt-4" style="gap:6px">${dots}</div>
     <div class="flex gap-2 w-full mt-4" style="margin-top:16px">
-      ${!isLast ? `<button data-action="tutorial-skip" class="btn-ghost flex-1">Passer</button>` : ''}
-      <button data-action="tutorial-next" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl" style="background:var(--gold);color:var(--ink)">${isLast ? "C'est parti !" : 'Suivant'}</button>
+      ${!isLast ? `<button data-action="tutorial-skip" class="btn-ghost flex-1">${t('tutorial.skip')}</button>` : ''}
+      <button data-action="tutorial-next" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl" style="background:var(--gold);color:var(--ink)">${isLast ? t('tutorial.start') : t('tutorial.next')}</button>
     </div>
   </div></div>`;
 }
@@ -338,14 +341,14 @@ function confirmImportModalHtml() {
   const s = ui.pendingImport || {};
   const dragonCount = Array.isArray(s.dragons) ? s.dragons.length : 0;
   const discoveredCount = Array.isArray(s.discovered) ? s.discovered.length : 0;
-  const name = s.gardienName ? escapeHtml(s.gardienName) : 'Gardien';
-  return `<div class="modal-overlay" data-backdrop-close="cancel-import" role="dialog" aria-modal="true" aria-label="Confirmation d'import"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
-    <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">Importer cette sauvegarde ?</h3>
-    <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">Gardien : <strong>${name}</strong> — ${dragonCount} dragon${dragonCount > 1 ? 's' : ''}, ${discoveredCount} espèce${discoveredCount > 1 ? 's' : ''} découverte${discoveredCount > 1 ? 's' : ''}.</p>
-    <p class="font-body fs-11 text-center mt-1" style="color:var(--ink-soft)">Ta progression actuelle sur cet appareil sera remplacée par celle du fichier importé.</p>
+  const name = s.gardienName ? escapeHtml(s.gardienName) : t('topbar.roleGardien');
+  return `<div class="modal-overlay" data-backdrop-close="cancel-import" role="dialog" aria-modal="true" aria-label="${t('importModal.aria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <h3 class="font-display font-bold text-base text-center" style="color:var(--ink)">${t('importModal.title')}</h3>
+    <p class="font-body fs-13 text-center mt-2" style="color:var(--ink-soft)">${t('importModal.summary', { name: `<strong>${name}</strong>`, n1: dragonCount, s1: dragonCount > 1 ? 's' : '', n2: discoveredCount, s2: discoveredCount > 1 ? 's' : '' })}</p>
+    <p class="font-body fs-11 text-center mt-1" style="color:var(--ink-soft)">${t('importModal.deviceWarning')}</p>
     <div class="flex gap-2 w-full mt-4" style="margin-top:16px;">
-      <button data-action="cancel-import" class="btn-ghost flex-1">Annuler</button>
-      <button data-action="confirm-import" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:var(--gold);color:var(--ink)">Importer</button>
+      <button data-action="cancel-import" class="btn-ghost flex-1">${t('modal.cancel')}</button>
+      <button data-action="confirm-import" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:var(--gold);color:var(--ink)">${t('importModal.import')}</button>
     </div>
   </div></div>`;
 }
@@ -403,7 +406,7 @@ function wireHoldGate(onSuccess) {
     if (iconSlot) {
       iconSlot.innerHTML = icon('check', { size: 24, color: '#436B37', className: 'hold-gate-icon--success' });
     }
-    if (instructions) instructions.textContent = 'Déverrouillé !';
+    if (instructions) instructions.textContent = t('modal.unlocked');
     haptic([20, 30, 50]);
     setTimeout(onSuccess, 550);
   }
@@ -507,15 +510,15 @@ function careAllDragons() {
     d.stage = newStage;
     caredCount += 1;
   });
-  if (caredCount === 0) { showToast('Aucun dragon disponible pour un câlin pour le moment'); return; }
+  if (caredCount === 0) { showToast(t('toast.noDragonForCare')); return; }
   addXp(caredCount);
   bumpQuestProgress('soin', caredCount);
   saveStateDebounced();
   playCareSound();
   haptic(30);
   showToast(grownCount > 0
-    ? `${caredCount} dragon${caredCount > 1 ? 's' : ''} câliné${caredCount > 1 ? 's' : ''}, dont ${grownCount} qui grandi${grownCount > 1 ? 'ssent' : 't'} ! ✨`
-    : `${caredCount} dragon${caredCount > 1 ? 's' : ''} câliné${caredCount > 1 ? 's' : ''} !`);
+    ? t('toast.caredGrew', { n: caredCount, s: caredCount > 1 ? 's' : '', g: grownCount, s2: grownCount > 1 ? 'ssent' : 't' })
+    : t('toast.caredPlain', { n: caredCount, s: caredCount > 1 ? 's' : '' }));
   renderTopBar();
   if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
 }
@@ -533,7 +536,7 @@ function careDragon(dragonId) {
   addXp(1);
   bumpQuestProgress('soin', 1);
   saveStateDebounced();
-  if (grew) { showToast(`${speciesById(d.speciesId).name} a grandi ! ✨`); playHatchSound(); }
+  if (grew) { showToast(t('toast.grew', { name: speciesById(d.speciesId).name })); playHatchSound(); }
   else { playCareSound(); }
   renderTopBar();
   if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
@@ -566,7 +569,7 @@ function resolveHatch() {
   const justCompleted = newlyDiscovered && state.discovered.length === SPECIES.length && !state.collectionCompleteShown;
   if (justCompleted) {
     state.collectionCompleteShown = true;
-    showToast('Dragondex complet ! Tu es un Maître Gardien ✨🏆');
+    showToast(t('toast.dragondexComplete'));
     haptic([40, 60, 40, 60, 80]);
   }
 
@@ -600,7 +603,7 @@ async function scheduleExpeditionNotification(exp) {
       notifications: [{
         id: notifIdForExpedition(exp.id),
         title: 'Lumidra',
-        body: 'Ton expédition est terminée — un trésor t\u2019attend au sanctuaire ! 🐉',
+        body: t('notif.body'),
         schedule: { at: new Date(exp.endAt) },
       }],
     });
@@ -620,7 +623,7 @@ function startExpedition(zoneId, typeId, dragonIds) {
   scheduleExpeditionNotification(newExp);
   bumpQuestProgress('expedition', 1);
   saveStateDebounced();
-  showToast('Expédition lancée !');
+  showToast(t('toast.expeditionLaunched'));
   ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
   if (ui.screen === 'carte') renderScreenCarte();
 }
@@ -660,7 +663,7 @@ function breedDragons() {
   const { parentAId, parentBId } = ui.labo;
   if (!parentAId || !parentBId || parentAId === parentBId) return;
   if (Date.now() < (state.laboCooldownUntil || 0)) return;
-  if (state.ecailles < BREED_COST) { showToast("Pas assez d'écailles"); return; }
+  if (state.ecailles < BREED_COST) { showToast(t('toast.notEnoughScales')); return; }
   const busy = busyDragonIds();
   const a = state.dragons.find(d => d.id === parentAId);
   const b = state.dragons.find(d => d.id === parentBId);
@@ -673,7 +676,7 @@ function breedDragons() {
   ui.labo = { parentAId: null, parentBId: null, picking: null };
   saveStateDebounced();
   haptic([20, 40, 20]);
-  showToast('Un œuf est apparu au Laboratoire !');
+  showToast(t('toast.eggAppeared'));
   renderTopBar();
   renderScreenLabo();
 }
@@ -724,7 +727,7 @@ function claimExpedition(expId) {
   saveStateDebounced();
   haptic(gotEgg ? [25, 50, 50] : 30);
   playCoinSound();
-  showToast(gotMythic ? `Un œuf mythique... c'est presque impossible ! ✨🌟` : gotLegendary ? `Un œuf légendaire scintille dans ta besace ! ✨` : gotEgg ? `+${ecaillesGain} écailles et un nouvel œuf !` : `+${ecaillesGain} écailles`);
+  showToast(gotMythic ? t('toast.mythicEgg') : gotLegendary ? t('toast.legendaryEgg') : gotEgg ? t('toast.gainEggScales', { n: ecaillesGain }) : t('toast.gainScales', { n: ecaillesGain }));
   renderTopBar();
   if (ui.screen === 'carte') renderScreenCarte();
 }
@@ -734,19 +737,19 @@ function buyDecor(decorId) {
   if (!decor || state.decorOwned.includes(decorId) || state.ecailles < decor.cost) return;
   if (decor.seasonal) {
     const ev = getActiveEvent();
-    if (!ev || ev.id !== decor.seasonal) { showToast("Cette décoration n'est pas disponible en ce moment"); return; }
+    if (!ev || ev.id !== decor.seasonal) { showToast(t('toast.decorUnavailable')); return; }
   }
   state.ecailles -= decor.cost;
   state.decorOwned.push(decorId);
   saveStateDebounced();
-  showToast(`${decor.name} ajouté !`);
+  showToast(t('toast.decorAdded', { name: decor.name }));
   renderTopBar();
   renderScreenBoutique();
 }
 
 function toggleEquipDecor(decorId) {
   const equipped = state.decorEquipped.includes(decorId);
-  if (!equipped && state.decorEquipped.length >= 3) { showToast('Maximum 3 décorations affichées'); return; }
+  if (!equipped && state.decorEquipped.length >= 3) { showToast(t('toast.maxDecor')); return; }
   state.decorEquipped = equipped ? state.decorEquipped.filter(id => id !== decorId) : [...state.decorEquipped, decorId];
   saveStateDebounced();
   renderScreenBoutique();

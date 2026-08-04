@@ -92,7 +92,7 @@ function dispatchAction(action, dataset, evt, el) {
       if (d) {
         d.customName = val || null;
         saveStateDebounced();
-        showToast('Nom mis à jour');
+        showToast(t('toast.nameUpdated'));
         renderModals();
         if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
       }
@@ -130,7 +130,7 @@ function dispatchAction(action, dataset, evt, el) {
         ui.releaseConfirmId = null;
         ui.detailDragonId = null;
         saveStateDebounced();
-        showToast(`${dragonDisplayName(d, species)} relâché (+${refund} écailles)`);
+        showToast(t('toast.dragonReleased', { name: dragonDisplayName(d, species), n: refund }));
         renderTopBar();
         renderModals();
         if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
@@ -165,7 +165,7 @@ function dispatchAction(action, dataset, evt, el) {
       }
       break;
     case 'tutorial-next':
-      if (ui.tutorialStep < TUTORIAL_SLIDES.length - 1) { ui.tutorialStep += 1; renderModals(); }
+      if (ui.tutorialStep < tutorialSlides().length - 1) { ui.tutorialStep += 1; renderModals(); }
       else { ui.tutorialStep = null; renderModals(); }
       break;
     case 'tutorial-skip':
@@ -193,7 +193,7 @@ function dispatchAction(action, dataset, evt, el) {
     case 'carte-open-zone': {
       const zone = ZONES.find(z => z.id === zoneId);
       if (computeLevel(state.xp) < zone.unlockLevel) {
-        showToast(`Niveau ${zone.unlockLevel} requis pour débloquer cette zone`);
+        showToast(t('toast.zoneLevelRequired', { n: zone.unlockLevel }));
         if (el) { el.classList.remove('anim-shake'); void el.offsetWidth; el.classList.add('anim-shake'); }
         break;
       }
@@ -311,7 +311,7 @@ function dispatchAction(action, dataset, evt, el) {
       if (val) state.gardienName = val;
       saveStateDebounced();
       renderTopBar();
-      showToast('Nom mis à jour');
+      showToast(t('toast.nameUpdated'));
       break;
     }
     case 'request-reset':
@@ -490,12 +490,12 @@ function bootLumidra() {
   initEvents();
   renderAll();
   if (saveWasCorrupted) {
-    setTimeout(() => showToast('Ta sauvegarde précédente était illisible — on repart à zéro, désolé 💛'), 500);
+    setTimeout(() => showToast(t('toast.corruptedSave')), 500);
   } else if (state.onboarded) {
     const streakResult = checkLoginStreak();
     if (streakResult) {
       renderTopBar();
-      setTimeout(() => showToast(`🔥 Série de ${streakResult.streak} jour${streakResult.streak > 1 ? 's' : ''} ! +${streakResult.bonus} écailles`), 500);
+      setTimeout(() => showToast(t('toast.streakBonus', { n: streakResult.streak, s: streakResult.streak > 1 ? 's' : '', bonus: streakResult.bonus })), 500);
     }
   }
 }
@@ -511,12 +511,19 @@ function showCrashOverlay(detail) {
   crashOverlayShown = true;
   const div = document.createElement('div');
   div.setAttribute('style', 'position:fixed;inset:0;z-index:9999;background:rgba(58,46,42,0.92);display:flex;align-items:center;justify-content:center;padding:24px;font-family:sans-serif;');
+  // Indépendant de t()/state : si l'état lui-même est corrompu, ce filet doit
+  // quand même pouvoir choisir une langue d'affichage sans lever d'erreur.
+  let isEnglish = false;
+  try { isEnglish = typeof state !== 'undefined' && state && state.language === 'en'; } catch (e) {}
+  const crashTitle = isEnglish ? 'Oops, something went wrong' : 'Oups, un souci est survenu';
+  const crashMessage = isEnglish ? 'Your save is safe. Just reload the app to continue.' : "Ta sauvegarde est en sécurité. Recharge simplement l'application pour continuer.";
+  const crashReload = isEnglish ? 'Reload' : 'Recharger';
   div.innerHTML = `
     <div style="background:#FFFCF6;border-radius:20px;padding:28px 22px;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
       <div style="font-size:40px;margin-bottom:8px;">🥚💥</div>
-      <div style="font-weight:800;font-size:17px;color:#3A2E2A;margin-bottom:8px;">Oups, un souci est survenu</div>
-      <div style="font-size:13px;color:#6B5D55;margin-bottom:18px;line-height:1.5;">Ta sauvegarde est en sécurité. Recharge simplement l'application pour continuer.</div>
-      <button id="crash-reload-btn" style="background:#EDA23C;color:#3A2E2A;font-weight:800;border:none;border-radius:14px;padding:12px 28px;font-size:14px;">Recharger</button>
+      <div style="font-weight:800;font-size:17px;color:#3A2E2A;margin-bottom:8px;">${crashTitle}</div>
+      <div style="font-size:13px;color:#6B5D55;margin-bottom:18px;line-height:1.5;">${crashMessage}</div>
+      <button id="crash-reload-btn" style="background:#EDA23C;color:#3A2E2A;font-weight:800;border:none;border-radius:14px;padding:12px 28px;font-size:14px;">${crashReload}</button>
     </div>`;
   document.body.appendChild(div);
   document.getElementById('crash-reload-btn').addEventListener('click', () => location.reload());
