@@ -87,20 +87,62 @@ const EXPEDITION_TYPES = [
 ];
 
 const DECOR = [
-  { id:'lanterne', nameFr:'Lanterne de Papier', nameEn:'Paper Lantern', cost:150 },
-  { id:'bassin', nameFr:'Bassin de Nénuphars', nameEn:'Lily Pond', cost:220 },
-  { id:'cristal', nameFr:'Cristal Lumineux', nameEn:'Glowing Crystal', cost:300 },
-  { id:'banc', nameFr:'Banc de Pierre', nameEn:'Stone Bench', cost:180 },
-  { id:'arche', nameFr:'Arche Fleurie', nameEn:'Flowered Arch', cost:260 },
-  { id:'carillon', nameFr:'Carillon de Vent', nameEn:'Wind Chime', cost:340 },
-  { id:'autel', nameFr:'Autel Ancien', nameEn:'Ancient Altar', cost:420 },
-  { id:'statue-ancien', nameFr:'Statue de Gardien', nameEn:'Guardian Statue', cost:480 },
-  { id:'flamme-eternelle', nameFr:'Flamme Éternelle', nameEn:'Eternal Flame', cost:520 },
-  { id:'voile-solaire', nameFr:'Voile Solaire', nameEn:'Solar Sail', cost:260, seasonal:'ete' },
-  { id:'citrouille-doree', nameFr:'Citrouille Dorée', nameEn:'Golden Pumpkin', cost:260, seasonal:'automne' },
-  { id:'guirlande-etoilee', nameFr:'Guirlande Étoilée', nameEn:'Starry Garland', cost:260, seasonal:'hiver' },
-  { id:'autel-astral', nameFr:'Autel Astral', nameEn:'Astral Altar', cost:650 },
-  { id:'flamme-primordiale', nameFr:'Flamme Primordiale', nameEn:'Primordial Flame', cost:720 },
+  // --- Permanent : Lumière ---
+  { id:'lanterne', nameFr:'Lanterne de Papier', nameEn:'Paper Lantern', cost:150, element:'lumiere' },
+  { id:'autel', nameFr:'Autel Ancien', nameEn:'Ancient Altar', cost:420, element:'lumiere' },
+  { id:'autel-astral', nameFr:'Autel Astral', nameEn:'Astral Altar', cost:650, element:'lumiere', shape:'gem' },
+  { id:'orbe-astral', nameFr:'Orbe Astral', nameEn:'Astral Orb', cost:420, element:'lumiere', shape:'orb' },
+  { id:'miroir-lune', nameFr:'Miroir de Lune', nameEn:'Moon Mirror', cost:380, element:'lumiere', shape:'gem' },
+  { id:'brule-encens', nameFr:'Brûle-Encens', nameEn:'Incense Burner', cost:260, element:'lumiere', shape:'container' },
+  { id:'vitrail-ancien', nameFr:'Vitrail Ancien', nameEn:'Ancient Stained Glass', cost:440, element:'lumiere', shape:'banner' },
+  { id:'horloge-solaire', nameFr:'Horloge Solaire', nameEn:'Sundial', cost:400, element:'lumiere', shape:'charm' },
+  // --- Permanent : Feu ---
+  { id:'flamme-eternelle', nameFr:'Flamme Éternelle', nameEn:'Eternal Flame', cost:520, element:'feu' },
+  { id:'flamme-primordiale', nameFr:'Flamme Primordiale', nameEn:'Primordial Flame', cost:720, element:'feu', shape:'flame' },
+  { id:'torche-forge', nameFr:'Torche de Forge', nameEn:'Forge Torch', cost:200, element:'feu', shape:'flame' },
+  { id:'brasero-ancien', nameFr:'Brasero Ancien', nameEn:'Ancient Brazier', cost:380, element:'feu', shape:'container' },
+  // --- Permanent : Eau ---
+  { id:'bassin', nameFr:'Bassin de Nénuphars', nameEn:'Lily Pond', cost:220, element:'eau' },
+  { id:'fontaine-celeste', nameFr:'Fontaine Céleste', nameEn:'Celestial Fountain', cost:340, element:'eau', shape:'container' },
+  { id:'etang-koi', nameFr:'Étang aux Koïs', nameEn:'Koi Pond', cost:300, element:'eau', shape:'orb' },
+  { id:'puits-voeux', nameFr:'Puits aux Vœux', nameEn:'Wishing Well', cost:260, element:'eau', shape:'container' },
+  // --- Permanent : Terre ---
+  { id:'banc', nameFr:'Banc de Pierre', nameEn:'Stone Bench', cost:180, element:'terre' },
+  { id:'statue-ancien', nameFr:'Statue de Gardien', nameEn:'Guardian Statue', cost:480, element:'terre' },
+  { id:'rocher-runique', nameFr:'Rocher Runique', nameEn:'Runic Boulder', cost:240, element:'terre', shape:'statue' },
+  { id:'totem-anciens', nameFr:'Totem des Anciens', nameEn:'Totem of the Ancients', cost:460, element:'terre', shape:'statue' },
+  { id:'passerelle-bois', nameFr:'Passerelle de Bois', nameEn:'Wooden Footbridge', cost:220, element:'terre', shape:'container' },
+  { id:'cabane-miniature', nameFr:'Cabane Miniature', nameEn:'Miniature Cabin', cost:400, element:'terre', shape:'container' },
+  // --- Permanent : Air ---
+  { id:'cristal', nameFr:'Cristal Lumineux', nameEn:'Glowing Crystal', cost:300, element:'air' },
+  { id:'carillon', nameFr:'Carillon de Vent', nameEn:'Wind Chime', cost:340, element:'air' },
+  { id:'moulin-vent', nameFr:'Moulin à Vent', nameEn:'Windmill', cost:280, element:'air', shape:'charm' },
+  { id:'plume-suspendue', nameFr:'Plume Suspendue', nameEn:'Hanging Feather', cost:190, element:'air', shape:'banner' },
+  { id:'girouette-dragon', nameFr:'Girouette Dragon', nameEn:'Dragon Weathervane', cost:360, element:'air', shape:'charm' },
+  { id:'colonne-brise', nameFr:'Colonne de Brise', nameEn:'Breeze Column', cost:320, element:'air', shape:'gem' },
+  // --- Permanent : Nature ---
+  { id:'arche', nameFr:'Arche Fleurie', nameEn:'Flowered Arch', cost:260, element:'nature' },
+  { id:'bosquet-bambous', nameFr:'Bosquet de Bambous', nameEn:'Bamboo Grove', cost:260, element:'nature', shape:'plant' },
+  { id:'ruche-doree', nameFr:'Ruche Dorée', nameEn:'Golden Beehive', cost:300, element:'nature', shape:'container' },
+  { id:'jardin-mousse', nameFr:'Jardin de Mousse', nameEn:'Moss Garden', cost:200, element:'nature', shape:'plant' },
+  { id:'balancelle-jardin', nameFr:'Balancelle de Jardin', nameEn:'Garden Swing', cost:340, element:'nature', shape:'statue' },
+  { id:'tapis-petales', nameFr:'Tapis de Pétales', nameEn:'Petal Carpet', cost:180, element:'nature', shape:'plant' },
+  // --- Saisonnier : Été ---
+  { id:'voile-solaire', nameFr:'Voile Solaire', nameEn:'Solar Sail', cost:260, seasonal:'ete', element:'lumiere' },
+  { id:'etoile-mer-doree', nameFr:'Étoile de Mer Dorée', nameEn:'Golden Starfish', cost:240, seasonal:'ete', element:'eau', shape:'charm' },
+  { id:'parasol-plage', nameFr:'Parasol de Plage', nameEn:'Beach Parasol', cost:260, seasonal:'ete', element:'lumiere', shape:'banner' },
+  // --- Saisonnier : Automne ---
+  { id:'citrouille-doree', nameFr:'Citrouille Dorée', nameEn:'Golden Pumpkin', cost:260, seasonal:'automne', element:'terre' },
+  { id:'guirlande-feuilles', nameFr:'Guirlande de Feuilles', nameEn:'Leaf Garland', cost:220, seasonal:'automne', element:'terre', shape:'plant' },
+  { id:'panier-recolte', nameFr:'Panier de Récolte', nameEn:'Harvest Basket', cost:240, seasonal:'automne', element:'terre', shape:'container' },
+  // --- Saisonnier : Hiver ---
+  { id:'guirlande-etoilee', nameFr:'Guirlande Étoilée', nameEn:'Starry Garland', cost:260, seasonal:'hiver', element:'lumiere' },
+  { id:'bonhomme-neige', nameFr:'Bonhomme de Neige', nameEn:'Snowman', cost:260, seasonal:'hiver', element:'eau', shape:'orb' },
+  { id:'couronne-houx', nameFr:'Couronne de Houx', nameEn:'Holly Wreath', cost:220, seasonal:'hiver', element:'nature', shape:'plant' },
+  // --- Saisonnier : Printemps ---
+  { id:'bouquet-cerisier', nameFr:'Bouquet de Fleurs de Cerisier', nameEn:'Cherry Blossom Bouquet', cost:240, seasonal:'printemps', element:'nature', shape:'plant' },
+  { id:'nid-oiseau', nameFr:"Nid d'Oiseau Printanier", nameEn:'Spring Bird Nest', cost:200, seasonal:'printemps', element:'nature', shape:'container' },
+  { id:'papillon-jade', nameFr:'Papillon de Jade', nameEn:'Jade Butterfly', cost:280, seasonal:'printemps', element:'nature', shape:'charm' },
 ];
 
 // Paliers intermédiaires de la collection (avant les 100%), pour donner un cap régulier à viser.
@@ -281,6 +323,12 @@ const T = {
     'boutique.subtitle': "Personnalise ton sanctuaire avec des écailles gagnées en jouant — jamais d'argent réel ici.",
     'boutique.equipped': 'Équipé ✓',
     'boutique.equip': 'Équiper',
+    'boutique.tabShop': 'Boutique',
+    'boutique.tabCollection': 'Ma collection ({n}/{total})',
+    'boutique.collectionEmpty': "Tu n'as encore rien acheté — direction l'onglet Boutique !",
+    'boutique.shopEmpty': "Tout est acheté pour le moment — reviens à la prochaine saison !",
+    'boutique.sectionSeasonal': 'Saisonnier',
+    'boutique.sectionPermanent': 'Permanent',
     'labo.title': 'Laboratoire',
     'labo.subtitle': "Associe deux dragons adultes pour obtenir un œuf inattendu — parfois même légendaire. Unis deux légendaires, et le mythique n'est plus tout à fait hors de portée.",
     'labo.needTwo': 'Il te faut au moins 2 dragons adultes, non occupés, pour tenter un élevage.',
@@ -515,6 +563,12 @@ const T = {
     'boutique.subtitle': 'Customize your sanctuary with scales earned by playing — never real money here.',
     'boutique.equipped': 'Equipped ✓',
     'boutique.equip': 'Equip',
+    'boutique.tabShop': 'Shop',
+    'boutique.tabCollection': 'My collection ({n}/{total})',
+    'boutique.collectionEmpty': "You haven't bought anything yet — head to the Shop tab!",
+    'boutique.shopEmpty': "Everything's bought for now — check back next season!",
+    'boutique.sectionSeasonal': 'Seasonal',
+    'boutique.sectionPermanent': 'Permanent',
     'labo.title': 'Laboratory',
     'labo.subtitle': 'Pair two adult dragons to get an unexpected egg — sometimes even legendary. Unite two legendaries, and the mythic is no longer completely out of reach.',
     'labo.needTwo': 'You need at least 2 adult, unoccupied dragons to attempt a breeding.',
@@ -1113,9 +1167,59 @@ function decorIconSVG(decorId, size) {
       <path d="${starPath(8, 14, 3, 1.2, 4)}" fill="var(--gold)"/>
       <path d="${starPath(16, 19, 3.6, 1.4, 4)}" fill="var(--gold)"/>
       <path d="${starPath(24, 14, 3, 1.2, 4)}" fill="var(--gold)"/>`;
+  } else {
+    // Repli générique : les nombreux objets ajoutés depuis partagent un petit jeu de silhouettes
+    // teintées par élément, plutôt qu'une illustration sur mesure pour chacun.
+    const entry = DECOR.find(dd => dd.id === decorId);
+    const built = genericDecorSVG((entry && entry.shape) || 'orb', (entry && entry.element) || 'lumiere', gradId);
+    defs = built.defs;
+    body = built.body;
   }
 
   return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><defs>${defs}</defs>${body}</svg>`;
+}
+
+function genericDecorSVG(shape, elKey, gradId) {
+  const c = ELEMENTS[elKey] || ELEMENTS.lumiere;
+  const defs = `<radialGradient id="${gradId}" cx="35%" cy="25%" r="80%"><stop offset="0%" stop-color="${c.light}"/><stop offset="100%" stop-color="${c.base}"/></radialGradient>`;
+  let body;
+  switch (shape) {
+    case 'gem':
+      body = `<path d="M16,4 L26,13 L20,28 L12,28 L6,13 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1.1"/>
+        <path d="M16,4 L16,28 M6,13 L26,13" stroke="#FFFFFF" stroke-width="0.6" opacity="0.45"/>`;
+      break;
+    case 'plant':
+      body = `<path d="M16,29 L16,14" stroke="${c.deep}" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M16,17 C9,15 7,7 9,4 C13,6 17,12 16,17 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="0.9"/>
+        <path d="M16,20 C23,18 25,10 23,7 C19,9 15,15 16,20 Z" fill="${c.light}" stroke="${c.deep}" stroke-width="0.9" opacity="0.9"/>`;
+      break;
+    case 'banner':
+      body = `<line x1="4" y1="6" x2="28" y2="6" stroke="${c.deep}" stroke-width="1.3"/>
+        <path d="M7,6 L11,27 L16,22 L21,27 L25,6" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="0.9"/>`;
+      break;
+    case 'statue':
+      body = `<rect x="9" y="25" width="14" height="4" rx="1" fill="${c.deep}"/>
+        <path d="M12,25 C11,17 12,10 16,7 C20,10 21,17 20,25 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+        <circle cx="16" cy="10.5" r="2.4" fill="${c.light}"/>`;
+      break;
+    case 'container':
+      body = `<path d="M9,13 L23,13 L21,27 C21,28.5 11,28.5 11,27 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+        <ellipse cx="16" cy="13" rx="7" ry="2.2" fill="${c.light}" stroke="${c.deep}" stroke-width="0.9"/>`;
+      break;
+    case 'flame':
+      body = `<path d="M16,4 C22,11 21,16 17,17.5 C19,14 17,12 16,10 C15,12.5 12,15 13,19 C9,17 9,10 16,4 Z" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="0.6"/>`;
+      break;
+    case 'charm':
+      body = `<circle cx="16" cy="15" r="10.5" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+        <path d="${starPath(16, 15, 4.6, 1.8, 4)}" fill="#FFFFFF" opacity="0.8"/>`;
+      break;
+    case 'orb':
+    default:
+      body = `<circle cx="16" cy="16" r="11" fill="url(#${gradId})" stroke="${c.deep}" stroke-width="1"/>
+        <circle cx="12.5" cy="12" r="2.6" fill="#FFFFFF" opacity="0.55"/>`;
+      break;
+  }
+  return { defs, body };
 }
 
 

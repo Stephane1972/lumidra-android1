@@ -167,9 +167,10 @@ function weeklyChallengeCardHtml() {
    ========================================================================= */
 
 const EVENTS = [
-  { id: 'ete', nameFr: "Festival d'Été", nameEn: 'Summer Festival', emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', taglineFr: 'Décoration exclusive en boutique : Voile Solaire !', taglineEn: 'Exclusive shop decoration: Solar Veil!' },
-  { id: 'automne', nameFr: "Récolte d'Automne", nameEn: 'Autumn Harvest', emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', taglineFr: 'Décoration exclusive en boutique : Citrouille Dorée !', taglineEn: 'Exclusive shop decoration: Golden Pumpkin!' },
-  { id: 'hiver', nameFr: "Veillée d'Hiver", nameEn: 'Winter Vigil', emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', taglineFr: 'Décoration exclusive en boutique : Guirlande Étoilée !', taglineEn: 'Exclusive shop decoration: Starry Garland!' },
+  { id: 'printemps', nameFr: 'Éveil du Printemps', nameEn: 'Spring Awakening', emoji: '🌸', startMonth: 2, startDay: 7, endMonth: 6, endDay: 14, decorId: 'bouquet-cerisier', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
+  { id: 'ete', nameFr: "Festival d'Été", nameEn: 'Summer Festival', emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
+  { id: 'automne', nameFr: "Récolte d'Automne", nameEn: 'Autumn Harvest', emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
+  { id: 'hiver', nameFr: "Veillée d'Hiver", nameEn: 'Winter Vigil', emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
 ];
 function eventDisplay(ev) {
   return { name: state.language === 'en' ? ev.nameEn : ev.nameFr, tagline: state.language === 'en' ? ev.taglineEn : ev.taglineFr };
@@ -635,31 +636,72 @@ function flowPanelHtml(title, innerHtml) {
    ÉCRAN — BOUTIQUE
    ========================================================================= */
 
+function decorCardHtml(d) {
+  const owned = state.decorOwned.includes(d.id);
+  const equipped = state.decorEquipped.includes(d.id);
+  const activeEvent = getActiveEvent();
+  const seasonLocked = d.seasonal && !owned && !(activeEvent && activeEvent.id === d.seasonal);
+  const canAfford = state.ecailles >= d.cost && !seasonLocked;
+  const action = !owned
+    ? `<button data-action="buy-decor" data-decor-id="${d.id}" ${canAfford ? '' : 'disabled'} class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full flex items-center justify-center gap-1" style="padding:6px 12px;background:${canAfford ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">${coinIconHtml()} ${d.cost}</button>`
+    : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? t('boutique.equipped') : t('boutique.equip')}</button>`;
+  return `<div class="rounded-2xl p-3 flex flex-col items-center relative" style="background:var(--parchment)">
+    ${d.seasonal ? `<span class="absolute font-display font-bold" style="top:6px;right:6px;font-size:14px" aria-hidden="true">${EVENTS.find(e => e.id === d.seasonal)?.emoji || ''}</span>` : ''}
+    <div class="mb-1 flex items-center justify-center" style="height:34px">${decorIconSVG(d.id, 34)}</div>
+    <div class="font-display font-bold text-xs text-center" style="color:var(--ink)">${d.name}</div>
+    ${action}
+  </div>`;
+}
+
+function decorSectionHtml(title, items) {
+  if (items.length === 0) return '';
+  return `<div class="mb-3\\.5" style="margin-bottom:14px">
+    <div class="font-display font-bold fs-11 mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.02em">${escapeHtml(title)}</div>
+    <div class="grid grid-cols-2 gap-2\\.5" style="gap:10px">${items.map(decorCardHtml).join('')}</div>
+  </div>`;
+}
+
 function renderScreenBoutique() {
   const activeEvent = getActiveEvent();
-  const visibleDecor = DECOR.filter(d => !d.seasonal || state.decorOwned.includes(d.id) || (activeEvent && activeEvent.id === d.seasonal));
-  const cards = visibleDecor.map(d => {
-    const owned = state.decorOwned.includes(d.id);
-    const equipped = state.decorEquipped.includes(d.id);
-    const seasonLocked = d.seasonal && !owned && !(activeEvent && activeEvent.id === d.seasonal);
-    const canAfford = state.ecailles >= d.cost && !seasonLocked;
-    const action = !owned
-      ? `<button data-action="buy-decor" data-decor-id="${d.id}" ${canAfford ? '' : 'disabled'} class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full flex items-center justify-center gap-1" style="padding:6px 12px;background:${canAfford ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">${coinIconHtml()} ${d.cost}</button>`
-      : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? t('boutique.equipped') : t('boutique.equip')}</button>`;
-    return `<div class="rounded-2xl p-3 flex flex-col items-center relative" style="background:var(--parchment)">
-      ${d.seasonal ? `<span class="absolute font-display font-bold" style="top:6px;right:6px;font-size:14px" aria-hidden="true">${EVENTS.find(e => e.id === d.seasonal)?.emoji || ''}</span>` : ''}
-      <div class="mb-1 flex items-center justify-center" style="height:34px">${decorIconSVG(d.id, 34)}</div>
-      <div class="font-display font-bold text-xs text-center" style="color:var(--ink)">${d.name}</div>
-      ${action}
-    </div>`;
-  }).join('');
+  const tab = ui.boutiqueTab || 'shop';
+  const ELEMENT_ORDER = ['lumiere', 'feu', 'eau', 'terre', 'air', 'nature'];
+
+  let body;
+  if (tab === 'collection') {
+    const owned = DECOR.filter(d => state.decorOwned.includes(d.id));
+    if (owned.length === 0) {
+      body = emptyNoteHtml(t('boutique.collectionEmpty'));
+    } else {
+      const seasonalOwned = owned.filter(d => d.seasonal);
+      const permanentOwned = owned.filter(d => !d.seasonal);
+      body = seasonalOwned.length
+        ? decorSectionHtml(t('boutique.sectionSeasonal'), seasonalOwned) + decorSectionHtml(t('boutique.sectionPermanent'), permanentOwned)
+        : decorSectionHtml(t('boutique.sectionPermanent'), permanentOwned);
+    }
+  } else {
+    const shoppable = DECOR.filter(d => !state.decorOwned.includes(d.id) && (!d.seasonal || (activeEvent && activeEvent.id === d.seasonal)));
+    if (shoppable.length === 0) {
+      body = emptyNoteHtml(t('boutique.shopEmpty'));
+    } else {
+      const seasonal = shoppable.filter(d => d.seasonal);
+      const bySection = ELEMENT_ORDER.map(el => decorSectionHtml(ELEMENTS[el].name, shoppable.filter(d => !d.seasonal && d.element === el))).join('');
+      body = (seasonal.length ? decorSectionHtml(t('boutique.sectionSeasonal'), seasonal) : '') + bySection;
+    }
+  }
+
+  const ownedCount = state.decorOwned.length;
+  const totalCount = DECOR.length;
 
   document.getElementById('screen-root').innerHTML = `
   <div class="flex-1 overflow-y-auto px-4 pb-4">
     <h3 class="font-display font-bold text-sm mb-1" style="color:var(--ink)">${t('boutique.title')}</h3>
     <p class="font-body font-semibold fs-11 mb-3" style="color:var(--ink-soft)">${t('boutique.subtitle')}</p>
     ${seasonalEventBannerHtml()}
-    <div class="grid grid-cols-2 gap-2\\.5" style="gap:10px">${cards}</div>
+    <div class="flex rounded-2xl p-1 mb-3" style="background:#F1ECE2">
+      <button data-action="boutique-set-tab" data-tab="shop" class="flex-1 font-display font-bold fs-12 py-2 rounded-xl" style="padding:8px 0;background:${tab === 'shop' ? 'var(--parchment)' : 'transparent'};color:var(--ink)">${t('boutique.tabShop')}</button>
+      <button data-action="boutique-set-tab" data-tab="collection" class="flex-1 font-display font-bold fs-12 py-2 rounded-xl" style="padding:8px 0;background:${tab === 'collection' ? 'var(--parchment)' : 'transparent'};color:var(--ink)">${t('boutique.tabCollection', { n: ownedCount, total: totalCount })}</button>
+    </div>
+    ${body}
   </div>`;
 }
 

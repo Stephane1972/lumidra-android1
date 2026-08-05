@@ -33,6 +33,7 @@ function dispatchAction(action, dataset, evt, el) {
   const elementKey = dataset.element;
   const screenName = dataset.screen;
   const expId = dataset.expId;
+  const tab = dataset.tab;
 
   switch (action) {
     case 'select-mode':
@@ -239,6 +240,10 @@ function dispatchAction(action, dataset, evt, el) {
       break;
     case 'expedition-double':
       resolveExpeditionGain(true);
+      break;
+    case 'boutique-set-tab':
+      ui.boutiqueTab = tab;
+      renderScreenBoutique();
       break;
     case 'buy-decor':
       buyDecor(decorId);
