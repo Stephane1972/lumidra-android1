@@ -562,7 +562,7 @@ function teamPickerHtml(zone, availableDragons) {
   if (availableDragons.length === 0) {
     grid = emptyNoteHtml(t('carte.noTeamDragons'));
   } else {
-    grid = `<div class="grid grid-cols-4 gap-2 mb-3">${availableDragons.map(d => {
+    grid = `<div class="team-picker-grid grid grid-cols-4 gap-2 mb-3" style="max-height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${availableDragons.map(d => {
       const s = speciesById(d.speciesId);
       const picked = teamIds.includes(d.id);
       return `<button data-action="carte-toggle-team-member" data-dragon-id="${d.id}" class="rounded-xl p-1\\.5 flex flex-col items-center relative" style="padding:6px;background:${picked ? '#FFF3DC' : 'var(--parchment)'};outline:${picked ? '2px solid var(--gold)' : 'none'}">
@@ -572,7 +572,21 @@ function teamPickerHtml(zone, availableDragons) {
     }).join('')}</div>`;
   }
 
+  // Bande d'équipe sélectionnée, TOUJOURS visible au-dessus de la grille (qui elle défile de façon
+  // indépendante) : plus le nombre de dragons disponibles grandit, plus il devient pénible de
+  // remonter tout en haut pour voir/retirer qui est déjà choisi — cette bande règle ça.
+  const selectedStrip = team.length > 0
+    ? `<div class="flex items-center gap-1\\.5 mb-2\\.5 flex-wrap" style="gap:6px;margin-bottom:10px;">${team.map(d => {
+        const s = speciesById(d.speciesId);
+        return `<button data-action="carte-toggle-team-member" data-dragon-id="${d.id}" class="rounded-lg relative" style="background:#FFF3DC;outline:2px solid var(--gold);padding:2px;">
+          ${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size: 30 })}
+          <span class="flex items-center justify-center" style="position:absolute;top:-4px;right:-4px;background:var(--ink-soft);border-radius:9999px;width:14px;height:14px;">${icon('x', { size: 9, color: '#fff' })}</span>
+        </button>`;
+      }).join('')}</div>`
+    : '';
+
   return `<div>
+    ${selectedStrip}
     ${grid}
     <div class="font-display font-bold text-xs mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">${t('carte.team', { n: teamIds.length })}</div>
     ${statBarHtml(t('carte.statVigueur'), avgVig)}
