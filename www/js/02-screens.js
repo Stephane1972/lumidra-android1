@@ -128,11 +128,13 @@ function dailyQuestsCardHtml() {
       ${rightSide}
     </div>`;
   }).join('');
+  const nextMilestone = nextStreakMilestone();
   return `<div class="rounded-2xl p-3\\.5 mb-3" style="padding:14px;background:var(--parchment)">
     <div class="flex items-center justify-between mb-1">
       <div class="font-display font-bold fs-13" style="color:var(--ink)">${t('objectives.dailyTitle')}</div>
-      ${state.loginStreak > 1 ? `<span class="font-body font-bold fs-11 flex items-center gap-1" style="color:var(--gold-deep)">${t('objectives.dayStreak', { n: state.loginStreak, s: state.loginStreak > 1 ? 's' : '' })}</span>` : ''}
+      ${state.loginStreak > 1 ? `<span class="font-body font-bold fs-11 flex items-center gap-1 anim-pulse" style="color:var(--gold-deep)">${t('objectives.dayStreak', { n: state.loginStreak, s: state.loginStreak > 1 ? 's' : '' })}</span>` : ''}
     </div>
+    ${state.loginStreak > 1 && nextMilestone ? `<div class="font-body fs-10 mb-1\\.5" style="color:var(--ink-soft)">${t('objectives.nextMilestone', { n: nextMilestone - state.loginStreak })}</div>` : ''}
     ${rows}
   </div>`;
 }

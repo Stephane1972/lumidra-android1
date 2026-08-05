@@ -356,18 +356,20 @@ function confirmImportModalHtml() {
 function renderToast() {
   const root = document.getElementById('toast-root');
   if (!ui.toast) { root.innerHTML = ''; return; }
+  const big = ui.toastVariant === 'milestone';
   root.innerHTML = `<div class="absolute left-4 right-4 z-50 anim-fadeup" style="bottom:92px">
-    <div class="font-display font-bold text-xs text-center py-2\\.5 rounded-2xl shadow-lg text-white" style="padding:10px 0;background:var(--ink)">${escapeHtml(ui.toast)}</div>
+    <div class="font-display font-bold ${big ? 'text-sm' : 'text-xs'} text-center py-2\\.5 rounded-2xl shadow-lg" style="padding:${big ? '14px 12px' : '10px 0'};background:${big ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : 'var(--ink)'};color:${big ? 'var(--ink)' : '#fff'}">${escapeHtml(ui.toast)}</div>
   </div>`;
 }
 
-function showToast(text) {
+function showToast(text, variant) {
   ui.toast = text;
+  ui.toastVariant = variant || null;
   renderToast();
   clearTimeout(toastTimer);
   // durée proportionnelle à la longueur du message : un enfant a besoin de plus de temps pour lire une phrase complète
   const duration = Math.min(6000, Math.max(3200, 900 + text.length * 55));
-  toastTimer = setTimeout(() => { ui.toast = null; renderToast(); }, duration);
+  toastTimer = setTimeout(() => { ui.toast = null; ui.toastVariant = null; renderToast(); }, duration);
 }
 
 let holdGateRAF = null;
@@ -577,6 +579,12 @@ function resolveHatch() {
     state.collectionCompleteShown = true;
     showToast(t('toast.dragondexComplete'));
     haptic([40, 60, 40, 60, 80]);
+  } else if (newlyDiscovered && COLLECTION_MILESTONES.includes(state.discovered.length) && !state.collectionMilestonesShown.includes(state.discovered.length)) {
+    // Petit palier de collection intermédiaire (avant les 100%), pour garder un cap régulier à atteindre.
+    state.collectionMilestonesShown.push(state.discovered.length);
+    const milestoneBonus = state.discovered.length * 3;
+    state.ecailles += milestoneBonus;
+    setTimeout(() => showToast(t('toast.collectionMilestone', { n: state.discovered.length, bonus: milestoneBonus }), 'milestone'), 700);
   }
 
   saveStateDebounced();

@@ -495,7 +495,11 @@ function bootLumidra() {
     const streakResult = checkLoginStreak();
     if (streakResult) {
       renderTopBar();
-      setTimeout(() => showToast(t('toast.streakBonus', { n: streakResult.streak, s: streakResult.streak > 1 ? 's' : '', bonus: streakResult.bonus })), 500);
+      if (streakResult.milestone) {
+        setTimeout(() => showToast(t('toast.streakMilestone', { n: streakResult.streak, bonus: streakResult.bonus + streakResult.milestoneBonus }), 'milestone'), 500);
+      } else {
+        setTimeout(() => showToast(t('toast.streakBonus', { n: streakResult.streak, s: streakResult.streak > 1 ? 's' : '', bonus: streakResult.bonus })), 500);
+      }
     }
   }
 }

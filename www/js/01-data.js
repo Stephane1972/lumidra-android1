@@ -103,6 +103,9 @@ const DECOR = [
   { id:'flamme-primordiale', nameFr:'Flamme Primordiale', nameEn:'Primordial Flame', cost:720 },
 ];
 
+// Paliers intermédiaires de la collection (avant les 100%), pour donner un cap régulier à viser.
+const COLLECTION_MILESTONES = [6, 12, 18, 24, 30];
+
 const DEFAULT_STATE = {
   onboarded: false,
   mode: 'eclosion',
@@ -118,6 +121,7 @@ const DEFAULT_STATE = {
   parentalLock: false,
   reduceVibrations: false,
   collectionCompleteShown: false,
+  collectionMilestonesShown: [],
   collectionBannerCollapsed: false,
   dailyQuests: null,
   weeklyChallenge: null,
@@ -227,6 +231,7 @@ const T = {
     'objectives.allDone': 'Tout est à jour',
     'objectives.toClaim': '{n} à réclamer',
     'objectives.dayStreak': '🔥 {n} jour{s}',
+    'objectives.nextMilestone': 'Encore {n} jour(s) avant le prochain bonus de série',
     'objectives.dailyCount': '{n} objectif{s} du jour',
     'objectives.weeklyCount': '1 défi de la semaine',
     'achievements.title': 'Succès',
@@ -357,6 +362,9 @@ const T = {
     'toast.zoneLevelRequired': 'Niveau {n} requis pour débloquer cette zone',
     'toast.corruptedSave': 'Ta sauvegarde précédente était illisible — on repart à zéro, désolé 💛',
     'toast.streakBonus': '🔥 Série de {n} jour{s} ! +{bonus} écailles',
+    'toast.streakMilestone': "🔥✨ Palier de {n} jours d'affilée ! +{bonus} écailles bonus",
+    'toast.dailyComboBonus': '⭐ Les 3 quêtes du jour, terminées ! +{n} écailles bonus',
+    'toast.collectionMilestone': '📖✨ {n} espèces découvertes ! +{bonus} écailles bonus',
     'toast.levelUp': '🎉 Niveau {n} atteint !',
     'toast.weeklyChallengeDone': 'Défi hebdomadaire réussi ! +{n} écailles',
     'toast.questReward': '+{n} écailles !',
@@ -442,6 +450,7 @@ const T = {
     'objectives.allDone': 'All caught up',
     'objectives.toClaim': '{n} to claim',
     'objectives.dayStreak': '🔥 {n} day{s}',
+    'objectives.nextMilestone': '{n} more day(s) to your next streak bonus',
     'objectives.dailyCount': "{n} today's objective{s}",
     'objectives.weeklyCount': '1 weekly challenge',
     'achievements.title': 'Achievements',
@@ -572,6 +581,9 @@ const T = {
     'toast.zoneLevelRequired': 'Level {n} required to unlock this zone',
     'toast.corruptedSave': 'Your previous save could not be read — starting fresh, sorry 💛',
     'toast.streakBonus': '🔥 {n}-day streak! +{bonus} scales',
+    'toast.streakMilestone': '🔥✨ {n}-day milestone! +{bonus} bonus scales',
+    'toast.dailyComboBonus': '⭐ All 3 daily quests done! +{n} bonus scales',
+    'toast.collectionMilestone': '📖✨ {n} species discovered! +{bonus} bonus scales',
     'toast.levelUp': '🎉 Level {n} reached!',
     'toast.weeklyChallengeDone': 'Weekly challenge completed! +{n} scales',
     'toast.questReward': '+{n} scales!',
@@ -1223,7 +1235,8 @@ function claimWeeklyChallenge() {
 }
 
 // Bonus de connexion quotidienne : compte les jours consécutifs et récompense en écailles.
-// Retourne { streak, bonus } le jour où un nouveau bonus est accordé, sinon null.
+// Retourne { streak, bonus, milestone, milestoneBonus } le jour où un nouveau bonus est accordé, sinon null.
+const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 150, 200, 365];
 function checkLoginStreak() {
   const today = todayDateStr();
   if (state.lastLoginDate === today) return null;
@@ -1237,10 +1250,17 @@ function checkLoginStreak() {
   }
   state.longestStreak = Math.max(state.longestStreak || 0, state.loginStreak);
   const bonus = 10 + Math.min(state.loginStreak, 10) * 2;
-  state.ecailles += bonus;
+  const milestone = STREAK_MILESTONES.includes(state.loginStreak);
+  const milestoneBonus = milestone ? state.loginStreak * 5 : 0;
+  state.ecailles += bonus + milestoneBonus;
   state.lastLoginDate = today;
   saveStateDebounced();
-  return { streak: state.loginStreak, bonus };
+  return { streak: state.loginStreak, bonus, milestone, milestoneBonus };
+}
+
+// Prochain palier de série non encore atteint (pour l'affichage "encore N jours").
+function nextStreakMilestone() {
+  return STREAK_MILESTONES.find(m => m > (state.loginStreak || 0)) || null;
 }
 
 function bumpQuestProgress(type, amount) {
@@ -1262,10 +1282,18 @@ function claimDailyQuest(questId) {
   if (!q || q.claimed || q.progress < q.target) return;
   q.claimed = true;
   state.ecailles += q.reward;
-  saveStateDebounced();
   showToast(t('toast.questReward', { n: q.reward }));
   haptic(30);
   playCoinSound();
+  // Bonus "combo" quand les 3 quêtes du jour sont réclamées (une seule fois par jour).
+  const allClaimed = state.dailyQuests.quests.every(qq => qq.claimed);
+  if (allClaimed && !state.dailyQuests.comboClaimed) {
+    state.dailyQuests.comboClaimed = true;
+    const comboBonus = Math.round(state.dailyQuests.quests.reduce((sum, qq) => sum + qq.reward, 0) * 0.5);
+    state.ecailles += comboBonus;
+    setTimeout(() => showToast(t('toast.dailyComboBonus', { n: comboBonus }), 'milestone'), 900);
+  }
+  saveStateDebounced();
   renderTopBar();
   if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
 }
