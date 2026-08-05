@@ -231,6 +231,9 @@ function dispatchAction(action, dataset, evt, el) {
     case 'carte-claim':
       claimExpedition(expId);
       break;
+    case 'carte-speed-up':
+      speedUpExpedition(expId);
+      break;
     case 'buy-decor':
       buyDecor(decorId);
       break;

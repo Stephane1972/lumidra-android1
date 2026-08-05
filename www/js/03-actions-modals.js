@@ -503,10 +503,28 @@ function completeOnboarding() {
   renderAll();
 }
 
+// Série de soin quotidien par dragon : le premier câlin du jour (calendaire) compte pour la série ;
+// à partir de 3 jours d'affilée, le dragon gagne un petit bonus d'XP au soin (constance récompensée).
+function bumpCareStreak(d) {
+  const today = todayDateStr();
+  if (d.lastCareDateStr === today) return false;
+  if (d.lastCareDateStr) {
+    const prev = new Date(d.lastCareDateStr + 'T00:00:00Z');
+    const cur = new Date(today + 'T00:00:00Z');
+    const diffDays = Math.round((cur - prev) / 86400000);
+    d.careStreakDays = diffDays === 1 ? (d.careStreakDays || 0) + 1 : 1;
+  } else {
+    d.careStreakDays = 1;
+  }
+  d.lastCareDateStr = today;
+  return d.careStreakDays >= 3;
+}
+
 function careAllDragons() {
   const busy = busyDragonIds();
   let caredCount = 0;
   let grownCount = 0;
+  let streakBonusXp = 0;
   state.dragons.forEach(d => {
     if (busy[d.id]) return;
     if (d.lastCareAt && (Date.now() - d.lastCareAt) < CARE_COOLDOWN_MS) return;
@@ -516,10 +534,11 @@ function careAllDragons() {
     d.careCount = careCount;
     d.lastCareAt = Date.now();
     d.stage = newStage;
+    if (bumpCareStreak(d)) streakBonusXp += 1;
     caredCount += 1;
   });
   if (caredCount === 0) { showToast(t('toast.noDragonForCare')); return; }
-  addXp(caredCount);
+  addXp(caredCount + streakBonusXp);
   bumpQuestProgress('soin', caredCount);
   saveStateDebounced();
   playCareSound();
@@ -541,7 +560,8 @@ function careDragon(dragonId) {
   d.careCount = careCount;
   d.lastCareAt = Date.now();
   d.stage = newStage;
-  addXp(1);
+  const streakBonus = bumpCareStreak(d);
+  addXp(streakBonus ? 2 : 1);
   bumpQuestProgress('soin', 1);
   saveStateDebounced();
   if (grew) { showToast(t('toast.grew', { name: speciesById(d.speciesId).name })); playHatchSound(); }
@@ -721,11 +741,36 @@ function computeTeamBonus(dragonIds, zone) {
   const elementSet = {};
   team.forEach(d => { elementSet[speciesById(d.speciesId).element] = true; });
   const elementalBonus = Object.keys(elementSet).length >= 3 ? 0.1 : Object.keys(elementSet).length === 2 ? 0.05 : 0;
+  // "Expédition parfaite" : toute l'équipe est d'un élément propre à la zone visitée.
+  const perfectMatch = team.every(d => zone.elements.includes(speciesById(d.speciesId).element));
+  const perfectMatchBonus = perfectMatch ? 0.12 : 0;
   let totalEclat = 0;
   team.forEach(d => { totalEclat += computeDragonStats(d, zone).eclat; });
   const avgEclat = totalEclat / team.length;
   const statBonus = Math.min(0.15, avgEclat / 500);
-  return { eggChanceBonus: harmonyBonus + elementalBonus + statBonus, ecaillesBonus: Math.round(avgEclat * 0.4) };
+  return { eggChanceBonus: harmonyBonus + elementalBonus + perfectMatchBonus + statBonus, ecaillesBonus: Math.round(avgEclat * (perfectMatch ? 0.55 : 0.4)), perfectMatch };
+}
+
+// Accélérer une expédition en cours contre des écailles : un puits de dépense simple,
+// et un vrai choix (patienter gratuitement vs. dépenser pour récupérer son équipe plus tôt).
+function speedUpCost(remainingMs) {
+  return Math.max(15, Math.round(remainingMs / 1000 / 20));
+}
+
+function speedUpExpedition(expId) {
+  const exp = state.expeditions.find(e => e.id === expId);
+  if (!exp) return;
+  const remaining = exp.endAt - Date.now();
+  if (remaining <= 0) return;
+  const cost = speedUpCost(remaining);
+  if (state.ecailles < cost) { showToast(t('toast.notEnoughScales')); return; }
+  state.ecailles -= cost;
+  exp.endAt = Date.now();
+  saveStateDebounced();
+  showToast(t('toast.expeditionSpedUp'));
+  haptic(20);
+  renderTopBar();
+  if (ui.screen === 'carte') renderScreenCarte();
 }
 
 function claimExpedition(expId) {

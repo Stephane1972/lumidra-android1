@@ -205,9 +205,11 @@ function dragonHabitatCardHtml(dragon, busy) {
   const happyDots = Math.min(4, 1 + Math.floor(dragon.careCount / 3));
   let dots = '';
   for (let i = 0; i < 4; i++) dots += `<span class="w-1\\.5 h-1\\.5 rounded-full" style="width:6px;height:6px;background:${i < happyDots ? 'var(--gold)' : '#E6DFD3'}"></span>`;
+  const careStreak = dragon.careStreakDays || 0;
   return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm ${rarityCardClass(species.variant)}" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
     ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">${t('sanctuaire.busyExpedition')}</span>` : ''}
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
+    ${careStreak >= 3 && !busy ? `<span class="absolute font-body font-bold" style="bottom:6px;right:6px;font-size:9px;color:var(--gold-deep)" aria-hidden="true">🔥${careStreak}</span>` : ''}
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
     <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
     <div class="flex gap-1 mt-1">${dots}</div>
@@ -524,12 +526,15 @@ function activeExpeditionCardHtml(exp) {
   const zone = ZONES.find(z => z.id === exp.zoneId);
   const remaining = exp.endAt - now;
   const ready = remaining <= 0;
+  const speedCost = ready ? 0 : speedUpCost(remaining);
   return `<div class="rounded-2xl p-3 flex items-center gap-3" style="background:${ready ? 'linear-gradient(135deg,#FFF3DC,#FCE3B8)' : 'var(--parchment)'}">
     <div class="flex-1">
       <div class="font-display font-bold text-xs" style="color:var(--ink)">${escapeHtml(zone.name)}</div>
       <div class="font-body font-bold fs-11" style="color:${ready ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${ready ? t('carte.expeditionDone') : t('carte.returnIn', { time: fmtCountdown(remaining) })}</div>
     </div>
-    ${ready ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>` : icon('clock', { size: 18, color: 'var(--ink-soft)' })}
+    ${ready
+      ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>`
+      : `<button data-action="carte-speed-up" data-exp-id="${exp.id}" class="font-display font-bold fs-10 px-2\\.5 py-1\\.5 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:#F1ECE2;color:var(--ink-soft)">⚡ ${speedCost}</button>`}
   </div>`;
 }
 
@@ -544,12 +549,13 @@ function teamPickerHtml(zone, availableDragons) {
   team.forEach(d => { elementSet[speciesById(d.speciesId).element] = true; });
   const distinctElements = Object.keys(elementSet).length;
   const elementalBonus = distinctElements >= 3 ? 20 : distinctElements === 2 ? 10 : 0;
+  const perfectMatch = team.length > 0 && team.every(d => zone.elements.includes(speciesById(d.speciesId).element));
 
   let totalVig = 0, totalEclat = 0;
   team.forEach(d => { const st = computeDragonStats(d, zone); totalVig += st.vigueur; totalEclat += st.eclat; });
   const avgVig = team.length ? Math.min(100, Math.round(totalVig / team.length)) : 0;
-  const avgEclat = team.length ? Math.min(100, Math.round(totalEclat / team.length + harmonyBonus * 0.3)) : 0;
-  const harmonie = team.length ? Math.min(100, 30 + harmonyBonus + elementalBonus + team.length * 10) : 0;
+  const avgEclat = team.length ? Math.min(100, Math.round(totalEclat / team.length + harmonyBonus * 0.3 + (perfectMatch ? 15 : 0))) : 0;
+  const harmonie = team.length ? Math.min(100, 30 + harmonyBonus + elementalBonus + (perfectMatch ? 15 : 0) + team.length * 10) : 0;
 
   let grid;
   if (availableDragons.length === 0) {
@@ -573,6 +579,7 @@ function teamPickerHtml(zone, availableDragons) {
     ${statBarHtml(t('carte.statHarmonie'), harmonie)}
     ${harmonyBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-1" style="color:var(--gold-deep)">${t('carte.harmonyBonus')}</div>` : ''}
     ${elementalBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.elementalBonus')}</div>` : ''}
+    ${perfectMatch ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.perfectMatchBonus')}</div>` : ''}
     <button data-action="carte-confirm-team" ${teamIds.length < 2 ? 'disabled' : ''} class="btn-primary full mt-3" style="margin-top:12px;">${t('carte.launchExpedition')}</button>
   </div>`;
 }
