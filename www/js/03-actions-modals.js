@@ -597,7 +597,7 @@ function resolveHatch() {
   const justCompleted = newlyDiscovered && state.discovered.length === SPECIES.length && !state.collectionCompleteShown;
   if (justCompleted) {
     state.collectionCompleteShown = true;
-    showToast(t('toast.dragondexComplete'));
+    showToast(t('toast.dragondexComplete'), 'milestone');
     haptic([40, 60, 40, 60, 80]);
   } else if (newlyDiscovered && COLLECTION_MILESTONES.includes(state.discovered.length) && !state.collectionMilestonesShown.includes(state.discovered.length)) {
     // Petit palier de collection intermédiaire (avant les 100%), pour garder un cap régulier à atteindre.

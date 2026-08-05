@@ -656,7 +656,7 @@ function addXp(amount) {
   const after = computeLevel(state.xp);
   if (after > before) {
     setTimeout(() => {
-      showToast(t('toast.levelUp', { n: after }));
+      showToast(t('toast.levelUp', { n: after }), 'milestone');
       playAchievementSound();
       haptic([30, 50, 30, 50, 80]);
     }, 350);
@@ -1243,7 +1243,7 @@ function claimWeeklyChallenge() {
   w.claimed = true;
   state.ecailles += w.reward;
   saveStateDebounced();
-  showToast(t('toast.weeklyChallengeDone', { n: w.reward }));
+  showToast(t('toast.weeklyChallengeDone', { n: w.reward }), 'milestone');
   haptic([30, 40, 60]);
   playAchievementSound();
   renderTopBar();
@@ -1321,7 +1321,7 @@ function claimAchievement(id) {
   state.achievementsClaimed.push(id);
   state.ecailles += ach.reward;
   saveStateDebounced();
-  showToast(t('toast.achievementUnlocked', { name: ach.name, n: ach.reward }));
+  showToast(t('toast.achievementUnlocked', { name: ach.name, n: ach.reward }), 'milestone');
   haptic([30, 40, 60]);
   playAchievementSound();
   renderTopBar();

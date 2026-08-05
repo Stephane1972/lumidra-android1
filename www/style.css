@@ -339,3 +339,49 @@ body { display:flex; justify-content:center; align-items:flex-start; min-height:
   body { background:#e2e5ea; padding:24px 0; }
   #lumidra-app { border-radius:28px; box-shadow:0 12px 40px rgba(0,0,0,.18); height:844px; }
 }
+
+/* =========================================================================
+   VAGUE 5 — polish visuel : barre de navigation, badges, bannière trophée, onboarding
+   ========================================================================= */
+
+/* ---- barre de navigation : pastille douce derrière l'onglet actif + petit rebond à l'activation ---- */
+#navbar-root button[aria-current="page"] {
+  position:relative;
+}
+#navbar-root button[aria-current="page"]::before {
+  content:''; position:absolute; top:-4px; left:50%; width:38px; height:38px;
+  transform:translateX(-50%); border-radius:14px; z-index:-1;
+  background:radial-gradient(circle, rgba(237,162,60,.22), transparent 70%);
+  animation: lumidra-navpill-in .28s cubic-bezier(.3,.9,.3,1.2);
+}
+@keyframes lumidra-navpill-in { 0%{opacity:0; transform:translateX(-50%) scale(.6);} 100%{opacity:1; transform:translateX(-50%) scale(1);} }
+#navbar-root button[aria-current="page"] span:first-child { animation: lumidra-navicon-pop .32s cubic-bezier(.3,.9,.3,1.3); }
+@keyframes lumidra-navicon-pop { 0%{transform:scale(1);} 40%{transform:scale(1.22);} 100%{transform:scale(1);} }
+@media (prefers-reduced-motion: reduce) {
+  #navbar-root button[aria-current="page"]::before,
+  #navbar-root button[aria-current="page"] span:first-child { animation:none; }
+}
+
+/* ---- pastille de notification (quêtes/succès prêts) : léger pouls pour attirer l'œil sans agresser ---- */
+@keyframes lumidra-badge-pulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+#navbar-root button span[aria-hidden="true"] { animation: lumidra-badge-pulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { #navbar-root button span[aria-hidden="true"] { animation:none; } }
+
+/* ---- bannière "collection complète" : reflet doré qui balaie doucement, comme un trophée sous vitrine ---- */
+.trophy-banner { position:relative; overflow:hidden; }
+.trophy-banner::after {
+  content:''; position:absolute; top:0; bottom:0; left:-60%; width:45%;
+  background:linear-gradient(75deg, transparent, rgba(255,255,255,.55), transparent);
+  animation: lumidra-trophy-sweep 3.4s ease-in-out infinite;
+}
+@keyframes lumidra-trophy-sweep { 0%{ left:-60%; } 45%,100%{ left:130%; } }
+@media (prefers-reduced-motion: reduce) { .trophy-banner::after { animation:none; } }
+
+/* ---- onboarding : halo doux et particules lentes autour de l'œuf d'accueil ---- */
+.onboarding-egg-wrap { position:relative; display:inline-flex; }
+.onboarding-egg-wrap::before {
+  content:''; position:absolute; inset:-22px; border-radius:50%; z-index:-1;
+  background:radial-gradient(circle, rgba(255,214,140,.55), transparent 70%);
+  animation: lumidra-pulse 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .onboarding-egg-wrap::before { animation:none; } }

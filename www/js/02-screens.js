@@ -7,7 +7,7 @@ function renderOnboarding() {
   const root = document.getElementById('onboarding-root');
   root.innerHTML = `
   <div class="absolute inset-0 flex flex-col items-center justify-center px-6 text-center safe-top safe-bottom" style="background:linear-gradient(180deg,#FFF6E0,var(--sky) 60%)">
-    <div class="anim-pulse mb-2">${eggSVG({ element: 'lumiere', size: 84, cracks: 0 })}</div>
+    <div class="anim-pulse mb-2 onboarding-egg-wrap">${eggSVG({ element: 'lumiere', size: 84, cracks: 0 })}</div>
     <h1 class="font-display font-extrabold text-3xl" style="color:var(--ink)">Lumidra</h1>
     <p class="font-body font-bold text-sm mt-1 mb-6" style="color:var(--ink-soft)">${t('onboarding.tagline')}</p>
 
@@ -410,7 +410,7 @@ function renderScreenDragondex() {
         <span style="display:inline-flex">${icon('chevron-down', { size: 14, color: 'var(--gold-deep)' })}</span>
       </button>`;
     } else {
-      completeBanner = `<div class="mb-3 rounded-2xl p-3\\.5 flex items-center gap-3" style="padding:14px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
+      completeBanner = `<div class="mb-3 rounded-2xl p-3\\.5 flex items-center gap-3 trophy-banner" style="padding:14px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
         <div style="font-size:26px;line-height:1;">🏆</div>
         <div class="flex-1">
           <div class="font-display font-bold text-sm" style="color:var(--gold-deep)">${t('dragondex.masterGuardian')}</div>
