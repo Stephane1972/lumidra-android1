@@ -249,6 +249,86 @@ body.gentle-fx .dragon-wing-flap { animation-duration: 2.8s; }
 body.gentle-fx .dragon-tail-swish { animation-duration: 4.4s; }
 @keyframes lumidra-idle-bob-soft { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
 
+/* =========================================================================
+   PASSE VISUELLE — ambiance, auras de rareté, transitions, particules
+   ========================================================================= */
+
+/* ---- ambiance de fond : lueurs douces qui dérivent lentement derrière tout l'écran ---- */
+#lumidra-app::before {
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,223,168,0.55), transparent 42%),
+    radial-gradient(circle at 88% 82%, rgba(190,214,255,0.5), transparent 45%),
+    radial-gradient(circle at 78% 8%, rgba(255,206,224,0.4), transparent 38%);
+  background-size:180% 180%;
+  animation: lumidra-ambient-drift 28s ease-in-out infinite alternate;
+}
+#main-shell, #onboarding-root { position:relative; z-index:1; }
+@keyframes lumidra-ambient-drift {
+  0%   { background-position: 0% 0%,   100% 100%, 100% 0%; }
+  100% { background-position: 22% 18%, 78% 84%,   68% 12%; }
+}
+body.gentle-fx #lumidra-app::before { opacity:.4; animation-duration:42s; }
+@media (prefers-reduced-motion: reduce) { #lumidra-app::before { animation:none; } }
+
+/* ---- transition douce entre écrans (Sanctuaire/Dragondex/Carte/...) ---- */
+@keyframes lumidra-screen-in { 0%{opacity:0; transform:translateY(10px);} 100%{opacity:1; transform:translateY(0);} }
+.screen-transition-in { animation: lumidra-screen-in .32s cubic-bezier(.3,.9,.3,1.1); }
+body.gentle-fx .screen-transition-in { animation-duration:.2s; }
+@media (prefers-reduced-motion: reduce) { .screen-transition-in { animation:none; } }
+
+/* ---- pulse de gain sur le compteur d'écailles (monnaie) ---- */
+@keyframes lumidra-coin-pulse {
+  0%   { transform:scale(1); box-shadow:0 0 0 0 rgba(237,162,60,.45); }
+  35%  { transform:scale(1.16); box-shadow:0 0 0 7px rgba(237,162,60,.28); }
+  100% { transform:scale(1); box-shadow:0 0 0 0 rgba(237,162,60,0); }
+}
+.coin-gain-pulse { animation: lumidra-coin-pulse .55s ease-out; }
+@media (prefers-reduced-motion: reduce) { .coin-gain-pulse { animation:none; } }
+
+/* ---- auras de rareté sur les cartes dragon (sanctuaire, dragondex) ----
+   variant : 0/1 commun (rien), 2 rare (bleu), 3 épique (violet), 4 légendaire (or pulsant), 5 mythique (halo arc-en-ciel tournant) */
+.dragon-card { position:relative; isolation:isolate; }
+.dragon-card::before {
+  content:''; position:absolute; inset:-4px; border-radius:20px; z-index:-1;
+  pointer-events:none; opacity:0;
+}
+.dragon-card.dragon-aura-2::before {
+  opacity:.5; background:radial-gradient(circle, rgba(111,168,224,.65), transparent 68%);
+  animation: lumidra-pulse 2.6s ease-in-out infinite;
+}
+.dragon-card.dragon-aura-3::before {
+  opacity:.5; background:radial-gradient(circle, rgba(155,111,214,.65), transparent 68%);
+  animation: lumidra-pulse 2.2s ease-in-out infinite;
+}
+.dragon-card.dragon-aura-4::before {
+  opacity:.55; background:radial-gradient(circle, rgba(237,162,60,.75), transparent 68%);
+  animation: lumidra-legendary-glow 2.1s ease-in-out infinite;
+}
+.dragon-card.dragon-aura-5::before {
+  opacity:.6; filter:blur(5px);
+  background:conic-gradient(from 0deg, #FF6FA5, #6FA8E0, #7CE0A0, #F5D76E, #FF6FA5);
+  animation: lumidra-mythic-spin 4s linear infinite;
+}
+@keyframes lumidra-mythic-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .dragon-card.dragon-aura-2::before, .dragon-card.dragon-aura-3::before,
+  .dragon-card.dragon-aura-4::before, .dragon-card.dragon-aura-5::before { animation:none; }
+}
+
+/* ---- burst de particules à l'éclosion (légendaire / mythique) ---- */
+@keyframes lumidra-spark-fly {
+  0%   { transform:translate(0,0) scale(0); opacity:0; }
+  18%  { opacity:1; }
+  100% { transform:translate(var(--sx), var(--sy)) scale(1); opacity:0; }
+}
+.spark-burst {
+  position:absolute; top:50%; left:50%; width:7px; height:7px; margin:-3.5px;
+  border-radius:50%; pointer-events:none; z-index:2;
+  animation: lumidra-spark-fly 950ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) { .spark-burst { display:none; } }
+
 /* ---- accessibilité clavier / états ---- */
 [data-action]:focus-visible { outline:2px solid var(--gold-deep); outline-offset:2px; border-radius:8px; }
 

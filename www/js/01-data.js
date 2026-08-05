@@ -1463,6 +1463,30 @@ function elementChipHtml(elKey) {
   return `<span class="inline-flex items-center gap-1 font-body font-bold fs-11 px-2 py-0.5 rounded-full" style="background:${c.light}77;color:${c.deep}">${icon(c.icon, { size: 11 })} ${c.name}</span>`;
 }
 
+// Classe CSS d'aura à poser sur une carte dragon selon sa rareté (voir style.css .dragon-card / .dragon-aura-N).
+function rarityCardClass(variant) {
+  return variant >= 2 ? `dragon-card dragon-aura-${variant}` : 'dragon-card';
+}
+
+// Génère un burst de particules (spans absolus) pour une révélation d'œuf légendaire/mythique.
+// À placer dans un conteneur position:relative (voir hatchModalHtml).
+function sparkBurstHtml(variant) {
+  const mythic = variant === 5;
+  const count = mythic ? 16 : 10;
+  const palette = mythic ? ['#FF6FA5', '#6FA8E0', '#7CE0A0', '#F5D76E'] : ['var(--gold)'];
+  let out = '';
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.35 - 0.175);
+    const dist = 65 + Math.random() * 55;
+    const sx = Math.round(Math.cos(angle) * dist);
+    const sy = Math.round(Math.sin(angle) * dist);
+    const delay = Math.round(Math.random() * 160);
+    const color = palette[i % palette.length];
+    out += `<span class="spark-burst" style="--sx:${sx}px;--sy:${sy}px;animation-delay:${delay}ms;background:${color};box-shadow:0 0 8px 2px ${color}"></span>`;
+  }
+  return out;
+}
+
 function rarityStarsHtml(variant) {
   const n = RARITY_STARS[variant];
   let stars = '';

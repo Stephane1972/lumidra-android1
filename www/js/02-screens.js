@@ -40,6 +40,8 @@ function renderOnboarding() {
 function renderTopBar() {
   const root = document.getElementById('topbar-root');
   const complete = state.discovered.length === SPECIES.length;
+  const coinGained = typeof ui._prevEcailles === 'number' && state.ecailles > ui._prevEcailles;
+  ui._prevEcailles = state.ecailles;
   root.innerHTML = `
   <div class="flex items-center justify-between px-4 pt-4 pb-2 safe-top">
     <div class="flex items-center gap-2\\.5" style="gap:10px">
@@ -57,7 +59,7 @@ function renderTopBar() {
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1\\.5 rounded-full px-3 py-1\\.5 font-display font-bold text-sm shadow-sm" style="gap:6px;background:var(--parchment);color:var(--ink)">
+      <div class="flex items-center gap-1\\.5 rounded-full px-3 py-1\\.5 font-display font-bold text-sm shadow-sm${coinGained ? ' coin-gain-pulse' : ''}" style="gap:6px;background:var(--parchment);color:var(--ink)">
         ${coinIconHtml()} ${state.ecailles}
       </div>
       <button data-action="open-settings" aria-label="${t('topbar.settingsAria')}" class="w-9 h-9 rounded-full flex items-center justify-center" style="background:var(--parchment)">
@@ -201,7 +203,7 @@ function dragonHabitatCardHtml(dragon, busy) {
   const happyDots = Math.min(4, 1 + Math.floor(dragon.careCount / 3));
   let dots = '';
   for (let i = 0; i < 4; i++) dots += `<span class="w-1\\.5 h-1\\.5 rounded-full" style="width:6px;height:6px;background:${i < happyDots ? 'var(--gold)' : '#E6DFD3'}"></span>`;
-  return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
+  return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm ${rarityCardClass(species.variant)}" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
     ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">${t('sanctuaire.busyExpedition')}</span>` : ''}
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
@@ -386,7 +388,7 @@ function renderScreenDragondex() {
 
   let cards = filtered.map(s => {
     const discovered = state.discovered.includes(s.id);
-    return `<button data-action="open-species" data-species-id="${s.id}" class="rounded-2xl p-2 flex flex-col items-center" style="background:var(--parchment)">
+    return `<button data-action="open-species" data-species-id="${s.id}" class="rounded-2xl p-2 flex flex-col items-center ${discovered ? rarityCardClass(s.variant) : ''}" style="background:var(--parchment)">
       <div style="filter:${discovered ? 'none' : 'grayscale(1) brightness(0.4)'};opacity:${discovered ? 1 : 0.55}">
         ${dragonSVG({ element: s.element, variant: s.variant, stage: 'adulte', size: 58 })}
       </div>

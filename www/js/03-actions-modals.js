@@ -69,7 +69,7 @@ function hatchModalHtml(flow) {
     <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? t('modal.hatchMysterious') : flow.taps < 3 ? t('modal.hatchMoving') : t('modal.hatchReady')}</p>
     <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">${t('modal.hatchTapButton', { n: flow.taps })}</button>
   ` : `
-    <div class="relative anim-pop" style="position:relative;z-index:1">${dragonSVG({ element: species.element, variant: species.variant, stage: 'bebe', size: 170 })}</div>
+    <div class="relative anim-pop" style="position:relative;z-index:1">${species.variant >= 4 ? sparkBurstHtml(species.variant) : ''}${dragonSVG({ element: species.element, variant: species.variant, stage: 'bebe', size: 170 })}</div>
     ${species.variant === 4 ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">${t('modal.legendaryBadge')}</div>` : ''}
     <h2 class="font-display font-extrabold text-xl mt-2" style="position:relative;z-index:1;color:var(--ink)">${escapeHtml(species.name.toUpperCase())}</h2>
     <div class="flex items-center gap-2 mt-1" style="position:relative;z-index:1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
@@ -96,7 +96,7 @@ function dragonDetailModalHtml(dragon) {
   return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(dragonDisplayName(dragon, species))}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <button data-action="close-dragon-detail" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
     <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? t('modal.removeFavorite') : t('modal.addFavorite')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
-    ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}
+    <div class="${rarityCardClass(species.variant)}" style="border-radius:24px">${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}</div>
     <div class="flex items-center gap-2 mt-2 w-full justify-center">
       <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="${t('modal.renameAria')}"
         class="font-display font-extrabold text-lg text-center rounded-xl px-2 py-1" style="color:var(--ink);background:var(--sky);max-width:180px"/>
@@ -460,6 +460,12 @@ function renderScreenByName(name) {
   else if (name === 'boutique') renderScreenBoutique();
   else if (name === 'reglages') renderScreenReglages();
   else if (name === 'labo') renderScreenLabo();
+  const root = document.getElementById('screen-root');
+  if (root) {
+    root.classList.remove('screen-transition-in');
+    void root.offsetWidth; // force le reflow pour rejouer l'animation à chaque changement d'écran
+    root.classList.add('screen-transition-in');
+  }
 }
 
 /* =========================================================================
