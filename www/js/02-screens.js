@@ -540,12 +540,16 @@ function teamPickerHtml(zone, availableDragons) {
   team.forEach(d => { temperamentSet[d.temperament] = true; });
   const distinct = Object.keys(temperamentSet).length;
   const harmonyBonus = distinct >= 2 ? 20 : 0;
+  const elementSet = {};
+  team.forEach(d => { elementSet[speciesById(d.speciesId).element] = true; });
+  const distinctElements = Object.keys(elementSet).length;
+  const elementalBonus = distinctElements >= 3 ? 20 : distinctElements === 2 ? 10 : 0;
 
   let totalVig = 0, totalEclat = 0;
   team.forEach(d => { const st = computeDragonStats(d, zone); totalVig += st.vigueur; totalEclat += st.eclat; });
   const avgVig = team.length ? Math.min(100, Math.round(totalVig / team.length)) : 0;
   const avgEclat = team.length ? Math.min(100, Math.round(totalEclat / team.length + harmonyBonus * 0.3)) : 0;
-  const harmonie = team.length ? Math.min(100, 30 + harmonyBonus + team.length * 10) : 0;
+  const harmonie = team.length ? Math.min(100, 30 + harmonyBonus + elementalBonus + team.length * 10) : 0;
 
   let grid;
   if (availableDragons.length === 0) {
@@ -568,6 +572,7 @@ function teamPickerHtml(zone, availableDragons) {
     ${statBarHtml(t('carte.statEclat'), avgEclat)}
     ${statBarHtml(t('carte.statHarmonie'), harmonie)}
     ${harmonyBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-1" style="color:var(--gold-deep)">${t('carte.harmonyBonus')}</div>` : ''}
+    ${elementalBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.elementalBonus')}</div>` : ''}
     <button data-action="carte-confirm-team" ${teamIds.length < 2 ? 'disabled' : ''} class="btn-primary full mt-3" style="margin-top:12px;">${t('carte.launchExpedition')}</button>
   </div>`;
 }
@@ -680,6 +685,19 @@ function renderScreenLabo() {
   const onCooldown = cooldownLeft > 0;
   const canBreed = a && b && a.id !== b.id && !onCooldown && state.ecailles >= BREED_COST;
 
+  // Indicateur de "pitié" : encourage à continuer l'élevage même après une série de résultats communs.
+  let pityHtml = '';
+  if (a && b && a.id !== b.id) {
+    const bothLegendary = speciesById(a.speciesId).variant === 4 && speciesById(b.speciesId).variant === 4;
+    if (bothLegendary) {
+      const left = Math.max(0, LABO_PITY_MYTHIC_THRESHOLD - (state.laboPityMythic || 0));
+      pityHtml = `<div class="font-body font-semibold fs-11 mb-2\\.5 text-center" style="color:var(--gold-deep)">${left <= 0 ? t('labo.pityMythicReady') : t('labo.pityMythic', { n: left })}</div>`;
+    } else {
+      const left = Math.max(0, LABO_PITY_LEGENDARY_THRESHOLD - (state.laboPityLegendary || 0));
+      pityHtml = `<div class="font-body font-semibold fs-11 mb-2\\.5 text-center" style="color:var(--ink-soft)">${left <= 0 ? t('labo.pityLegendaryReady') : t('labo.pityLegendary', { n: left })}</div>`;
+    }
+  }
+
   let pickerHtml = '';
   if (picking) {
     const already = picking === 'a' ? parentBId : parentAId;
@@ -707,6 +725,7 @@ function renderScreenLabo() {
     ${eligible.length < 2 && !(a && b) ? emptyNoteHtml(t('labo.needTwo')) : ''}
     ${pickerHtml}
     <div class="grid grid-cols-2 gap-3 mb-3">${slotHtml(a, 'a')}${slotHtml(b, 'b')}</div>
+    ${pityHtml}
     <button data-action="breed-dragons" ${canBreed ? '' : 'disabled'} class="w-full font-display font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2" style="background:${canBreed ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">
       ${onCooldown ? t('labo.availableIn', { time: fmtCountdown(cooldownLeft) }) : `${coinIconHtml()} ${t('labo.breed', { cost: BREED_COST })}`}
     </button>

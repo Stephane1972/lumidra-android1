@@ -650,20 +650,33 @@ function startExpedition(zoneId, typeId, dragonIds) {
 // injectent aujourd'hui bien plus d'écailles qu'au moment du réglage initial (80/2h).
 const BREED_COST = 120;
 const BREED_COOLDOWN_MS = 3 * 60 * 60 * 1000;
+// Pitié (pity) : évite les séries de malchance trop longues côté élevage, sans changer
+// la moyenne long terme de façon perceptible — un classique des systèmes de gacha "honnêtes".
+const LABO_PITY_LEGENDARY_THRESHOLD = 12;
+const LABO_PITY_MYTHIC_THRESHOLD = 8;
 
 function pickBreedingSpecies(speciesA, speciesB) {
   const sameElement = speciesA.element === speciesB.element;
+  const bothLegendary = speciesA.variant === 4 && speciesB.variant === 4;
+
   // Mythique : seulement en unissant deux dragons DÉJÀ légendaires (le vrai sommet de l'élevage).
-  if (speciesA.variant === 4 && speciesB.variant === 4) {
+  if (bothLegendary) {
     const mythicPool = SPECIES.filter(s => s.variant === 5 && (s.element === speciesA.element || s.element === speciesB.element));
-    if (mythicPool.length && Math.random() < 0.15) {
+    const pityReady = (state.laboPityMythic || 0) >= LABO_PITY_MYTHIC_THRESHOLD;
+    if (mythicPool.length && (pityReady || Math.random() < 0.15)) {
+      state.laboPityMythic = 0;
+      state.laboPityLegendary = 0;
       return mythicPool[randInt(0, mythicPool.length - 1)];
     }
+    state.laboPityMythic = (state.laboPityMythic || 0) + 1;
   }
   const legendaryPool = SPECIES.filter(s => s.variant === 4 && (s.element === speciesA.element || s.element === speciesB.element));
-  if (legendaryPool.length && Math.random() < 0.04) {
+  const legendaryPityReady = (state.laboPityLegendary || 0) >= LABO_PITY_LEGENDARY_THRESHOLD;
+  if (legendaryPool.length && (legendaryPityReady || Math.random() < 0.04)) {
+    state.laboPityLegendary = 0;
     return legendaryPool[randInt(0, legendaryPool.length - 1)];
   }
+  state.laboPityLegendary = (state.laboPityLegendary || 0) + 1;
   const pool = SPECIES.filter(s => s.variant < 4 && (s.element === speciesA.element || s.element === speciesB.element));
   const weighted = [];
   pool.forEach(s => {
@@ -697,7 +710,7 @@ function breedDragons() {
 
 // Jusqu'ici la fiche d'équipe (harmonie de tempérament, vigueur/éclat moyens) n'était
 // qu'un aperçu décoratif au moment de lancer l'expédition. Elle influence désormais
-// vraiment la récolte : diversité de tempérament + éclat moyen de l'équipe.
+// vraiment la récolte : diversité de tempérament + diversité élémentaire + éclat moyen de l'équipe.
 function computeTeamBonus(dragonIds, zone) {
   if (!dragonIds || dragonIds.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0 };
   const team = dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
@@ -705,11 +718,14 @@ function computeTeamBonus(dragonIds, zone) {
   const temperamentSet = {};
   team.forEach(d => { temperamentSet[d.temperament] = true; });
   const harmonyBonus = Object.keys(temperamentSet).length >= 2 ? 0.08 : 0;
+  const elementSet = {};
+  team.forEach(d => { elementSet[speciesById(d.speciesId).element] = true; });
+  const elementalBonus = Object.keys(elementSet).length >= 3 ? 0.1 : Object.keys(elementSet).length === 2 ? 0.05 : 0;
   let totalEclat = 0;
   team.forEach(d => { totalEclat += computeDragonStats(d, zone).eclat; });
   const avgEclat = totalEclat / team.length;
   const statBonus = Math.min(0.15, avgEclat / 500);
-  return { eggChanceBonus: harmonyBonus + statBonus, ecaillesBonus: Math.round(avgEclat * 0.4) };
+  return { eggChanceBonus: harmonyBonus + elementalBonus + statBonus, ecaillesBonus: Math.round(avgEclat * 0.4) };
 }
 
 function claimExpedition(expId) {
