@@ -234,6 +234,12 @@ function dispatchAction(action, dataset, evt, el) {
     case 'carte-speed-up':
       speedUpExpedition(expId);
       break;
+    case 'expedition-cash-in':
+      resolveExpeditionGain(false);
+      break;
+    case 'expedition-double':
+      resolveExpeditionGain(true);
+      break;
     case 'buy-decor':
       buyDecor(decorId);
       break;

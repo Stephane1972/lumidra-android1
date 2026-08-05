@@ -16,7 +16,8 @@ function renderModals() {
   const root = document.getElementById('modal-root');
   let html = '';
 
-  if (ui.hatchFlow) html += hatchModalHtml(ui.hatchFlow);
+  if (ui.expeditionResult) html += expeditionResultModalHtml(ui.expeditionResult);
+  else if (ui.hatchFlow) html += hatchModalHtml(ui.hatchFlow);
   else if (ui.detailDragonId) {
     const dragon = state.dragons.find(d => d.id === ui.detailDragonId);
     if (dragon) html += dragonDetailModalHtml(dragon);
@@ -282,6 +283,18 @@ function speciesDetailModalHtml(entry) {
 
 const HOLD_GATE_DURATION_MS = 3500;
 const HOLD_GATE_CIRCUMFERENCE = 213.6; // 2 * PI * 34
+
+function expeditionResultModalHtml(result) {
+  const rewardIcon = result.gotEgg ? '🥚' : coinIconHtml();
+  return `<div class="modal-overlay" data-backdrop-close="expedition-cash-in" role="dialog" aria-modal="true" aria-label="${t('modal.expeditionResultAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
+    <div class="anim-pop" style="font-size:40px;line-height:1;">${rewardIcon}</div>
+    <h3 class="font-display font-bold text-lg mt-2 text-center" style="color:var(--ink)">${t('modal.expeditionResultTitle', { n: result.ecaillesGain })}</h3>
+    ${result.gotEgg ? `<p class="font-body fs-13 text-center mt-1" style="color:var(--ink-soft)">${t('modal.expeditionResultEgg')}</p>` : ''}
+    <button data-action="expedition-double" class="btn-primary full mt-4" style="margin-top:16px;">${t('modal.doubleOrNothing')}</button>
+    <p class="font-body fs-10 text-center mt-2" style="color:var(--ink-soft)">${t('modal.doubleOrNothingOdds')}</p>
+    <button data-action="expedition-cash-in" class="w-full font-display font-bold text-xs py-3 rounded-2xl mt-2" style="margin-top:8px;background:var(--sky);color:var(--ink-soft)">${t('modal.cashIn')}</button>
+  </div></div>`;
+}
 
 function lockChallengeModalHtml(challenge) {
   return `<div class="modal-overlay" data-backdrop-close="close-lock-challenge" role="dialog" aria-modal="true" aria-label="${t('modal.parentalLockAria')}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
@@ -790,14 +803,17 @@ function claimExpedition(expId) {
     if (!state.discovered.includes(picked.id)) gotEgg = { id: uid('egg'), speciesId: picked.id, obtainedAt: Date.now() };
     else ecaillesGain += 40;
   }
-  state.ecailles += ecaillesGain;
   addXp(5);
   state.statsExpeditionsCompleted = (state.statsExpeditionsCompleted || 0) + 1;
   if (gotEgg) state.eggInbox.push(gotEgg);
   state.expeditions = state.expeditions.filter(e => e.id !== expId);
+  // Le gain d'écailles est crédité tout de suite (jamais de récompense "en attente" qui pourrait
+  // se perdre si l'appli se ferme) ; seul un doublement BONUS optionnel est ensuite proposé.
+  state.ecailles += ecaillesGain;
   bumpQuestProgress('collecte', ecaillesGain);
   state.expeditionLog = state.expeditionLog || [];
-  state.expeditionLog.unshift({ zoneName: zone.name, typeName: type.name, ecailles: ecaillesGain, gotEgg: !!gotEgg, legendary: gotLegendary, mythic: gotMythic, at: Date.now() });
+  const logEntry = { zoneName: zone.name, typeName: type.name, ecailles: ecaillesGain, gotEgg: !!gotEgg, legendary: gotLegendary, mythic: gotMythic, at: Date.now() };
+  state.expeditionLog.unshift(logEntry);
   if (state.expeditionLog.length > 15) state.expeditionLog.length = 15;
   saveStateDebounced();
   haptic(gotEgg ? [25, 50, 50] : 30);
@@ -805,6 +821,32 @@ function claimExpedition(expId) {
   showToast(gotMythic ? t('toast.mythicEgg') : gotLegendary ? t('toast.legendaryEgg') : gotEgg ? t('toast.gainEggScales', { n: ecaillesGain }) : t('toast.gainScales', { n: ecaillesGain }));
   renderTopBar();
   if (ui.screen === 'carte') renderScreenCarte();
+  // Offre optionnelle de doubler ce gain (bonus, sans rien risquer de ce qui est déjà acquis) ;
+  // réservé aux expéditions d'équipe (rares, plusieurs heures) pour que ça reste un moment fort,
+  // pas une interruption répétitive sur les courtes reconnaissances de 3 minutes.
+  if (ecaillesGain > 0 && type.team) {
+    ui.expeditionResult = { ecaillesGain, gotEgg: !!gotEgg, logEntry };
+    renderModals();
+  }
+}
+
+// Résout le doublement optionnel après une expédition (voir claimExpedition / expeditionResultModalHtml).
+// Le gain de base est déjà crédité — ignorer/fermer cette modale ne coûte ni ne change rien.
+function resolveExpeditionGain(doubleDown) {
+  const r = ui.expeditionResult;
+  if (!r) return;
+  if (doubleDown) {
+    const won = Math.random() < 0.5;
+    const delta = won ? r.ecaillesGain : -r.ecaillesGain;
+    state.ecailles = Math.max(0, state.ecailles + delta);
+    if (r.logEntry) r.logEntry.ecailles = won ? r.ecaillesGain * 2 : 0;
+    saveStateDebounced();
+    playCoinSound();
+    showToast(won ? t('toast.doubleWon', { n: r.ecaillesGain * 2 }) : t('toast.doubleLost'));
+    renderTopBar();
+  }
+  ui.expeditionResult = null;
+  renderModals();
 }
 
 function buyDecor(decorId) {
