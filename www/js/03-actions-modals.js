@@ -693,11 +693,15 @@ function hasNativeNotifications() {
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
     && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications);
 }
-function notifIdForExpedition(expId) {
+function notifIdFor(key) {
   let h = 0;
-  for (let i = 0; i < expId.length; i++) h = (h * 31 + expId.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
   return h % 2147483647;
 }
+function notifIdForExpedition(expId) {
+  return notifIdFor('exp:' + expId);
+}
+const STREAK_NOTIF_ID = notifIdFor('streak-reminder');
 async function scheduleExpeditionNotification(exp) {
   if (!hasNativeNotifications()) return;
   try {
@@ -721,6 +725,36 @@ async function cancelExpeditionNotification(expId) {
   if (!hasNativeNotifications()) return;
   try {
     await window.Capacitor.Plugins.LocalNotifications.cancel({ notifications: [{ id: notifIdForExpedition(expId) }] });
+  } catch (e) {}
+}
+
+// Rappel doux de série de connexion : reprogrammé à chaque ouverture pour le lendemain 20h,
+// avec le compte de jours à jour. Un seul rappel actif à la fois (même id), donc pas de spam
+// si le joueur ne revient pas — et il disparaît de lui-même si la série tombe à 0.
+async function scheduleStreakReminder() {
+  if (!hasNativeNotifications()) return;
+  try {
+    const { LocalNotifications } = window.Capacitor.Plugins;
+    if ((state.loginStreak || 0) < 2) {
+      await LocalNotifications.cancel({ notifications: [{ id: STREAK_NOTIF_ID }] });
+      return;
+    }
+    const current = await LocalNotifications.checkPermissions();
+    if (current.display !== 'granted') {
+      const requested = await LocalNotifications.requestPermissions();
+      if (requested.display !== 'granted') return;
+    }
+    const target = new Date();
+    target.setDate(target.getDate() + 1);
+    target.setHours(20, 0, 0, 0);
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: STREAK_NOTIF_ID,
+        title: 'Lumidra',
+        body: t('notif.streakBody', { n: state.loginStreak }),
+        schedule: { at: target },
+      }],
+    });
   } catch (e) {}
 }
 

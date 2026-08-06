@@ -530,6 +530,7 @@ function bootLumidra() {
         setTimeout(() => showToast(t('toast.streakBonus', { n: streakResult.streak, s: streakResult.streak > 1 ? 's' : '', bonus: streakResult.bonus })), 500);
       }
     }
+    scheduleStreakReminder();
   }
 }
 
