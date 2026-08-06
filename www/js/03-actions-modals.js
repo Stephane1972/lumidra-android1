@@ -96,7 +96,7 @@ function hatchModalHtml(flow) {
 function dragonDetailModalHtml(dragon) {
   const species = speciesById(dragon.speciesId);
   const busy = !!busyDragonIds()[dragon.id];
-  const cooldownLeft = dragon.lastCareAt ? CARE_COOLDOWN_MS - (now - dragon.lastCareAt) : 0;
+  const cooldownLeft = dragon.lastCareAt ? effectiveCareCooldown(dragon) - (now - dragon.lastCareAt) : 0;
   const canCare = cooldownLeft <= 0 && !busy;
   const nextStageAt = dragon.stage === 'bebe' ? 5 : dragon.stage === 'juvenile' ? 12 : null;
   const progressPct = nextStageAt ? Math.min(100, (dragon.careCount / nextStageAt) * 100) : 100;
@@ -114,7 +114,10 @@ function dragonDetailModalHtml(dragon) {
     <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     ${dragonStatsRowHtml(dragon, species)}
     <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
-    ${state.mode === 'stratege' ? `<div class="w-full mt-3 flex justify-center gap-4 font-body font-bold fs-11" style="color:var(--ink-soft)"><span>${t('modal.temperamentLabel', { t: dragon.temperament })}</span></div>` : ''}
+    <div class="w-full mt-3 rounded-2xl px-3 py-2\\.5" style="padding:10px 12px;background:var(--sky)">
+      <div class="font-body font-bold fs-11 text-center" style="color:var(--ink)">${t('modal.temperamentLabel', { t: dragon.temperament })}</div>
+      <div class="font-body fs-10 text-center mt-1" style="color:var(--ink-soft)">${t('trait.desc.' + temperamentIndex(dragon))}</div>
+    </div>
     <div class="w-full mt-4">
       <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)">
         <span>${t('modal.stageLabel', { s: STAGE_LABEL[dragon.stage] })}</span>${nextStageAt ? `<span>${t('modal.careCount', { n: dragon.careCount, total: nextStageAt })}</span>` : ''}
@@ -648,9 +651,10 @@ function careAllDragons() {
   let caredCount = 0;
   let grownCount = 0;
   let streakBonusXp = 0;
+  let loyalBonusXp = 0;
   state.dragons.forEach(d => {
     if (busy[d.id]) return;
-    if (d.lastCareAt && (Date.now() - d.lastCareAt) < CARE_COOLDOWN_MS) return;
+    if (d.lastCareAt && (Date.now() - d.lastCareAt) < effectiveCareCooldown(d)) return;
     const careCount = d.careCount + 1;
     const newStage = computeStage(careCount);
     if (newStage !== d.stage) grownCount += 1;
@@ -658,10 +662,11 @@ function careAllDragons() {
     d.lastCareAt = Date.now();
     d.stage = newStage;
     if (bumpCareStreak(d)) streakBonusXp += 1;
+    if (isLoyalDragon(d)) loyalBonusXp += 1;
     caredCount += 1;
   });
   if (caredCount === 0) { showToast(t('toast.noDragonForCare')); return; }
-  addXp(caredCount + streakBonusXp);
+  addXp(caredCount + streakBonusXp + loyalBonusXp);
   bumpQuestProgress('soin', caredCount);
   saveStateDebounced();
   playCareSound();
@@ -676,7 +681,7 @@ function careAllDragons() {
 function careDragon(dragonId) {
   const d = state.dragons.find(dd => dd.id === dragonId);
   if (!d) return;
-  if (d.lastCareAt && (Date.now() - d.lastCareAt) < CARE_COOLDOWN_MS) return;
+  if (d.lastCareAt && (Date.now() - d.lastCareAt) < effectiveCareCooldown(d)) return;
   const careCount = d.careCount + 1;
   const newStage = computeStage(careCount);
   const grew = newStage !== d.stage;
@@ -684,7 +689,8 @@ function careDragon(dragonId) {
   d.lastCareAt = Date.now();
   d.stage = newStage;
   const streakBonus = bumpCareStreak(d);
-  addXp(streakBonus ? 2 : 1);
+  // Loyal : +1 point d'affection supplémentaire à chaque câlin.
+  addXp((streakBonus ? 2 : 1) + (isLoyalDragon(d) ? 1 : 0));
   bumpQuestProgress('soin', 1);
   saveStateDebounced();
   if (grew) { showToast(t('toast.grew', { name: speciesById(d.speciesId).name })); playHatchSound(); }
@@ -905,9 +911,9 @@ function breedDragons() {
 // qu'un aperçu décoratif au moment de lancer l'expédition. Elle influence désormais
 // vraiment la récolte : diversité de tempérament + diversité élémentaire + éclat moyen de l'équipe.
 function computeTeamBonus(dragonIds, zone) {
-  if (!dragonIds || dragonIds.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0 };
+  if (!dragonIds || dragonIds.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0, boldLegendaryMult: 1 };
   const team = dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
-  if (team.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0 };
+  if (team.length === 0) return { eggChanceBonus: 0, ecaillesBonus: 0, boldLegendaryMult: 1 };
   const temperamentSet = {};
   team.forEach(d => { temperamentSet[d.temperament] = true; });
   const harmonyBonus = Object.keys(temperamentSet).length >= 2 ? 0.08 : 0;
@@ -918,10 +924,20 @@ function computeTeamBonus(dragonIds, zone) {
   const perfectMatch = team.every(d => zone.elements.includes(speciesById(d.speciesId).element));
   const perfectMatchBonus = perfectMatch ? 0.12 : 0;
   let totalEclat = 0;
-  team.forEach(d => { totalEclat += computeDragonStats(d, zone).eclat; });
+  let totalVigueur = 0;
+  team.forEach(d => { const st = computeDragonStats(d, zone); totalEclat += st.eclat; totalVigueur += st.vigueur; });
   const avgEclat = totalEclat / team.length;
+  const avgVigueur = totalVigueur / team.length;
   const statBonus = Math.min(0.15, avgEclat / 500);
-  return { eggChanceBonus: harmonyBonus + elementalBonus + perfectMatchBonus + statBonus, ecaillesBonus: Math.round(avgEclat * (perfectMatch ? 0.55 : 0.4)), perfectMatch };
+  // Audacieux : chaque dragon Audacieux de l'équipe augmente les chances de rareté de +25% (cumulatif).
+  const boldCount = team.filter(isBoldDragon).length;
+  const boldLegendaryMult = 1 + boldCount * 0.25;
+  return {
+    eggChanceBonus: harmonyBonus + elementalBonus + perfectMatchBonus + statBonus,
+    ecaillesBonus: Math.round(avgEclat * (perfectMatch ? 0.55 : 0.4) + avgVigueur * 0.15),
+    perfectMatch,
+    boldLegendaryMult,
+  };
 }
 
 // Accélérer une expédition en cours contre des écailles : un puits de dépense simple,
@@ -960,8 +976,8 @@ function claimExpedition(expId) {
   let gotMythic = false;
   const effEggChance = type.eggChance + teamBonus.eggChanceBonus + (eventBoost ? 0.05 : 0);
   if (Math.random() < Math.min(0.97, effEggChance)) {
-    const effLegendaryChance = (type.legendaryChance || 0) * (eventBoost ? 1.5 : 1);
-    const effMythicChance = (type.mythicChance || 0) * (eventBoost ? 1.3 : 1);
+    const effLegendaryChance = (type.legendaryChance || 0) * (eventBoost ? 1.5 : 1) * (teamBonus.boldLegendaryMult || 1);
+    const effMythicChance = (type.mythicChance || 0) * (eventBoost ? 1.3 : 1) * (teamBonus.boldLegendaryMult || 1);
     const picked = weightedSpeciesFromZone(zone, effLegendaryChance, effMythicChance);
     if (picked.variant === 4) gotLegendary = true;
     if (picked.variant === 5) gotMythic = true;

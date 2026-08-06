@@ -22,6 +22,22 @@ let STAGE_LABEL = STAGE_LABEL_FR;
 const TEMPERAMENTS_FR = ['Calme', 'Joueur', 'Audacieux', 'Loyal'];
 const TEMPERAMENTS_EN = ['Calm', 'Playful', 'Bold', 'Loyal'];
 let TEMPERAMENTS = TEMPERAMENTS_FR;
+
+// Chaque tempérament donne un petit trait passif distinct et concret — jusqu'ici le
+// tempérament n'était qu'une étiquette sans effet ; il influence maintenant vraiment
+// le jeu (endurance, cooldown de soin, chance en expédition, XP d'affection).
+// L'index (0-3) est la clé canonique : le texte affiché dépend juste de la langue.
+function temperamentIndex(dragon) {
+  let i = TEMPERAMENTS_FR.indexOf(dragon.temperament);
+  if (i === -1) i = TEMPERAMENTS_EN.indexOf(dragon.temperament);
+  return i === -1 ? 0 : i;
+}
+function effectiveCareCooldown(dragon) {
+  // Joueur : récupère 20% plus vite, on peut le câliner plus souvent.
+  return temperamentIndex(dragon) === 1 ? Math.round(CARE_COOLDOWN_MS * 0.8) : CARE_COOLDOWN_MS;
+}
+function isLoyalDragon(dragon) { return temperamentIndex(dragon) === 3; }
+function isBoldDragon(dragon) { return temperamentIndex(dragon) === 2; }
 const CARE_COOLDOWN_MS = 90000; // 1 min 30 — un vrai temps de pause, plus une boucle instantanée
 const SAVE_KEY = 'lumidra-save-v1';
 
@@ -476,6 +492,7 @@ const T = {
     'carte.statEclat': 'Éclat',
     'carte.statHarmonie': 'Harmonie',
     'carte.harmonyBonus': "💡 Tempéraments variés : bonus d'harmonie actif",
+    'carte.boldBonus': '⚡ Audacieux dans l\u2019équipe : +{n}% de chance de rareté',
     'carte.elementalBonus': "🌈 Éléments variés : bonus de récolte actif",
     'carte.perfectMatchBonus': "🎯 Équipe parfaitement accordée à la zone : bonus maximal !",
     'carte.launchExpedition': "Lancer l'expédition",
@@ -524,6 +541,10 @@ const T = {
     'modal.renameAria': 'Renommer ce dragon',
     'modal.confirmNameAria': 'Valider le nom',
     'modal.temperamentLabel': 'Tempérament : {t}',
+    'trait.desc.0': '🛡️ Calme : +15% de vigueur, plus d\u2019écailles ramenées en expédition',
+    'trait.desc.1': '🎾 Joueur : récupère 20% plus vite, câlinable plus souvent',
+    'trait.desc.2': '⚡ Audacieux : +25% de chance de croiser un dragon rare en expédition',
+    'trait.desc.3': '💛 Loyal : +1 point d\u2019affection à chaque câlin',
     'modal.stageLabel': 'Stade : {s}',
     'modal.careCount': '{n}/{total} soins',
     'modal.inExpedition': 'En expédition',
@@ -757,6 +778,7 @@ const T = {
     'carte.statEclat': 'Radiance',
     'carte.statHarmonie': 'Harmony',
     'carte.harmonyBonus': '💡 Varied temperaments: harmony bonus active',
+    'carte.boldBonus': '⚡ Bold dragon(s) in team: +{n}% rarity chance',
     'carte.elementalBonus': '🌈 Varied elements: harvest bonus active',
     'carte.perfectMatchBonus': '🎯 Team perfectly matched to the zone: maximum bonus!',
     'carte.launchExpedition': 'Launch the expedition',
@@ -805,6 +827,10 @@ const T = {
     'modal.renameAria': 'Rename this dragon',
     'modal.confirmNameAria': 'Confirm the name',
     'modal.temperamentLabel': 'Temperament: {t}',
+    'trait.desc.0': '🛡️ Calm: +15% vigor, more scales brought back from expeditions',
+    'trait.desc.1': '🎾 Playful: recovers 20% faster, can be cared for more often',
+    'trait.desc.2': '⚡ Bold: +25% chance of finding a rare dragon on expeditions',
+    'trait.desc.3': '💛 Loyal: +1 affection point on every hug',
     'modal.stageLabel': 'Stage: {s}',
     'modal.careCount': '{n}/{total} care',
     'modal.inExpedition': 'On expedition',
@@ -991,7 +1017,9 @@ function computeDragonStats(dragon, zone) {
   const s = speciesById(dragon.speciesId);
   const rarityBase = [30, 30, 45, 60, 85, 115][s.variant];
   const stageBonus = { bebe: 0, juvenile: 8, adulte: 16 }[dragon.stage];
-  const vigueur = rarityBase + stageBonus;
+  let vigueur = rarityBase + stageBonus;
+  // Calme : endurance renforcée (+15% de vigueur), directement utile pour les récompenses d'expédition.
+  if (temperamentIndex(dragon) === 0) vigueur = Math.round(vigueur * 1.15);
   const eclat = rarityBase + stageBonus + (zone.elements.includes(s.element) ? 20 : 0);
   return { vigueur, eclat };
 }

@@ -631,6 +631,7 @@ function teamPickerHtml(zone, availableDragons) {
     ${harmonyBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-1" style="color:var(--gold-deep)">${t('carte.harmonyBonus')}</div>` : ''}
     ${elementalBonus > 0 ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.elementalBonus')}</div>` : ''}
     ${perfectMatch ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.perfectMatchBonus')}</div>` : ''}
+    ${team.filter(isBoldDragon).length > 0 ? `<div class="font-body font-semibold fs-11 mt-0\\.5" style="color:var(--gold-deep)">${t('carte.boldBonus', { n: team.filter(isBoldDragon).length * 25 })}</div>` : ''}
     <button data-action="carte-confirm-team" ${teamIds.length < 2 ? 'disabled' : ''} class="btn-primary full mt-3" style="margin-top:12px;">${t('carte.launchExpedition')}</button>
   </div>`;
 }
