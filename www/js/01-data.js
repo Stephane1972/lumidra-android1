@@ -32,12 +32,38 @@ function temperamentIndex(dragon) {
   if (i === -1) i = TEMPERAMENTS_EN.indexOf(dragon.temperament);
   return i === -1 ? 0 : i;
 }
-function effectiveCareCooldown(dragon) {
-  // Joueur : récupère 20% plus vite, on peut le câliner plus souvent.
-  return temperamentIndex(dragon) === 1 ? Math.round(CARE_COOLDOWN_MS * 0.8) : CARE_COOLDOWN_MS;
-}
 function isLoyalDragon(dragon) { return temperamentIndex(dragon) === 3; }
 function isBoldDragon(dragon) { return temperamentIndex(dragon) === 2; }
+
+// Lien d'attachement : plus on s'occupe d'un dragon précis (careCount cumulé, qui continue
+// de grimper même une fois adulte), plus son trait de tempérament se renforce. Trois paliers,
+// jamais de régression — le lien ne se perd pas si on espace les câlins.
+const BOND_THRESHOLDS = [0, 15, 40]; // careCount requis pour les paliers 1 / 2 / 3
+function bondTier(dragon) {
+  const c = dragon.careCount || 0;
+  if (c >= BOND_THRESHOLDS[2]) return 3;
+  if (c >= BOND_THRESHOLDS[1]) return 2;
+  return 1;
+}
+function bondNextThreshold(dragon) {
+  const tier = bondTier(dragon);
+  return tier >= 3 ? null : BOND_THRESHOLDS[tier];
+}
+const TRAIT_KEYS = ['calme', 'joueur', 'audacieux', 'loyal'];
+// Ampleur de chaque trait selon le palier de lien (1/2/3) : Calme/Joueur/Audacieux en fraction, Loyal en points d'XP fixes.
+const TRAIT_MAGNITUDE = {
+  calme: [0.15, 0.22, 0.30],
+  joueur: [0.20, 0.30, 0.40],
+  audacieux: [0.25, 0.35, 0.50],
+  loyal: [1, 2, 3],
+};
+function traitKey(dragon) { return TRAIT_KEYS[temperamentIndex(dragon)]; }
+function traitMagnitude(dragon) { return TRAIT_MAGNITUDE[traitKey(dragon)][bondTier(dragon) - 1]; }
+
+function effectiveCareCooldown(dragon) {
+  // Joueur : récupère plus vite (ampleur croissante avec le lien), on peut le câliner plus souvent.
+  return temperamentIndex(dragon) === 1 ? Math.round(CARE_COOLDOWN_MS * (1 - traitMagnitude(dragon))) : CARE_COOLDOWN_MS;
+}
 const CARE_COOLDOWN_MS = 90000; // 1 min 30 — un vrai temps de pause, plus une boucle instantanée
 const SAVE_KEY = 'lumidra-save-v1';
 
@@ -541,10 +567,15 @@ const T = {
     'modal.renameAria': 'Renommer ce dragon',
     'modal.confirmNameAria': 'Valider le nom',
     'modal.temperamentLabel': 'Tempérament : {t}',
-    'trait.desc.0': '🛡️ Calme : +15% de vigueur, plus d\u2019écailles ramenées en expédition',
-    'trait.desc.1': '🎾 Joueur : récupère 20% plus vite, câlinable plus souvent',
-    'trait.desc.2': '⚡ Audacieux : +25% de chance de croiser un dragon rare en expédition',
-    'trait.desc.3': '💛 Loyal : +1 point d\u2019affection à chaque câlin',
+    'trait.desc.calme': '🛡️ Calme : +{n}% de vigueur, plus d\u2019écailles ramenées en expédition',
+    'trait.desc.joueur': '🎾 Joueur : récupère {n}% plus vite, câlinable plus souvent',
+    'trait.desc.audacieux': '⚡ Audacieux : +{n}% de chance de croiser un dragon rare en expédition',
+    'trait.desc.loyal': '💛 Loyal : +{n} point{s} d\u2019affection à chaque câlin',
+    'bond.tier1': 'Lien naissant',
+    'bond.tier2': 'Lien fort',
+    'bond.tier3': 'Lien profond',
+    'bond.progress': '{cur}/{total} soins pour renforcer le lien',
+    'bond.maxed': 'Lien au maximum !',
     'modal.stageLabel': 'Stade : {s}',
     'modal.careCount': '{n}/{total} soins',
     'modal.inExpedition': 'En expédition',
@@ -827,10 +858,15 @@ const T = {
     'modal.renameAria': 'Rename this dragon',
     'modal.confirmNameAria': 'Confirm the name',
     'modal.temperamentLabel': 'Temperament: {t}',
-    'trait.desc.0': '🛡️ Calm: +15% vigor, more scales brought back from expeditions',
-    'trait.desc.1': '🎾 Playful: recovers 20% faster, can be cared for more often',
-    'trait.desc.2': '⚡ Bold: +25% chance of finding a rare dragon on expeditions',
-    'trait.desc.3': '💛 Loyal: +1 affection point on every hug',
+    'trait.desc.calme': '🛡️ Calm: +{n}% vigor, more scales brought back from expeditions',
+    'trait.desc.joueur': '🎾 Playful: recovers {n}% faster, can be cared for more often',
+    'trait.desc.audacieux': '⚡ Bold: +{n}% chance of finding a rare dragon on expeditions',
+    'trait.desc.loyal': '💛 Loyal: +{n} affection point{s} on every hug',
+    'bond.tier1': 'Budding bond',
+    'bond.tier2': 'Strong bond',
+    'bond.tier3': 'Deep bond',
+    'bond.progress': '{cur}/{total} care sessions to strengthen the bond',
+    'bond.maxed': 'Bond maxed out!',
     'modal.stageLabel': 'Stage: {s}',
     'modal.careCount': '{n}/{total} care',
     'modal.inExpedition': 'On expedition',
@@ -1018,8 +1054,8 @@ function computeDragonStats(dragon, zone) {
   const rarityBase = [30, 30, 45, 60, 85, 115][s.variant];
   const stageBonus = { bebe: 0, juvenile: 8, adulte: 16 }[dragon.stage];
   let vigueur = rarityBase + stageBonus;
-  // Calme : endurance renforcée (+15% de vigueur), directement utile pour les récompenses d'expédition.
-  if (temperamentIndex(dragon) === 0) vigueur = Math.round(vigueur * 1.15);
+  // Calme : endurance renforcée (ampleur croissante avec le lien), directement utile pour les récompenses d'expédition.
+  if (temperamentIndex(dragon) === 0) vigueur = Math.round(vigueur * (1 + traitMagnitude(dragon)));
   const eclat = rarityBase + stageBonus + (zone.elements.includes(s.element) ? 20 : 0);
   return { vigueur, eclat };
 }

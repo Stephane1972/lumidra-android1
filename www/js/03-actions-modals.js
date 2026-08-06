@@ -93,6 +93,27 @@ function hatchModalHtml(flow) {
   </div></div>`;
 }
 
+function traitBlockHtml(dragon) {
+  const key = traitKey(dragon);
+  const tier = bondTier(dragon);
+  const mag = traitMagnitude(dragon);
+  const pct = Math.round(mag * 100);
+  const descArgs = key === 'loyal' ? { n: mag, s: mag > 1 ? 's' : '' } : { n: pct };
+  const nextThreshold = bondNextThreshold(dragon);
+  const bondLine = tier >= 3
+    ? t('bond.maxed')
+    : t('bond.progress', { cur: dragon.careCount || 0, total: nextThreshold });
+  const bondPct = tier >= 3 ? 100 : Math.min(100, Math.round(((dragon.careCount || 0) / nextThreshold) * 100));
+  return `<div class="w-full mt-3 rounded-2xl px-3 py-2\\.5" style="padding:10px 12px;background:var(--sky)">
+    <div class="font-body font-bold fs-11 text-center" style="color:var(--ink)">${t('modal.temperamentLabel', { t: dragon.temperament })} · ${t('bond.tier' + tier)}</div>
+    <div class="font-body fs-10 text-center mt-1" style="color:var(--ink-soft)">${t('trait.desc.' + key, descArgs)}</div>
+    <div class="w-full h-1\\.5 rounded-full overflow-hidden mt-2" style="height:6px;margin-top:8px;background:#E4DCC9">
+      <div class="h-full rounded-full" style="width:${bondPct}%;background:var(--gold)"></div>
+    </div>
+    <div class="font-body fs-9 text-center mt-1" style="color:var(--ink-soft)">${bondLine}</div>
+  </div>`;
+}
+
 function dragonDetailModalHtml(dragon) {
   const species = speciesById(dragon.speciesId);
   const busy = !!busyDragonIds()[dragon.id];
@@ -114,10 +135,7 @@ function dragonDetailModalHtml(dragon) {
     <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     ${dragonStatsRowHtml(dragon, species)}
     <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
-    <div class="w-full mt-3 rounded-2xl px-3 py-2\\.5" style="padding:10px 12px;background:var(--sky)">
-      <div class="font-body font-bold fs-11 text-center" style="color:var(--ink)">${t('modal.temperamentLabel', { t: dragon.temperament })}</div>
-      <div class="font-body fs-10 text-center mt-1" style="color:var(--ink-soft)">${t('trait.desc.' + temperamentIndex(dragon))}</div>
-    </div>
+    ${traitBlockHtml(dragon)}
     <div class="w-full mt-4">
       <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)">
         <span>${t('modal.stageLabel', { s: STAGE_LABEL[dragon.stage] })}</span>${nextStageAt ? `<span>${t('modal.careCount', { n: dragon.careCount, total: nextStageAt })}</span>` : ''}
@@ -662,7 +680,7 @@ function careAllDragons() {
     d.lastCareAt = Date.now();
     d.stage = newStage;
     if (bumpCareStreak(d)) streakBonusXp += 1;
-    if (isLoyalDragon(d)) loyalBonusXp += 1;
+    if (isLoyalDragon(d)) loyalBonusXp += traitMagnitude(d);
     caredCount += 1;
   });
   if (caredCount === 0) { showToast(t('toast.noDragonForCare')); return; }
@@ -689,8 +707,8 @@ function careDragon(dragonId) {
   d.lastCareAt = Date.now();
   d.stage = newStage;
   const streakBonus = bumpCareStreak(d);
-  // Loyal : +1 point d'affection supplémentaire à chaque câlin.
-  addXp((streakBonus ? 2 : 1) + (isLoyalDragon(d) ? 1 : 0));
+  // Loyal : points d'affection supplémentaires à chaque câlin, davantage si le lien est fort.
+  addXp((streakBonus ? 2 : 1) + (isLoyalDragon(d) ? traitMagnitude(d) : 0));
   bumpQuestProgress('soin', 1);
   saveStateDebounced();
   if (grew) { showToast(t('toast.grew', { name: speciesById(d.speciesId).name })); playHatchSound(); }
@@ -929,9 +947,8 @@ function computeTeamBonus(dragonIds, zone) {
   const avgEclat = totalEclat / team.length;
   const avgVigueur = totalVigueur / team.length;
   const statBonus = Math.min(0.15, avgEclat / 500);
-  // Audacieux : chaque dragon Audacieux de l'équipe augmente les chances de rareté de +25% (cumulatif).
-  const boldCount = team.filter(isBoldDragon).length;
-  const boldLegendaryMult = 1 + boldCount * 0.25;
+  // Audacieux : chaque dragon Audacieux de l'équipe augmente les chances de rareté selon son propre lien.
+  const boldLegendaryMult = 1 + team.filter(isBoldDragon).reduce((sum, d) => sum + traitMagnitude(d), 0);
   return {
     eggChanceBonus: harmonyBonus + elementalBonus + perfectMatchBonus + statBonus,
     ecaillesBonus: Math.round(avgEclat * (perfectMatch ? 0.55 : 0.4) + avgVigueur * 0.15),
