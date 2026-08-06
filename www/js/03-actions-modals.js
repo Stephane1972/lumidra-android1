@@ -69,10 +69,16 @@ function hatchModalHtml(flow) {
   const body = !revealed ? `
     <div style="position:relative;z-index:1" class="${flow.taps > 0 ? 'anim-shake' : ''}">${eggSVG({ element: species.element, size: 170, cracks: flow.taps })}</div>
     <p class="font-body font-extrabold fs-13 mt-3" style="position:relative;z-index:1;color:var(--ink-soft)">${flow.taps === 0 ? t('modal.hatchMysterious') : flow.taps < 3 ? t('modal.hatchMoving') : t('modal.hatchReady')}</p>
-    <button data-action="hatch-tap" class="btn-primary full mt-4" style="position:relative;z-index:1;margin-top:16px;">${t('modal.hatchTapButton', { n: flow.taps })}</button>
+    <div class="hatch-timing-track" style="position:relative;z-index:1;margin-top:10px">
+      <div class="hatch-timing-zone"></div>
+      <div class="hatch-timing-dot" style="animation-delay:-${(Date.now() - flow.startedAt) % 2400}ms"></div>
+    </div>
+    <p class="font-body font-bold fs-10 mt-1" style="position:relative;z-index:1;min-height:14px;color:var(--gold-deep)">${flow.lastTapBonus ? t('modal.hatchTimingBonus') : t('modal.hatchTimingHint')}</p>
+    <button data-action="hatch-tap" class="btn-primary full mt-3" style="position:relative;z-index:1;margin-top:10px;">${t('modal.hatchTapButton', { n: flow.taps })}</button>
   ` : `
     <div class="relative anim-pop" style="position:relative;z-index:1">${species.variant >= 4 ? sparkBurstHtml(species.variant) : ''}${dragonSVG({ element: species.element, variant: species.variant, stage: 'bebe', size: 170 })}</div>
     ${species.variant === 4 ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">${t('modal.legendaryBadge')}</div>` : ''}
+    ${flow.perfectHatch ? `<div class="font-display font-extrabold fs-11" style="position:relative;z-index:1;color:var(--gold-deep);letter-spacing:.05em">${t('modal.perfectHatchBadge')}</div>` : ''}
     <h2 class="font-display font-extrabold text-xl mt-2" style="position:relative;z-index:1;color:var(--ink)">${escapeHtml(species.name.toUpperCase())}</h2>
     <div class="flex items-center gap-2 mt-1" style="position:relative;z-index:1">${elementChipHtml(species.element)}${rarityStarsHtml(species.variant)}</div>
     <p class="font-body fs-13 text-center mt-3 leading-relaxed rounded-2xl px-4 py-3" style="position:relative;z-index:1;color:var(--ink);background:var(--sky)">${escapeHtml(species.lore)}</p>
@@ -551,7 +557,7 @@ function completeOnboarding() {
   checkLoginStreak();
   saveStateDebounced();
 
-  ui.hatchFlow = { egg, taps: 0, revealedDragon: null };
+  ui.hatchFlow = { egg, taps: 0, revealedDragon: null, startedAt: Date.now(), bonusHits: 0, lastTapBonus: false };
   renderAll();
 }
 
@@ -623,6 +629,16 @@ function careDragon(dragonId) {
   renderModals();
 }
 
+function hatchTimingPos(startedAt) {
+  const period = 1200;
+  const elapsed = (Date.now() - startedAt) % (period * 2);
+  return elapsed <= period ? elapsed / period : (period * 2 - elapsed) / period;
+}
+function hatchTimingIsBonus(startedAt) {
+  const pos = hatchTimingPos(startedAt);
+  return pos >= 0.55 && pos <= 0.82;
+}
+
 function createDragon(speciesId) {
   return {
     id: uid('drg'), speciesId, stage: 'bebe', careCount: 0, lastCareAt: 0,
@@ -637,6 +653,11 @@ function resolveHatch() {
   const species = speciesById(egg.speciesId);
   const newDragon = createDragon(egg.speciesId);
   const newlyDiscovered = !state.discovered.includes(egg.speciesId);
+  const perfectHatch = (flow.bonusHits || 0) >= 2;
+  if (perfectHatch) {
+    newDragon.careCount = 1;
+    state.ecailles += 15;
+  }
   state.eggInbox = state.eggInbox.filter(e => e.id !== egg.id);
   state.dragons.push(newDragon);
   if (newlyDiscovered) state.discovered.push(egg.speciesId);
@@ -645,6 +666,7 @@ function resolveHatch() {
   bumpQuestProgress('eclosion', 1);
   haptic(newlyDiscovered ? [30, 40, 60] : 40);
   playHatchSound();
+  if (perfectHatch) setTimeout(() => showToast(t('toast.perfectHatch'), 'milestone'), 300);
 
   const justCompleted = newlyDiscovered && state.discovered.length === SPECIES.length && !state.collectionCompleteShown;
   if (justCompleted) {
@@ -660,7 +682,7 @@ function resolveHatch() {
   }
 
   saveStateDebounced();
-  ui.hatchFlow = { egg, taps: flow.taps, revealedDragon: newDragon };
+  ui.hatchFlow = { egg, taps: flow.taps, revealedDragon: newDragon, perfectHatch };
   renderModals();
 }
 

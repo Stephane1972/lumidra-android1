@@ -139,13 +139,17 @@ function dispatchAction(action, dataset, evt, el) {
       break;
     }
     case 'start-hatch-from-inbox':
-      if (state.eggInbox.length > 0) { ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null }; renderModals(); }
+      if (state.eggInbox.length > 0) { ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null, startedAt: Date.now(), bonusHits: 0, lastTapBonus: false }; renderModals(); }
       break;
-    case 'hatch-tap':
+    case 'hatch-tap': {
+      const bonus = hatchTimingIsBonus(ui.hatchFlow.startedAt);
+      ui.hatchFlow.lastTapBonus = bonus;
+      if (bonus) ui.hatchFlow.bonusHits = (ui.hatchFlow.bonusHits || 0) + 1;
       ui.hatchFlow.taps = Math.min(3, ui.hatchFlow.taps + 1);
       if (ui.hatchFlow.taps >= 3 && !ui.hatchFlow.revealedDragon) resolveHatch();
-      else renderModals();
+      else { haptic(bonus ? [15, 20, 15] : 20); renderModals(); }
       break;
+    }
     case 'hatch-finish':
       ui.hatchFlow = null;
       renderAll();
@@ -158,7 +162,7 @@ function dispatchAction(action, dataset, evt, el) {
       break;
     case 'hatch-finish-and-continue':
       if (state.eggInbox.length > 0) {
-        ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null };
+        ui.hatchFlow = { egg: state.eggInbox[0], taps: 0, revealedDragon: null, startedAt: Date.now(), bonusHits: 0, lastTapBonus: false };
         renderAll();
       } else {
         ui.hatchFlow = null;

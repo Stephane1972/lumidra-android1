@@ -186,6 +186,22 @@ button:disabled { cursor:not-allowed; }
   width:260px; height:260px; border-radius:50%; pointer-events:none;
 }
 
+/* ---- mini-jeu de timing à l'éclosion : tape quand le point traverse la zone dorée ---- */
+.hatch-timing-track {
+  position:relative; width:220px; max-width:80%; height:14px;
+  background:#EEE6D8; border-radius:999px; overflow:hidden;
+}
+.hatch-timing-zone {
+  position:absolute; top:0; bottom:0; left:55%; width:27%;
+  background:var(--gold); opacity:0.55; border-radius:999px;
+}
+.hatch-timing-dot {
+  position:absolute; top:1.5px; width:11px; height:11px; border-radius:50%;
+  background:var(--gold-deep); box-shadow:0 0 0 2px var(--parchment);
+  animation: hatch-dot-slide 1.2s linear infinite alternate;
+}
+@keyframes hatch-dot-slide { from { left:1.5px; } to { left:calc(100% - 12.5px); } }
+
 /* ---- verrou parental par appui long ---- */
 .hold-gate {
   position:relative; width:80px; height:80px; border-radius:50%;
