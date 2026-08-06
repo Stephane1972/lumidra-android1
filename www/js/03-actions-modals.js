@@ -853,12 +853,17 @@ function claimExpedition(expId) {
   const type = EXPEDITION_TYPES.find(t => t.id === exp.typeId);
   const zone = ZONES.find(z => z.id === exp.zoneId);
   const teamBonus = computeTeamBonus(exp.dragonIds, zone);
+  const activeEvent = getActiveEvent();
+  const eventBoost = !!(activeEvent && zone.elements.includes(activeEvent.boostElement));
   let ecaillesGain = randInt(type.ecaillesMin, type.ecaillesMax) + teamBonus.ecaillesBonus;
   let gotEgg = null;
   let gotLegendary = false;
   let gotMythic = false;
-  if (Math.random() < Math.min(0.95, type.eggChance + teamBonus.eggChanceBonus)) {
-    const picked = weightedSpeciesFromZone(zone, type.legendaryChance || 0, type.mythicChance || 0);
+  const effEggChance = type.eggChance + teamBonus.eggChanceBonus + (eventBoost ? 0.05 : 0);
+  if (Math.random() < Math.min(0.97, effEggChance)) {
+    const effLegendaryChance = (type.legendaryChance || 0) * (eventBoost ? 1.5 : 1);
+    const effMythicChance = (type.mythicChance || 0) * (eventBoost ? 1.3 : 1);
+    const picked = weightedSpeciesFromZone(zone, effLegendaryChance, effMythicChance);
     if (picked.variant === 4) gotLegendary = true;
     if (picked.variant === 5) gotMythic = true;
     if (!state.discovered.includes(picked.id)) gotEgg = { id: uid('egg'), speciesId: picked.id, obtainedAt: Date.now() };

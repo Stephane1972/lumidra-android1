@@ -167,10 +167,10 @@ function weeklyChallengeCardHtml() {
    ========================================================================= */
 
 const EVENTS = [
-  { id: 'printemps', nameFr: 'Éveil du Printemps', nameEn: 'Spring Awakening', emoji: '🌸', startMonth: 2, startDay: 7, endMonth: 6, endDay: 14, decorId: 'bouquet-cerisier', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
-  { id: 'ete', nameFr: "Festival d'Été", nameEn: 'Summer Festival', emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
-  { id: 'automne', nameFr: "Récolte d'Automne", nameEn: 'Autumn Harvest', emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
-  { id: 'hiver', nameFr: "Veillée d'Hiver", nameEn: 'Winter Vigil', emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', taglineFr: 'Décorations exclusives en boutique !', taglineEn: 'Exclusive shop decorations!' },
+  { id: 'printemps', nameFr: 'Éveil du Printemps', nameEn: 'Spring Awakening', emoji: '🌸', startMonth: 2, startDay: 7, endMonth: 6, endDay: 14, decorId: 'bouquet-cerisier', boostElement: 'nature', taglineFr: 'Décorations exclusives + dragons Nature plus chanceux !', taglineEn: 'Exclusive decorations + luckier Nature dragons!' },
+  { id: 'ete', nameFr: "Festival d'Été", nameEn: 'Summer Festival', emoji: '☀️', startMonth: 6, startDay: 15, endMonth: 8, endDay: 31, decorId: 'voile-solaire', boostElement: 'feu', taglineFr: 'Décorations exclusives + dragons Feu plus chanceux !', taglineEn: 'Exclusive decorations + luckier Fire dragons!' },
+  { id: 'automne', nameFr: "Récolte d'Automne", nameEn: 'Autumn Harvest', emoji: '🍂', startMonth: 9, startDay: 15, endMonth: 10, endDay: 31, decorId: 'citrouille-doree', boostElement: 'terre', taglineFr: 'Décorations exclusives + dragons Terre plus chanceux !', taglineEn: 'Exclusive decorations + luckier Earth dragons!' },
+  { id: 'hiver', nameFr: "Veillée d'Hiver", nameEn: 'Winter Vigil', emoji: '❄️', startMonth: 12, startDay: 1, endMonth: 1, endDay: 6, decorId: 'guirlande-etoilee', boostElement: 'eau', taglineFr: 'Décorations exclusives + dragons Eau plus chanceux !', taglineEn: 'Exclusive decorations + luckier Water dragons!' },
 ];
 function eventDisplay(ev) {
   return { name: state.language === 'en' ? ev.nameEn : ev.nameFr, tagline: state.language === 'en' ? ev.taglineEn : ev.taglineFr };
@@ -508,12 +508,15 @@ function zonesPathMapHtml() {
   const nodesHtml = points.map((p, i) => {
     const { zone, unlocked } = p;
     const isNext = i === (firstLockedIndex === -1 ? -1 : firstLockedIndex);
+    const activeEvent = getActiveEvent();
+    const boosted = unlocked && activeEvent && zone.elements.includes(activeEvent.boostElement);
     const chips = zone.elements.map(el => {
       const c = ELEMENTS[el];
       return icon(c.icon, { size: 13, color: unlocked ? c.deep : '#B7AF9E' });
     }).join('');
     return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
       ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
+      ${boosted ? `<div style="position:absolute;left:calc(50% + 22px);top:-8px;font-size:15px" aria-hidden="true" title="${t('carte.eventBoostHint')}">${activeEvent.emoji}</div>` : ''}
       <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : t('dragondex.lockedSuffix')}"
         class="rounded-full flex items-center justify-center relative ${unlocked ? 'dragon-anim-idle' : ''}"
         style="width:66px;height:66px;margin:0 auto;background:${unlocked ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : '#D8CFC0'};box-shadow:0 4px 0 ${unlocked ? 'var(--gold-deep)' : '#B7AF9E'};border:3px solid #fff;animation-delay:${(i * 0.35).toFixed(2)}s">
