@@ -321,6 +321,43 @@ function dispatchAction(action, dataset, evt, el) {
     case 'claim-pass-tier':
       claimPassTier(Number(dataset.tier));
       break;
+    case 'open-rival-modal':
+      ui.rivalModalOpen = true;
+      renderModals();
+      break;
+    case 'close-rival-modal':
+      ui.rivalModalOpen = false;
+      renderModals();
+      break;
+    case 'copy-rival-code': {
+      const code = dataset.code || '';
+      const done = () => showToast(t('rival.codeCopied'));
+      const fail = () => showToast(t('rival.codeCopyFailed'));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done).catch(fail);
+      } else {
+        fail();
+      }
+      haptic(15);
+      break;
+    }
+    case 'compare-rival-code': {
+      const input = document.getElementById('rival-code-input');
+      const raw = input ? input.value : '';
+      const decoded = decodeGuardianCode(raw);
+      if (!decoded) {
+        showToast(t('rival.invalidCode'));
+        break;
+      }
+      addRivalComparison(decoded);
+      haptic(20);
+      renderModals();
+      break;
+    }
+    case 'remove-rival-comparison':
+      removeRivalComparison(dataset.rivalId);
+      renderModals();
+      break;
     case 'change-mode':
       state.mode = mode;
       if (mode === 'eclosion' && ui.screen === 'labo') ui.screen = 'sanctuaire';

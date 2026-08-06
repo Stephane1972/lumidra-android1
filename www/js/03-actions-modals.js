@@ -26,6 +26,7 @@ function renderModals() {
   else if (ui.confirmResetOpen) html += confirmResetModalHtml();
   else if (ui.confirmImportOpen) html += confirmImportModalHtml();
   else if (ui.guardianPathOpen) html += guardianPathModalHtml();
+  else if (ui.rivalModalOpen) html += rivalModalHtml();
   else if (ui.tutorialStep !== null) html += tutorialModalHtml();
 
   // Piège de focus clavier : mémorise l'élément déclencheur à l'ouverture,
@@ -365,6 +366,70 @@ function guardianPathModalHtml() {
     </div>
     <p class="font-body fs-11 mb-3" style="margin-bottom:12px;color:var(--ink-soft)">${t('pass.subtitle')}</p>
     <div class="w-full">${rows}</div>
+  </div></div>`;
+}
+
+function rivalStatRowHtml(label, mineVal, theirVal) {
+  const max = Math.max(mineVal, theirVal, 1);
+  const bar = (val, color) => `<div class="w-full rounded-full overflow-hidden" style="background:#EEE6D8;height:6px;"><div class="h-full rounded-full" style="width:${Math.max(4, (val / max) * 100)}%;background:${color}"></div></div>`;
+  return `<div class="mb-2\\.5" style="margin-bottom:10px">
+    <div class="font-body font-bold fs-11 mb-1" style="color:var(--ink)">${label}</div>
+    <div class="flex items-center gap-2">
+      <span class="font-display font-extrabold fs-11 shrink-0" style="width:24px;color:var(--gold-deep)">${mineVal}</span>
+      ${bar(mineVal, 'var(--gold)')}
+    </div>
+    <div class="flex items-center gap-2 mt-1">
+      <span class="font-display font-extrabold fs-11 shrink-0" style="width:24px;color:var(--ink-soft)">${theirVal}</span>
+      ${bar(theirVal, '#B7AF9E')}
+    </div>
+  </div>`;
+}
+
+function rivalComparisonBlockHtml(rival) {
+  const mine = guardianProfileStats();
+  return `<div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+    <div class="flex items-center justify-between mb-2\\.5" style="margin-bottom:10px">
+      <div class="flex items-center gap-2">
+        <span class="font-display font-bold fs-12" style="color:var(--gold-deep)">${escapeHtml(mine.name)}</span>
+        <span class="font-body fs-10" style="color:var(--ink-soft)">${t('rival.you')}</span>
+      </div>
+      <span class="font-body fs-11" style="color:var(--ink-soft)">${escapeHtml(rival.name)}</span>
+    </div>
+    ${rivalStatRowHtml(t('rival.statLevel'), mine.level, rival.level)}
+    ${rivalStatRowHtml(t('rival.statDiscovered'), mine.discovered, rival.discovered)}
+    ${rivalStatRowHtml(t('rival.statLegendary'), mine.legendary, rival.legendary)}
+    ${rivalStatRowHtml(t('rival.statMythic'), mine.mythic, rival.mythic)}
+    ${rivalStatRowHtml(t('rival.statPassTier'), mine.passTier, rival.passTier)}
+    ${rivalStatRowHtml(t('rival.statStreak'), mine.streak, rival.streak)}
+    <button data-action="remove-rival-comparison" data-rival-id="${rival.id}" class="font-body font-bold fs-10 mt-1" style="color:var(--ink-soft);text-decoration:underline">${t('rival.remove')}</button>
+  </div>`;
+}
+
+function rivalModalHtml() {
+  const mine = guardianProfileStats();
+  const code = encodeGuardianCode(mine) || '';
+  const history = (state.rivalComparisons || []);
+  return `<div class="modal-overlay" data-backdrop-close="close-rival-modal" role="dialog" aria-modal="true" aria-label="${t('rival.title')}"><div class="modal-sheet safe-bottom-sheet" style="align-items:stretch;text-align:left" tabindex="-1">
+    <button data-action="close-rival-modal" aria-label="${t('pass.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+    <div class="flex items-center gap-2 mb-1" style="margin-bottom:4px">
+      <span style="font-size:22px" aria-hidden="true">🤝</span>
+      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">${t('rival.title')}</h3>
+    </div>
+    <p class="font-body fs-11 mb-3" style="margin-bottom:12px;color:var(--ink-soft)">${t('rival.subtitle')}</p>
+
+    <div class="rounded-2xl p-3 mb-3" style="background:var(--sky)">
+      <div class="font-body font-bold fs-11 mb-1\\.5" style="margin-bottom:6px;color:var(--ink)">${t('rival.myProfile')}</div>
+      <div class="font-mono fs-10 rounded-xl px-2\\.5 py-2 mb-2" style="padding:8px 10px;margin-bottom:8px;background:#fff;color:var(--ink-soft);word-break:break-all;user-select:all">${escapeHtml(code)}</div>
+      <button data-action="copy-rival-code" data-code="${escapeHtml(code)}" class="w-full font-display font-bold fs-11 py-2 rounded-xl" style="background:var(--gold);color:var(--ink)">${icon('download', { size: 13 })} ${t('rival.copyCode')}</button>
+    </div>
+
+    <div class="rounded-2xl p-3 mb-3" style="background:var(--parchment)">
+      <label for="rival-code-input" class="font-body font-bold fs-11 mb-1\\.5" style="display:block;margin-bottom:6px;color:var(--ink)">${t('rival.pasteLabel')}</label>
+      <input id="rival-code-input" type="text" placeholder="${t('rival.pastePlaceholder')}" class="w-full rounded-xl px-3 py-2 font-mono fs-10 mb-2" style="padding:8px 10px;margin-bottom:8px;border:1px solid #DDD3C0;background:#fff;color:var(--ink)"/>
+      <button data-action="compare-rival-code" class="w-full font-display font-bold fs-11 py-2 rounded-xl" style="background:var(--gold-deep-btn);color:#fff">${t('rival.compareButton')}</button>
+    </div>
+
+    ${history.length > 0 ? `<div class="font-body font-bold fs-12 mb-2" style="color:var(--ink)">${t('rival.history')}</div>${history.map(rivalComparisonBlockHtml).join('')}` : ''}
   </div></div>`;
 }
 

@@ -214,6 +214,69 @@ function claimPassTier(tierNumber) {
   renderModals();
 }
 
+/* =========================================================================
+   PROFIL DE GARDIEN — comparaison asynchrone entre joueurs via un petit code
+   texte (pas de serveur : tout se fait en local, le code s'échange à la main
+   ou par message). Aucun classement mondial, aucun "perdant" affiché : juste
+   deux profils côte à côte pour se situer entre amis.
+   ========================================================================= */
+const GUARDIAN_CODE_VERSION = 1;
+
+function guardianProfileStats() {
+  return {
+    v: GUARDIAN_CODE_VERSION,
+    name: (state.gardienName || 'Gardien').slice(0, 16),
+    level: computeLevel(state.xp),
+    discovered: state.discovered.length,
+    total: SPECIES.length,
+    legendary: state.discovered.filter(id => speciesById(id).variant === 4).length,
+    mythic: state.discovered.filter(id => speciesById(id).variant === 5).length,
+    passTier: state.passClaimedTiers.length,
+    streak: state.longestStreak || 0,
+  };
+}
+
+function encodeGuardianCode(stats) {
+  const payload = [stats.v, stats.name, stats.level, stats.discovered, stats.total, stats.legendary, stats.mythic, stats.passTier, stats.streak].join('|');
+  try {
+    return 'LMD1-' + btoa(unescape(encodeURIComponent(payload)));
+  } catch (e) {
+    return null;
+  }
+}
+
+function decodeGuardianCode(code) {
+  if (!code) return null;
+  const trimmed = code.trim().replace(/^LMD1-/, '');
+  try {
+    const payload = decodeURIComponent(escape(atob(trimmed)));
+    const parts = payload.split('|');
+    if (parts.length !== 9) return null;
+    const [v, name, level, discovered, total, legendary, mythic, passTier, streak] = parts;
+    const nums = [level, discovered, total, legendary, mythic, passTier, streak].map(Number);
+    if (nums.some(n => !Number.isFinite(n) || n < 0)) return null;
+    return {
+      v: Number(v), name: (name || 'Gardien').slice(0, 16),
+      level: nums[0], discovered: nums[1], total: nums[2],
+      legendary: nums[3], mythic: nums[4], passTier: nums[5], streak: nums[6],
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function addRivalComparison(decoded) {
+  state.rivalComparisons = state.rivalComparisons || [];
+  state.rivalComparisons.unshift({ id: uid('rival'), comparedAt: Date.now(), ...decoded });
+  state.rivalComparisons = state.rivalComparisons.slice(0, 6);
+  saveStateDebounced();
+}
+
+function removeRivalComparison(id) {
+  state.rivalComparisons = (state.rivalComparisons || []).filter(r => r.id !== id);
+  saveStateDebounced();
+}
+
 const DEFAULT_STATE = {
   onboarded: false,
   mode: 'eclosion',
@@ -251,6 +314,7 @@ const DEFAULT_STATE = {
   expeditionLog: [],
   passPoints: 0,
   passClaimedTiers: [],
+  rivalComparisons: [],
   // Détection simple à la première ouverture : français par défaut sauf si l'appareil est
   // clairement réglé sur une autre langue. Modifiable ensuite dans les réglages.
   language: (typeof navigator !== 'undefined' && navigator.language && navigator.language.slice(0, 2).toLowerCase() === 'fr') ? 'fr' : 'en',
@@ -263,7 +327,7 @@ const DEFAULT_STATE = {
 function freshDefaultState() {
   return Object.assign({}, DEFAULT_STATE, {
     dragons: [], eggInbox: [], discovered: [], expeditions: [],
-    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [], passClaimedTiers: [],
+    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [], passClaimedTiers: [], rivalComparisons: [],
   });
 }
 
@@ -380,6 +444,27 @@ const T = {
     'carte.pathSubtitle': 'Avance de zone en zone à mesure que ton niveau grandit.',
     'carte.zoneLevel': 'Niveau {n}',
     'carte.eventBoostHint': 'Chances de rareté accrues pendant l\'événement en cours',
+    'rival.title': 'Comparer avec un autre Gardien',
+    'rival.subtitle': "Partage ton code avec un ami, colle le sien pour voir vos deux parcours côte à côte. Rien n'est envoyé nulle part.",
+    'rival.myProfile': 'Mon profil',
+    'rival.copyCode': 'Copier mon code',
+    'rival.codeCopied': 'Code copié !',
+    'rival.codeCopyFailed': "Impossible de copier automatiquement — sélectionne le code à la main.",
+    'rival.pasteLabel': "Code d'un ami",
+    'rival.pastePlaceholder': 'Colle le code ici (LMD1-...)',
+    'rival.compareButton': 'Comparer',
+    'rival.invalidCode': 'Ce code ne semble pas valide.',
+    'rival.statLevel': 'Niveau',
+    'rival.statDiscovered': 'Dragons découverts',
+    'rival.statLegendary': 'Légendaires',
+    'rival.statMythic': 'Mythiques',
+    'rival.statPassTier': 'Voie du Gardien',
+    'rival.statStreak': 'Plus longue série',
+    'rival.you': 'Toi',
+    'rival.history': 'Comparaisons précédentes',
+    'rival.remove': 'Retirer',
+    'rival.settingsButton': 'Comparer avec un ami',
+    'rival.settingsHint': 'Compare ta progression avec un ami, sans compte ni serveur.',
     'carte.back': 'Retour',
     'carte.chooseDragon': 'Choisis un dragon',
     'carte.buildTeam': 'Compose ton équipe',
@@ -640,6 +725,27 @@ const T = {
     'carte.pathSubtitle': 'Advance zone by zone as your level grows.',
     'carte.zoneLevel': 'Level {n}',
     'carte.eventBoostHint': 'Boosted rarity chances during the current event',
+    'rival.title': 'Compare with another Guardian',
+    'rival.subtitle': "Share your code with a friend, paste theirs to see both journeys side by side. Nothing is sent anywhere.",
+    'rival.myProfile': 'My profile',
+    'rival.copyCode': 'Copy my code',
+    'rival.codeCopied': 'Code copied!',
+    'rival.codeCopyFailed': "Couldn't copy automatically — select the code by hand.",
+    'rival.pasteLabel': "A friend's code",
+    'rival.pastePlaceholder': 'Paste the code here (LMD1-...)',
+    'rival.compareButton': 'Compare',
+    'rival.invalidCode': "That code doesn't look valid.",
+    'rival.statLevel': 'Level',
+    'rival.statDiscovered': 'Dragons discovered',
+    'rival.statLegendary': 'Legendaries',
+    'rival.statMythic': 'Mythics',
+    'rival.statPassTier': "Guardian's Path",
+    'rival.statStreak': 'Longest streak',
+    'rival.you': 'You',
+    'rival.history': 'Previous comparisons',
+    'rival.remove': 'Remove',
+    'rival.settingsButton': 'Compare with a friend',
+    'rival.settingsHint': 'Compare your progress with a friend, no account or server needed.',
     'carte.back': 'Back',
     'carte.chooseDragon': 'Choose a dragon',
     'carte.buildTeam': 'Build your team',
@@ -1589,6 +1695,7 @@ const ui = {
   tutorialStep: null,
   labo: { parentAId: null, parentBId: null, picking: null },
   guardianPathOpen: false,
+  rivalModalOpen: false,
 };
 
 let toastTimer = null;

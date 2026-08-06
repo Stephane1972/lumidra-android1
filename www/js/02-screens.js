@@ -893,6 +893,12 @@ function renderScreenReglages() {
     </div>
 
     <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
+      <div class="font-body font-bold fs-13 mb-1" style="color:var(--ink)">${t('rival.settingsButton')}</div>
+      <p class="font-body fs-11 leading-relaxed mb-3" style="color:var(--ink-soft)">${t('rival.settingsHint')}</p>
+      <button data-action="open-rival-modal" class="w-full flex items-center justify-center gap-1.5 font-display font-bold text-xs py-2.5 rounded-xl" style="padding:10px 0;background:var(--sky);color:var(--ink)">🤝 ${t('rival.settingsButton')}</button>
+    </div>
+
+    <div class="rounded-2xl p-4 mb-3" style="background:var(--parchment)">
       <div class="font-body font-bold fs-13 mb-2" style="color:var(--ink)">${t('settings.statsTitle')}</div>
       ${statRowHtml(t('settings.statDragons'), state.dragons.length)}
       ${statRowHtml(t('settings.statEggs'), state.statsEggsHatched || 0)}
