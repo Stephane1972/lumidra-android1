@@ -207,9 +207,10 @@ function dragonHabitatCardHtml(dragon, busy) {
   let dots = '';
   for (let i = 0; i < 4; i++) dots += `<span class="w-1\\.5 h-1\\.5 rounded-full" style="width:6px;height:6px;background:${i < happyDots ? 'var(--gold)' : '#E6DFD3'}"></span>`;
   const careStreak = dragon.careStreakDays || 0;
-  return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm ${rarityCardClass(species.variant)}" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
+  return `<button data-action="open-dragon" data-dragon-id="${dragon.id}" class="rounded-2xl p-2\\.5 flex flex-col items-center relative shadow-sm ${dragonCardClass(dragon)}" style="padding:10px;background:var(--parchment);opacity:${busy ? 0.6 : 1}">
     ${busy ? `<span class="absolute font-display font-bold fs-8 px-1\\.5 py-0\\.5 rounded-full text-white" style="top:6px;right:6px;padding:2px 6px;background:var(--ink-soft)">${t('sanctuaire.busyExpedition')}</span>` : ''}
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
+    ${bondTier(dragon) === 3 ? `<span class="absolute" style="bottom:6px;left:6px;font-size:11px" aria-hidden="true">💞</span>` : ''}
     ${careStreak >= 3 && !busy ? `<span class="absolute font-body font-bold" style="bottom:6px;right:6px;font-size:9px;color:var(--gold-deep)" aria-hidden="true">🔥${careStreak}</span>` : ''}
     ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
     <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>

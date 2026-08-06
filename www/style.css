@@ -332,6 +332,31 @@ body.gentle-fx .screen-transition-in { animation-duration:.2s; }
   .dragon-card.dragon-aura-4::before, .dragon-card.dragon-aura-5::before { animation:none; }
 }
 
+/* ---- halo de lien (palier 3, indépendant de la rareté) ---- */
+.dragon-card.dragon-bond-max::after {
+  content:''; position:absolute; inset:-6px; border-radius:22px; z-index:-1;
+  pointer-events:none; opacity:.4;
+  background:radial-gradient(circle, rgba(217,99,74,.55), transparent 70%);
+  animation: lumidra-bond-glow 2.4s ease-in-out infinite;
+}
+@keyframes lumidra-bond-glow {
+  0%, 100% { opacity:.28; transform:scale(1); }
+  50% { opacity:.5; transform:scale(1.06); }
+}
+@keyframes lumidra-bond-heart-float {
+  0%   { transform:translateY(0) scale(.6); opacity:0; }
+  15%  { opacity:1; }
+  100% { transform:translateY(-46px) scale(1); opacity:0; }
+}
+.bond-heart-float {
+  position:absolute; top:10%; font-size:15px; pointer-events:none;
+  animation: lumidra-bond-heart-float 2.8s ease-in infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dragon-card.dragon-bond-max::after { animation:none; opacity:.35; }
+  .bond-heart-float { animation:none; opacity:0; }
+}
+
 /* ---- burst de particules à l'éclosion (légendaire / mythique) ---- */
 @keyframes lumidra-spark-fly {
   0%   { transform:translate(0,0) scale(0); opacity:0; }

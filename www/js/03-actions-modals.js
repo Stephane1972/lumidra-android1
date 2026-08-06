@@ -114,6 +114,13 @@ function traitBlockHtml(dragon) {
   </div>`;
 }
 
+// Petits cœurs qui flottent doucement au-dessus du dragon au lien le plus profond —
+// pure récompense de fidélité, aucun texte ni chiffre, juste un clin d'œil visuel.
+function bondHeartsHtml() {
+  const hearts = ['💗', '💞', '💗'];
+  return hearts.map((h, i) => `<span class="bond-heart-float" style="left:${28 + i * 22}%;animation-delay:${(i * 0.7).toFixed(1)}s" aria-hidden="true">${h}</span>`).join('');
+}
+
 function dragonDetailModalHtml(dragon) {
   const species = speciesById(dragon.speciesId);
   const busy = !!busyDragonIds()[dragon.id];
@@ -126,7 +133,7 @@ function dragonDetailModalHtml(dragon) {
   return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(dragonDisplayName(dragon, species))}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <button data-action="close-dragon-detail" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
     <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? t('modal.removeFavorite') : t('modal.addFavorite')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
-    <div class="${rarityCardClass(species.variant)}" style="border-radius:24px">${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}</div>
+    <div class="${dragonCardClass(dragon)}" style="border-radius:24px;position:relative">${bondTier(dragon) === 3 ? bondHeartsHtml() : ''}${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}</div>
     <div class="flex items-center gap-2 mt-2 w-full justify-center">
       <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="${t('modal.renameAria')}"
         class="font-display font-extrabold text-lg text-center rounded-xl px-2 py-1" style="color:var(--ink);background:var(--sky);max-width:180px"/>

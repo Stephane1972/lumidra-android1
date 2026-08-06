@@ -1916,6 +1916,15 @@ function rarityCardClass(variant) {
   return variant >= 2 ? `dragon-card dragon-aura-${variant}` : 'dragon-card';
 }
 
+// Petit halo chaleureux et discret, indépendant de la rareté : marque les dragons au lien
+// le plus profond (palier 3), qu'ils soient communs ou légendaires — récompense de fidélité,
+// pas de puissance.
+function dragonCardClass(dragon) {
+  const species = speciesById(dragon.speciesId);
+  const base = rarityCardClass(species.variant);
+  return bondTier(dragon) === 3 ? base + ' dragon-bond-max' : base;
+}
+
 // Génère un burst de particules (spans absolus) pour une révélation d'œuf légendaire/mythique.
 // À placer dans un conteneur position:relative (voir hatchModalHtml).
 function sparkBurstHtml(variant) {
