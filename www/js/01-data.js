@@ -143,10 +143,76 @@ const DECOR = [
   { id:'bouquet-cerisier', nameFr:'Bouquet de Fleurs de Cerisier', nameEn:'Cherry Blossom Bouquet', cost:240, seasonal:'printemps', element:'nature', shape:'plant' },
   { id:'nid-oiseau', nameFr:"Nid d'Oiseau Printanier", nameEn:'Spring Bird Nest', cost:200, seasonal:'printemps', element:'nature', shape:'container' },
   { id:'papillon-jade', nameFr:'Papillon de Jade', nameEn:'Jade Butterfly', cost:280, seasonal:'printemps', element:'nature', shape:'charm' },
+  // --- Exclusifs : Voie du Gardien (obtenus uniquement via les paliers, jamais en boutique) ---
+  { id:'lanterne-gardien', nameFr:'Lanterne du Gardien', nameEn:"Guardian's Lantern", cost:0, passOnly:true, element:'lumiere', shape:'charm' },
+  { id:'brasier-gardien', nameFr:'Brasier du Gardien', nameEn:"Guardian's Brazier", cost:0, passOnly:true, element:'feu', shape:'flame' },
+  { id:'stele-gardien', nameFr:'Stèle du Gardien', nameEn:"Guardian's Stele", cost:0, passOnly:true, element:'terre', shape:'statue' },
+  { id:'aile-gardien', nameFr:'Aile de Cristal du Gardien', nameEn:"Guardian's Crystal Wing", cost:0, passOnly:true, element:'air', shape:'gem' },
 ];
 
 // Paliers intermédiaires de la collection (avant les 100%), pour donner un cap régulier à viser.
 const COLLECTION_MILESTONES = [6, 12, 18, 24, 30];
+
+// La Voie du Gardien : une progression permanente (jamais de reset, jamais de date limite)
+// alimentée par tout ce que le joueur fait déjà (quêtes, défi hebdo, séries, hauts faits).
+// Chaque palier se débloque à un seuil cumulé de points et se réclame manuellement.
+const PASS_TIERS = [
+  { tier: 1, threshold: 40, reward: { type: 'ecailles', amount: 30 } },
+  { tier: 2, threshold: 100, reward: { type: 'ecailles', amount: 40 } },
+  { tier: 3, threshold: 170, reward: { type: 'ecailles', amount: 45 } },
+  { tier: 4, threshold: 250, reward: { type: 'ecailles', amount: 50 } },
+  { tier: 5, threshold: 340, reward: { type: 'decor', id: 'lanterne-gardien' } },
+  { tier: 6, threshold: 440, reward: { type: 'ecailles', amount: 60 } },
+  { tier: 7, threshold: 550, reward: { type: 'ecailles', amount: 65 } },
+  { tier: 8, threshold: 670, reward: { type: 'ecailles', amount: 70 } },
+  { tier: 9, threshold: 800, reward: { type: 'ecailles', amount: 75 } },
+  { tier: 10, threshold: 940, reward: { type: 'decor', id: 'brasier-gardien' } },
+  { tier: 11, threshold: 1100, reward: { type: 'ecailles', amount: 90 } },
+  { tier: 12, threshold: 1270, reward: { type: 'ecailles', amount: 95 } },
+  { tier: 13, threshold: 1450, reward: { type: 'ecailles', amount: 100 } },
+  { tier: 14, threshold: 1640, reward: { type: 'ecailles', amount: 105 } },
+  { tier: 15, threshold: 1840, reward: { type: 'decor', id: 'stele-gardien' } },
+  { tier: 16, threshold: 2060, reward: { type: 'ecailles', amount: 120 } },
+  { tier: 17, threshold: 2290, reward: { type: 'ecailles', amount: 125 } },
+  { tier: 18, threshold: 2530, reward: { type: 'ecailles', amount: 130 } },
+  { tier: 19, threshold: 2780, reward: { type: 'ecailles', amount: 140 } },
+  { tier: 20, threshold: 3040, reward: { type: 'decor', id: 'aile-gardien' } },
+];
+
+// Ajoute des points à la Voie du Gardien et prévient si un nouveau palier vient de s'ouvrir
+// (le joueur doit ensuite le réclamer lui-même depuis l'écran de la Voie).
+function addPassPoints(amount) {
+  if (!amount) return;
+  const before = PASS_TIERS.filter(pt => state.passPoints >= pt.threshold).length;
+  state.passPoints += amount;
+  const after = PASS_TIERS.filter(pt => state.passPoints >= pt.threshold).length;
+  saveStateDebounced();
+  if (after > before) {
+    setTimeout(() => showToast(t('toast.passTierReady'), 'milestone'), 500);
+  }
+}
+
+function passTiersUnlockedCount() {
+  return PASS_TIERS.filter(pt => state.passPoints >= pt.threshold).length;
+}
+
+function claimPassTier(tierNumber) {
+  const pt = PASS_TIERS.find(p => p.tier === tierNumber);
+  if (!pt || state.passClaimedTiers.includes(tierNumber) || state.passPoints < pt.threshold) return;
+  state.passClaimedTiers.push(tierNumber);
+  if (pt.reward.type === 'ecailles') {
+    state.ecailles += pt.reward.amount;
+    showToast(t('toast.passReward', { n: pt.reward.amount }));
+  } else if (pt.reward.type === 'decor') {
+    if (!state.decorOwned.includes(pt.reward.id)) state.decorOwned.push(pt.reward.id);
+    showToast(t('toast.passRewardDecor'));
+  }
+  haptic([20, 30, 50]);
+  playAchievementSound();
+  saveStateDebounced();
+  renderTopBar();
+  renderModals();
+}
 
 const DEFAULT_STATE = {
   onboarded: false,
@@ -183,6 +249,8 @@ const DEFAULT_STATE = {
   tutorialSeen: false,
   selectedTitle: null,
   expeditionLog: [],
+  passPoints: 0,
+  passClaimedTiers: [],
   // Détection simple à la première ouverture : français par défaut sauf si l'appareil est
   // clairement réglé sur une autre langue. Modifiable ensuite dans les réglages.
   language: (typeof navigator !== 'undefined' && navigator.language && navigator.language.slice(0, 2).toLowerCase() === 'fr') ? 'fr' : 'en',
@@ -195,7 +263,7 @@ const DEFAULT_STATE = {
 function freshDefaultState() {
   return Object.assign({}, DEFAULT_STATE, {
     dragons: [], eggInbox: [], discovered: [], expeditions: [],
-    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [],
+    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [], passClaimedTiers: [],
   });
 }
 
@@ -270,6 +338,17 @@ const T = {
     'sanctuaire.sortAlpha': 'A-Z',
     'sanctuaire.sortRarity': 'Rareté',
     'objectives.title': 'Objectifs',
+    'pass.bannerTitle': 'Voie du Gardien',
+    'pass.bannerProgress': 'Palier {n}/{total}',
+    'pass.viewButton': 'Voir',
+    'pass.title': 'Voie du Gardien',
+    'pass.subtitle': 'Une progression permanente : chaque quête, défi, série et succès te fait avancer. Aucune date limite.',
+    'pass.tierLabel': 'Palier {n}',
+    'pass.claim': 'Réclamer',
+    'pass.claimed': 'Réclamé',
+    'pass.locked': '{cur}/{total} pts',
+    'pass.rewardDecorLabel': 'Décor exclusif',
+    'pass.closeAria': 'Fermer la Voie du Gardien',
     'objectives.dailyTitle': 'Objectifs du jour',
     'objectives.weeklyTitle': 'Défi de la semaine',
     'objectives.allDone': 'Tout est à jour',
@@ -434,6 +513,9 @@ const T = {
     'toast.weeklyChallengeDone': 'Défi hebdomadaire réussi ! +{n} écailles',
     'toast.questReward': '+{n} écailles !',
     'toast.achievementUnlocked': 'Succès débloqué : {name} (+{n} écailles)',
+    'toast.passTierReady': 'Un nouveau palier de la Voie du Gardien est prêt !',
+    'toast.passReward': 'Palier réclamé : +{n} écailles !',
+    'toast.passRewardDecor': 'Palier réclamé : nouveau décor exclusif !',
     'toast.exportChooseDestination': 'Choisis où enregistrer ta sauvegarde',
     'toast.exportFailed': "Impossible d'exporter la sauvegarde",
     'toast.exportSuccess': 'Sauvegarde exportée !',
@@ -510,6 +592,17 @@ const T = {
     'sanctuaire.sortAlpha': 'A-Z',
     'sanctuaire.sortRarity': 'Rarity',
     'objectives.title': 'Objectives',
+    'pass.bannerTitle': "Guardian's Path",
+    'pass.bannerProgress': 'Tier {n}/{total}',
+    'pass.viewButton': 'View',
+    'pass.title': "Guardian's Path",
+    'pass.subtitle': 'A permanent progression: every quest, challenge, streak and achievement moves you forward. No deadline, ever.',
+    'pass.tierLabel': 'Tier {n}',
+    'pass.claim': 'Claim',
+    'pass.claimed': 'Claimed',
+    'pass.locked': '{cur}/{total} pts',
+    'pass.rewardDecorLabel': 'Exclusive decoration',
+    'pass.closeAria': "Close the Guardian's Path",
     'objectives.dailyTitle': "Today's objectives",
     'objectives.weeklyTitle': 'Weekly challenge',
     'objectives.allDone': 'All caught up',
@@ -674,6 +767,9 @@ const T = {
     'toast.weeklyChallengeDone': 'Weekly challenge completed! +{n} scales',
     'toast.questReward': '+{n} scales!',
     'toast.achievementUnlocked': 'Achievement unlocked: {name} (+{n} scales)',
+    'toast.passTierReady': 'A new Guardian Path tier is ready to claim!',
+    'toast.passReward': 'Tier claimed: +{n} scales!',
+    'toast.passRewardDecor': 'Tier claimed: new exclusive decoration!',
     'toast.exportChooseDestination': 'Choose where to save your save file',
     'toast.exportFailed': 'Unable to export the save',
     'toast.exportSuccess': 'Save exported!',
@@ -1362,6 +1458,7 @@ function claimWeeklyChallenge() {
   if (!w || w.claimed || w.progress < w.target) return;
   w.claimed = true;
   state.ecailles += w.reward;
+  addPassPoints(35);
   saveStateDebounced();
   showToast(t('toast.weeklyChallengeDone', { n: w.reward }), 'milestone');
   haptic([30, 40, 60]);
@@ -1389,6 +1486,7 @@ function checkLoginStreak() {
   const milestone = STREAK_MILESTONES.includes(state.loginStreak);
   const milestoneBonus = milestone ? state.loginStreak * 5 : 0;
   state.ecailles += bonus + milestoneBonus;
+  addPassPoints(5 + (milestone ? 20 : 0));
   state.lastLoginDate = today;
   saveStateDebounced();
   return { streak: state.loginStreak, bonus, milestone, milestoneBonus };
@@ -1418,6 +1516,7 @@ function claimDailyQuest(questId) {
   if (!q || q.claimed || q.progress < q.target) return;
   q.claimed = true;
   state.ecailles += q.reward;
+  addPassPoints(8);
   showToast(t('toast.questReward', { n: q.reward }));
   haptic(30);
   playCoinSound();
@@ -1440,6 +1539,7 @@ function claimAchievement(id) {
   if (ach.progress(state) < ach.target) return;
   state.achievementsClaimed.push(id);
   state.ecailles += ach.reward;
+  addPassPoints(15);
   saveStateDebounced();
   showToast(t('toast.achievementUnlocked', { name: ach.name, n: ach.reward }), 'milestone');
   haptic([30, 40, 60]);
@@ -1476,6 +1576,7 @@ const ui = {
   expeditionLogCollapsed: true,
   tutorialStep: null,
   labo: { parentAId: null, parentBId: null, picking: null },
+  guardianPathOpen: false,
 };
 
 let toastTimer = null;

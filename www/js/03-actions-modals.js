@@ -25,6 +25,7 @@ function renderModals() {
   else if (ui.lockChallenge) html += lockChallengeModalHtml(ui.lockChallenge);
   else if (ui.confirmResetOpen) html += confirmResetModalHtml();
   else if (ui.confirmImportOpen) html += confirmImportModalHtml();
+  else if (ui.guardianPathOpen) html += guardianPathModalHtml();
   else if (ui.tutorialStep !== null) html += tutorialModalHtml();
 
   // Piège de focus clavier : mémorise l'élément déclencheur à l'ouverture,
@@ -320,6 +321,44 @@ function confirmResetModalHtml() {
       <button data-action="cancel-reset" class="btn-ghost flex-1">${t('modal.cancel')}</button>
       <button data-action="confirm-reset" class="flex-1 font-display font-bold text-xs py-3 rounded-2xl text-white" style="background:#B5502C">${t('modal.confirm')}</button>
     </div>
+  </div></div>`;
+}
+
+function guardianPathTierRowHtml(pt) {
+  const claimed = state.passClaimedTiers.includes(pt.tier);
+  const unlocked = state.passPoints >= pt.threshold;
+  const rewardLabel = pt.reward.type === 'ecailles'
+    ? `${coinIconHtml()} +${pt.reward.amount}`
+    : `${decorIconSVG(pt.reward.id, 26)}`;
+  const rewardText = pt.reward.type === 'decor' ? t('pass.rewardDecorLabel') : '';
+  let action;
+  if (claimed) {
+    action = `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${icon('check', { size: 13, color: 'var(--ink-soft)' })} ${t('pass.claimed')}</span>`;
+  } else if (unlocked) {
+    action = `<button data-action="claim-pass-tier" data-tier="${pt.tier}" class="font-display font-bold fs-10 rounded-xl shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${t('pass.claim')}</button>`;
+  } else {
+    action = `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${t('pass.locked', { cur: Math.min(state.passPoints, pt.threshold), total: pt.threshold })}</span>`;
+  }
+  return `<div class="flex items-center gap-2\\.5" style="gap:10px;padding:8px 0;border-bottom:1px solid #EEE6D8;opacity:${claimed ? 0.65 : 1}">
+    <div class="flex items-center justify-center shrink-0" style="width:30px;height:30px">${rewardLabel}</div>
+    <div class="flex-1">
+      <div class="font-body font-bold fs-12" style="color:var(--ink)">${t('pass.tierLabel', { n: pt.tier })}</div>
+      ${rewardText ? `<div class="font-body fs-10" style="color:var(--ink-soft)">${rewardText}</div>` : ''}
+    </div>
+    ${action}
+  </div>`;
+}
+
+function guardianPathModalHtml() {
+  const rows = PASS_TIERS.map(guardianPathTierRowHtml).join('');
+  return `<div class="modal-overlay" data-backdrop-close="close-guardian-path" role="dialog" aria-modal="true" aria-label="${t('pass.title')}"><div class="modal-sheet safe-bottom-sheet" style="align-items:stretch;text-align:left" tabindex="-1">
+    <button data-action="close-guardian-path" aria-label="${t('pass.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+    <div class="flex items-center gap-2 mb-1" style="margin-bottom:4px">
+      <span style="font-size:22px" aria-hidden="true">🏵️</span>
+      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">${t('pass.title')}</h3>
+    </div>
+    <p class="font-body fs-11 mb-3" style="margin-bottom:12px;color:var(--ink-soft)">${t('pass.subtitle')}</p>
+    <div class="w-full">${rows}</div>
   </div></div>`;
 }
 

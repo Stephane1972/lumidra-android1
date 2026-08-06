@@ -249,10 +249,41 @@ function sanctuaireSortChipsHtml() {
     <button data-action="set-sanctuaire-sort" data-sort="${o.id}" aria-pressed="${cur === o.id}" class="shrink-0 font-body font-bold fs-11 rounded-full" style="padding:5px 12px;background:${cur === o.id ? 'var(--gold)' : 'rgba(255,255,255,.6)'};color:var(--ink)">${o.label}</button>`).join('')}</div>`;
 }
 
+function guardianPathNextTier() {
+  return PASS_TIERS.find(pt => !state.passClaimedTiers.includes(pt.tier)) || null;
+}
+
+function guardianPathBannerHtml() {
+  const readyToClaim = passTiersUnlockedCount() - state.passClaimedTiers.length;
+  const nextTier = guardianPathNextTier();
+  if (!nextTier) {
+    return `<button data-action="open-guardian-path" class="w-full flex items-center gap-3 rounded-2xl px-4 py-3 mb-3 text-left" style="padding:12px 16px;background:linear-gradient(135deg,#FFF3DC,#FCE3B8)">
+      <div style="font-size:26px" aria-hidden="true">🏵️</div>
+      <div class="flex-1">
+        <div class="font-display font-bold fs-12" style="color:var(--gold-deep)">${t('pass.bannerTitle')}</div>
+        <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('pass.bannerProgress', { n: PASS_TIERS.length, total: PASS_TIERS.length })}</div>
+      </div>
+    </button>`;
+  }
+  const prevThreshold = nextTier.tier > 1 ? PASS_TIERS[nextTier.tier - 2].threshold : 0;
+  const pct = Math.max(0, Math.min(100, ((state.passPoints - prevThreshold) / (nextTier.threshold - prevThreshold)) * 100));
+  return `<button data-action="open-guardian-path" class="w-full rounded-2xl mb-3 text-left" style="padding:12px 16px;background:var(--parchment)">
+    <div class="flex items-center gap-2 mb-1\\.5" style="margin-bottom:6px">
+      <span style="font-size:18px" aria-hidden="true">🏵️</span>
+      <span class="flex-1 font-display font-bold fs-12" style="color:var(--ink)">${t('pass.bannerTitle')}</span>
+      ${readyToClaim > 0 ? `<span class="font-display font-bold fs-10 rounded-full" style="padding:3px 8px;background:var(--gold);color:var(--ink)">${t('objectives.toClaim', { n: readyToClaim })}</span>` : `<span class="font-body font-bold fs-10" style="color:var(--ink-soft)">${t('pass.bannerProgress', { n: nextTier.tier - 1, total: PASS_TIERS.length })}</span>`}
+    </div>
+    <div class="w-full h-2 rounded-full overflow-hidden" style="background:#EEE6D8">
+      <div class="h-full rounded-full" style="width:${pct}%;background:var(--gold)"></div>
+    </div>
+  </button>`;
+}
+
 function objectivesSummaryHtml() {
   const questsReady = state.dailyQuests ? state.dailyQuests.quests.filter(q => q.progress >= q.target && !q.claimed).length : 0;
   const weeklyReady = state.weeklyChallenge && state.weeklyChallenge.progress >= state.weeklyChallenge.target && !state.weeklyChallenge.claimed ? 1 : 0;
-  const readyCount = questsReady + weeklyReady;
+  const passReady = passTiersUnlockedCount() - state.passClaimedTiers.length;
+  const readyCount = questsReady + weeklyReady + passReady;
   const activeEvent = getActiveEvent();
 
   if (ui.objectivesBannerCollapsed) {
@@ -260,6 +291,7 @@ function objectivesSummaryHtml() {
     const dailyUnclaimed = state.dailyQuests ? state.dailyQuests.quests.filter(q => !q.claimed).length : 0;
     if (dailyUnclaimed) bits.push(t('objectives.dailyCount', { n: dailyUnclaimed, s: dailyUnclaimed > 1 ? 's' : '' }));
     if (state.weeklyChallenge && !state.weeklyChallenge.claimed) bits.push(t('objectives.weeklyCount'));
+    if (passReady > 0) bits.push(t('pass.bannerTitle'));
     const summary = bits.length ? bits.join(' · ') : t('objectives.allDone');
     return `<button data-action="toggle-objectives-banner" aria-expanded="false" class="w-full flex items-center gap-2\\.5 rounded-2xl mb-3" style="gap:10px;padding:10px 14px;background:var(--parchment)">
       <span style="font-size:18px" aria-hidden="true">${activeEvent ? activeEvent.emoji : '🎯'}</span>
@@ -276,6 +308,7 @@ function objectivesSummaryHtml() {
     </button>
     ${dailyQuestsCardHtml()}
     ${weeklyChallengeCardHtml()}
+    ${guardianPathBannerHtml()}
     ${seasonalEventBannerHtml()}
   </div>`;
 }
@@ -693,7 +726,7 @@ function renderScreenBoutique() {
         : decorSectionHtml(t('boutique.sectionPermanent'), permanentOwned);
     }
   } else {
-    const shoppable = DECOR.filter(d => !state.decorOwned.includes(d.id) && (!d.seasonal || (activeEvent && activeEvent.id === d.seasonal)));
+    const shoppable = DECOR.filter(d => !d.passOnly && !state.decorOwned.includes(d.id) && (!d.seasonal || (activeEvent && activeEvent.id === d.seasonal)));
     if (shoppable.length === 0) {
       body = emptyNoteHtml(t('boutique.shopEmpty'));
     } else {

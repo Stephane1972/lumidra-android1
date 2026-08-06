@@ -306,6 +306,17 @@ function dispatchAction(action, dataset, evt, el) {
     case 'claim-achievement':
       claimAchievement(dataset.achievementId);
       break;
+    case 'open-guardian-path':
+      ui.guardianPathOpen = true;
+      renderModals();
+      break;
+    case 'close-guardian-path':
+      ui.guardianPathOpen = false;
+      renderModals();
+      break;
+    case 'claim-pass-tier':
+      claimPassTier(Number(dataset.tier));
+      break;
     case 'change-mode':
       state.mode = mode;
       if (mode === 'eclosion' && ui.screen === 'labo') ui.screen = 'sanctuaire';
