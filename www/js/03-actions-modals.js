@@ -314,6 +314,13 @@ function speciesDetailModalHtml(entry) {
     <h2 class="font-display font-extrabold text-xl mt-2" style="color:var(--ink)">${discovered ? escapeHtml(species.name) : '???'}</h2>
     <div class="flex items-center gap-2 mt-1">${elementChipHtml(species.element)}${discovered ? rarityStarsHtml(species.variant) : ''}</div>
     <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${discovered ? escapeHtml(species.lore) : t('modal.discoverToReveal')}</p>
+    ${discovered ? `<div class="w-full mt-3 rounded-2xl px-3 py-3" style="background:var(--parchment)">
+      <div class="flex items-center gap-1\\.5 mb-1\\.5" style="margin-bottom:6px">
+        <span style="font-size:14px" aria-hidden="true">📖</span>
+        <span class="font-display font-bold fs-11" style="color:var(--gold-deep)">${t('almanac.entryLabel')}</span>
+      </div>
+      <p class="font-body fs-12 leading-relaxed" style="color:var(--ink-soft)">${escapeHtml(species.almanac || '')}</p>
+    </div>` : ''}
   </div></div>`;
 }
 
