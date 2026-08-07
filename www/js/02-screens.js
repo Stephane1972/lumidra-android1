@@ -212,7 +212,7 @@ function dragonHabitatCardHtml(dragon, busy) {
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
     ${bondTier(dragon) === 3 ? `<span class="absolute" style="bottom:6px;left:6px;font-size:11px" aria-hidden="true">💞</span>` : ''}
     ${careStreak >= 3 && !busy ? `<span class="absolute font-body font-bold" style="bottom:6px;right:6px;font-size:9px;color:var(--gold-deep)" aria-hidden="true">🔥${careStreak}</span>` : ''}
-    ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68, hatId: dragon.hatId, collarId: dragon.collarId })}
+    ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68, hatId: dragon.hatId, collarId: dragon.collarId, charmId: dragon.charmId })}
     <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
     <div class="flex gap-1 mt-1">${dots}</div>
   </button>`;
@@ -713,8 +713,13 @@ function decorSectionHtml(title, items) {
   </div>`;
 }
 
+function accessoryPreviewViewBox(slot) {
+  return slot === 'charm' ? '142 122 52 52' : '60 4 80 50';
+}
+
 function accessoryCardHtml(acc, owned) {
-  const preview = `<svg viewBox="60 4 80 50" width="52" height="34">${accessorySVGFragment(acc.id)}</svg>`;
+  const vb = accessoryPreviewViewBox(acc.slot);
+  const preview = `<svg viewBox="${vb}" width="52" height="34">${accessorySVGFragment(acc.id)}</svg>`;
   return `<div class="rounded-2xl p-2\\.5 flex flex-col items-center" style="padding:10px;background:var(--parchment)">
     <div class="flex items-center justify-center" style="width:52px;height:34px">${preview}</div>
     <div class="font-body font-bold fs-10 text-center mt-1\\.5" style="margin-top:6px;color:var(--ink)">${escapeHtml(acc.name)}</div>
@@ -741,7 +746,8 @@ function renderScreenBoutique() {
   if (tab === 'accessories') {
     const owned = state.accessoriesOwned || [];
     body = accessorySectionHtml('accessory.slotHat', ACCESSORIES.filter(a => a.slot === 'hat'), owned)
-      + accessorySectionHtml('accessory.slotCollar', ACCESSORIES.filter(a => a.slot === 'collar'), owned);
+      + accessorySectionHtml('accessory.slotCollar', ACCESSORIES.filter(a => a.slot === 'collar'), owned)
+      + accessorySectionHtml('accessory.slotCharm', ACCESSORIES.filter(a => a.slot === 'charm'), owned);
   } else if (tab === 'collection') {
     const owned = DECOR.filter(d => state.decorOwned.includes(d.id));
     if (owned.length === 0) {

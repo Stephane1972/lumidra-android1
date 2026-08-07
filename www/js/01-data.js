@@ -537,6 +537,7 @@ const T = {
     'boutique.tabAccessories': 'Accessoires ({n}/{total})',
     'accessory.slotHat': 'Chapeaux',
     'accessory.slotCollar': 'Colliers',
+    'accessory.slotCharm': 'Breloques de queue',
     'accessory.owned': 'Possédé',
     'accessory.equip': 'Équiper',
     'accessory.equipped': 'Équipé',
@@ -840,6 +841,7 @@ const T = {
     'boutique.tabAccessories': 'Accessories ({n}/{total})',
     'accessory.slotHat': 'Hats',
     'accessory.slotCollar': 'Collars',
+    'accessory.slotCharm': 'Tail charms',
     'accessory.owned': 'Owned',
     'accessory.equip': 'Equip',
     'accessory.equipped': 'Equipped',
@@ -1268,6 +1270,10 @@ const ACCESSORIES = [
   { id: 'collier-perles', slot: 'collar', nameFr: 'Collier de Perles', nameEn: 'Pearl Necklace', cost: 85 },
   { id: 'noeud-papillon', slot: 'collar', nameFr: 'Nœud Papillon', nameEn: 'Bow Tie', cost: 50 },
   { id: 'collier-floral', slot: 'collar', nameFr: 'Collier Floral', nameEn: 'Flower Garland', cost: 70 },
+  { id: 'grelot-doux', slot: 'charm', nameFr: 'Grelot Doux', nameEn: 'Soft Bell', cost: 45 },
+  { id: 'ruban-queue', slot: 'charm', nameFr: 'Ruban de Queue', nameEn: 'Tail Ribbon', cost: 45 },
+  { id: 'gemme-lune', slot: 'charm', nameFr: 'Gemme de Lune', nameEn: 'Moon Gem', cost: 95 },
+  { id: 'etoile-filante', slot: 'charm', nameFr: 'Breloque Étoile', nameEn: 'Shooting Star Charm', cost: 80 },
 ];
 const ACCESSORIES_BY_ID = new Map(ACCESSORIES.map(a => [a.id, a]));
 function accessoryById(id) { return ACCESSORIES_BY_ID.get(id); }
@@ -1312,6 +1318,29 @@ function accessorySVGFragment(accId) {
           <circle r="2" fill="#F4C548"/>
         </g>`;
       }).join('')}`;
+    case 'grelot-doux': return `
+      <g transform="translate(166,146)">
+        <path d="M-2,-14 Q0,-18 2,-14 L2,-8 L-2,-8 Z" fill="#B7AF9E" ${s}/>
+        <circle r="8" fill="#F4C548" ${s}/>
+        <path d="M-8,1 Q0,7 8,1" stroke="${INK}" stroke-width="1.6" fill="none"/>
+        <circle cy="4" r="1.6" fill="${INK}"/>
+      </g>`;
+    case 'ruban-queue': return `
+      <g transform="translate(166,146) rotate(18)">
+        <path d="M-2,0 L-14,-8 L-12,0 L-14,8 Z" fill="#E0553F" ${s}/>
+        <path d="M2,0 L14,-8 L12,0 L14,8 Z" fill="#E0553F" ${s}/>
+        <circle r="3" fill="#B5502C" ${s}/>
+      </g>`;
+    case 'gemme-lune': return `
+      <g transform="translate(166,146)">
+        <path d="M6,-10 A11,11 0 1 0 6,10 A8.5,8.5 0 1 1 6,-10 Z" fill="#8FA6D9" ${s}/>
+        <circle cx="-2" cy="-4" r="1.4" fill="#F4EDE0"/>
+      </g>`;
+    case 'etoile-filante': return `
+      <g transform="translate(166,146)">
+        <path d="M0,-9 l2.4,5.8 6.2,0.6 -4.8,4 1.4,6.2 -5.2,-3.2 -5.2,3.2 1.4,-6.2 -4.8,-4 6.2,-0.6 Z" fill="#F4C548" ${s}/>
+        <path d="M-14,10 L-4,4" stroke="#F4C548" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      </g>`;
     default: return '';
   }
 }
@@ -1339,6 +1368,7 @@ function dragonSVG(opts) {
   const element = opts.element, variant = opts.variant, stage = opts.stage || 'adulte', size = opts.size || 100;
   const hatId = opts.hatId || null;
   const collarId = opts.collarId || null;
+  const charmId = opts.charmId || null;
   const c = ELEMENTS[element];
   const idStr = nextSvgUid();
   const gradId = `grad-${element}-${idStr}`;
@@ -1379,7 +1409,7 @@ function dragonSVG(opts) {
       ${showGlow ? `<circle cx="100" cy="110" r="78" fill="${variant === 4 ? 'var(--gold)' : c.light}" opacity="0.22" class="${variant === 4 ? 'dragon-anim-legendary-halo' : ''}"/>` : ''}
       <ellipse cx="82" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
       <ellipse cx="118" cy="168" rx="12" ry="7" fill="${c.deep}" opacity="0.9"/>
-      <g class="dragon-tail-swish"><path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})" stroke="${INK}" stroke-width="3"/></g>
+      <g class="dragon-tail-swish"><path d="M126,150 C155,148 172,130 178,150 C182,168 165,178 148,172 C138,168 130,160 126,150 Z" fill="url(#${gradId})" stroke="${INK}" stroke-width="3"/>${charmId ? accessorySVGFragment(charmId) : ''}</g>
       ${wings}
       <ellipse cx="100" cy="124" rx="50" ry="42" fill="url(#${gradId})" stroke="${INK}" stroke-width="3.5"/>
       <ellipse cx="100" cy="138" rx="30" ry="22" fill="${c.light}" opacity="0.55"/>
