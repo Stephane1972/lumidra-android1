@@ -15,7 +15,13 @@ setInterval(() => {
     const newScrollable = document.querySelector('#screen-root .overflow-y-auto');
     if (newScrollable) newScrollable.scrollTop = prevScrollTop;
   }
-  if (ui.detailDragonId) renderModals();
+  if (ui.detailDragonId) {
+    const prevSheet = document.querySelector('.modal-sheet');
+    const prevSheetScrollTop = prevSheet ? prevSheet.scrollTop : 0;
+    renderModals();
+    const newSheet = document.querySelector('.modal-sheet');
+    if (newSheet) newSheet.scrollTop = prevSheetScrollTop;
+  }
 }, 1000);
 
 /* =========================================================================
