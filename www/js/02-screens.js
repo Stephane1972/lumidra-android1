@@ -314,6 +314,25 @@ function objectivesSummaryHtml() {
   </div>`;
 }
 
+// Étagère de décorations : les pièces équipées (jusqu'à 3) sont posées visuellement dans la
+// scène du sanctuaire plutôt que réduites à des icônes dans l'en-tête — un vrai petit coin
+// personnalisé, sans jamais chevaucher les cartes de dragons (donc rien ne bloque un tap).
+function decorShelfHtml(equippedDecor) {
+  if (equippedDecor.length === 0) {
+    return `<button data-action="open-boutique-collection" class="w-full flex items-center justify-center gap-1\\.5 rounded-2xl mb-2\\.5" style="padding:10px;margin-bottom:10px;background:rgba(255,255,255,.35);border:2px dashed rgba(255,255,255,.9)">
+      <span class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('sanctuaire.decorateEmpty')}</span>
+    </button>`;
+  }
+  const items = equippedDecor.map((d, i) => {
+    const lift = [0, -4, 2][i % 3];
+    return `<div class="flex flex-col items-center" style="transform:translateY(${lift}px)">${decorIconSVG(d.id, 40)}</div>`;
+  }).join('');
+  return `<div class="rounded-2xl mb-2\\.5" style="margin-bottom:10px;padding:8px 14px 0;background:rgba(255,255,255,.32)">
+    <div class="flex items-end justify-center gap-5" style="padding-bottom:2px">${items}</div>
+    <div style="height:4px;border-radius:2px;background:rgba(255,255,255,.75)"></div>
+  </div>`;
+}
+
 function renderScreenSanctuaire() {
   const busy = busyDragonIds();
   const equippedDecor = DECOR.filter(d => state.decorEquipped.includes(d.id));
@@ -335,8 +354,9 @@ function renderScreenSanctuaire() {
   html += `<div class="rounded-3xl p-4" style="background:linear-gradient(180deg,#E7F0FA,#DCEBF6)">
     <div class="flex items-center justify-between mb-2\\.5" style="margin-bottom:10px">
       <h3 class="font-display font-semibold fs-13" style="color:var(--ink-soft)">${t('sanctuaire.title')}</h3>
-      ${equippedDecor.length ? `<div class="flex gap-1">${equippedDecor.map(d => decorIconSVG(d.id, 18)).join('')}</div>` : ''}
-    </div>`;
+      <button data-action="open-boutique-collection" class="font-body font-bold fs-10" style="color:var(--gold-deep)">${t('sanctuaire.decorateLink')}</button>
+    </div>
+    ${decorShelfHtml(equippedDecor)}`;
 
   if (state.dragons.length === 0) {
     html += emptyNoteHtml(t('sanctuaire.empty'));

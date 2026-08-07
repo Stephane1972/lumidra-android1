@@ -49,6 +49,10 @@ function dispatchAction(action, dataset, evt, el) {
     case 'nav':
       requestScreen(screenName);
       break;
+    case 'open-boutique-collection':
+      ui.boutiqueTab = 'collection';
+      requestScreen('boutique');
+      break;
     case 'open-dragon':
       ui.detailDragonId = dragonId;
       renderModals();
