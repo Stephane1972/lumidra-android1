@@ -59,6 +59,17 @@ function dispatchAction(action, dataset, evt, el) {
       ui.boutiqueTab = 'collection';
       requestScreen('boutique');
       break;
+    case 'open-decor-slot-picker':
+      ui.decorSlotPickerIndex = Number(dataset.slotIndex);
+      renderModals();
+      break;
+    case 'close-decor-slot-picker':
+      ui.decorSlotPickerIndex = null;
+      renderModals();
+      break;
+    case 'pick-decor-slot':
+      setDecorSlot(Number(dataset.slotIndex), dataset.decorId || null);
+      break;
     case 'open-dragon':
       ui.detailDragonId = dragonId;
       renderModals();

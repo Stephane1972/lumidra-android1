@@ -27,6 +27,7 @@ function renderModals() {
   else if (ui.confirmImportOpen) html += confirmImportModalHtml();
   else if (ui.guardianPathOpen) html += guardianPathModalHtml();
   else if (ui.rivalModalOpen) html += rivalModalHtml();
+  else if (ui.decorSlotPickerIndex !== null) html += decorSlotPickerModalHtml(ui.decorSlotPickerIndex);
   else if (ui.tutorialStep !== null) html += tutorialModalHtml();
 
   // Piège de focus clavier : mémorise l'élément déclencheur à l'ouverture,
@@ -497,6 +498,34 @@ function rivalModalHtml() {
     </div>
 
     ${history.length > 0 ? `<div class="font-body font-bold fs-12 mb-2" style="color:var(--ink)">${t('rival.history')}</div>${history.map(rivalComparisonBlockHtml).join('')}` : ''}
+  </div></div>`;
+}
+
+function decorSlotPickerModalHtml(index) {
+  const owned = state.decorOwned.filter(id => !state.decorEquipped.includes(id) || state.decorEquipped[index] === id);
+  const currentId = state.decorEquipped[index];
+  const noneBtn = `<button data-action="pick-decor-slot" data-slot-index="${index}" data-decor-id="" class="rounded-2xl p-2\\.5 flex flex-col items-center" style="padding:10px;background:${!currentId ? 'var(--gold)' : 'var(--parchment)'}">
+    <div class="flex items-center justify-center" style="width:40px;height:40px">${icon('x', { size: 18, color: 'var(--ink-soft)' })}</div>
+    <div class="font-body font-bold fs-10 text-center mt-1\\.5" style="margin-top:6px;color:var(--ink)">${t('accessory.none')}</div>
+  </button>`;
+  const cards = owned.map(id => {
+    const d = DECOR.find(x => x.id === id);
+    if (!d) return '';
+    const active = currentId === id;
+    return `<button data-action="pick-decor-slot" data-slot-index="${index}" data-decor-id="${id}" class="rounded-2xl p-2\\.5 flex flex-col items-center" style="padding:10px;background:${active ? 'var(--gold)' : 'var(--parchment)'}">
+      <div class="flex items-center justify-center" style="width:40px;height:40px">${decorIconSVG(d.id, 34)}</div>
+      <div class="font-body font-bold fs-10 text-center mt-1\\.5" style="margin-top:6px;color:var(--ink)">${escapeHtml(d.name)}</div>
+    </button>`;
+  }).join('');
+  return `<div class="modal-overlay" data-backdrop-close="close-decor-slot-picker" role="dialog" aria-modal="true" aria-label="${t('sanctuaire.decorateLink')}"><div class="modal-sheet safe-bottom-sheet" style="align-items:stretch;text-align:left" tabindex="-1">
+    <button data-action="close-decor-slot-picker" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
+    <div class="flex items-center gap-2 mb-3" style="margin-bottom:12px">
+      <span style="font-size:20px" aria-hidden="true">🏺</span>
+      <h3 class="font-display font-bold text-sm" style="color:var(--ink)">${t('sanctuaire.decorateLink')}</h3>
+    </div>
+    ${state.decorOwned.length === 0
+      ? `<p class="font-body fs-12 text-center" style="color:var(--ink-soft)">${t('sanctuaire.decorateEmpty')}</p>`
+      : `<div class="grid grid-cols-3 gap-2 w-full">${noneBtn}${cards}</div>`}
   </div></div>`;
 }
 
@@ -1135,11 +1164,36 @@ function buyDecor(decorId) {
 }
 
 function toggleEquipDecor(decorId) {
-  const equipped = state.decorEquipped.includes(decorId);
-  if (!equipped && state.decorEquipped.length >= 3) { showToast(t('toast.maxDecor')); return; }
-  state.decorEquipped = equipped ? state.decorEquipped.filter(id => id !== decorId) : [...state.decorEquipped, decorId];
+  normalizeDecorSlots();
+  const idx = state.decorEquipped.indexOf(decorId);
+  if (idx !== -1) {
+    state.decorEquipped[idx] = null;
+    saveStateDebounced();
+    renderScreenBoutique();
+    return;
+  }
+  const freeIdx = state.decorEquipped.indexOf(null);
+  if (freeIdx === -1) { showToast(t('toast.maxDecor')); return; }
+  state.decorEquipped[freeIdx] = decorId;
   saveStateDebounced();
   renderScreenBoutique();
+}
+
+// Assigne (ou retire, si decorId est null) une pièce à un emplacement précis de l'étagère du
+// sanctuaire. Une même pièce ne peut occuper qu'un seul emplacement à la fois.
+function setDecorSlot(index, decorId) {
+  normalizeDecorSlots();
+  if (decorId && !state.decorOwned.includes(decorId)) return;
+  if (decorId) {
+    const dupIdx = state.decorEquipped.indexOf(decorId);
+    if (dupIdx !== -1 && dupIdx !== index) state.decorEquipped[dupIdx] = null;
+  }
+  state.decorEquipped[index] = decorId || null;
+  saveStateDebounced();
+  haptic(15);
+  ui.decorSlotPickerIndex = null;
+  renderModals();
+  if (ui.screen === 'sanctuaire') renderScreenSanctuaire();
 }
 
 function doReset() {

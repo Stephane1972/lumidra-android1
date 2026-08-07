@@ -35,6 +35,15 @@ function temperamentIndex(dragon) {
 function isLoyalDragon(dragon) { return temperamentIndex(dragon) === 3; }
 function isBoldDragon(dragon) { return temperamentIndex(dragon) === 2; }
 
+// state.decorEquipped est désormais un tableau à 3 emplacements fixes (valeurs nullable) pour
+// permettre de choisir précisément quelle pièce va à quelle place — les anciennes sauvegardes
+// (simple liste compacte, sans null) sont complétées automatiquement au premier accès.
+function normalizeDecorSlots() {
+  const s = (state.decorEquipped || []).slice(0, 3);
+  while (s.length < 3) s.push(null);
+  state.decorEquipped = s;
+}
+
 // Lien d'attachement : plus on s'occupe d'un dragon précis (careCount cumulé, qui continue
 // de grimper même une fois adulte), plus son trait de tempérament se renforce. Trois paliers,
 // jamais de régression — le lien ne se perd pas si on espace les câlins.
@@ -1886,6 +1895,7 @@ const ui = {
   labo: { parentAId: null, parentBId: null, picking: null },
   guardianPathOpen: false,
   rivalModalOpen: false,
+  decorSlotPickerIndex: null,
 };
 
 let toastTimer = null;
