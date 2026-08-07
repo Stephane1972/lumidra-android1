@@ -121,6 +121,35 @@ function bondHeartsHtml() {
   return hearts.map((h, i) => `<span class="bond-heart-float" style="left:${28 + i * 22}%;animation-delay:${(i * 0.7).toFixed(1)}s" aria-hidden="true">${h}</span>`).join('');
 }
 
+function accessoryPickerRowHtml(dragon, slot) {
+  const owned = (state.accessoriesOwned || []).filter(id => accessoryById(id) && accessoryById(id).slot === slot);
+  const currentId = slot === 'hat' ? dragon.hatId : dragon.collarId;
+  const noneBtn = `<button data-action="equip-accessory" data-dragon-id="${dragon.id}" data-slot="${slot}" data-accessory-id="" class="rounded-xl flex flex-col items-center justify-center shrink-0" style="width:46px;height:46px;background:${!currentId ? 'var(--gold)' : '#F1ECE2'}">
+    <span class="font-body font-bold fs-9" style="color:var(--ink)">${t('accessory.none')}</span>
+  </button>`;
+  const chips = owned.map(id => {
+    const acc = accessoryById(id);
+    const active = currentId === id;
+    return `<button data-action="equip-accessory" data-dragon-id="${dragon.id}" data-slot="${slot}" data-accessory-id="${id}" class="rounded-xl flex items-center justify-center shrink-0" style="width:46px;height:46px;background:${active ? 'var(--gold)' : '#F1ECE2'}">
+      <svg viewBox="60 4 80 50" width="34" height="22">${accessorySVGFragment(id)}</svg>
+    </button>`;
+  }).join('');
+  return `<div class="flex gap-1\\.5 overflow-x-auto" style="gap:6px;-webkit-overflow-scrolling:touch;">${noneBtn}${chips}</div>`;
+}
+
+function accessoryCustomizeBlockHtml(dragon) {
+  const anyOwned = (state.accessoriesOwned || []).length > 0;
+  return `<div class="w-full mt-3 rounded-2xl px-3 py-2\\.5" style="padding:10px 12px;background:var(--parchment)">
+    <div class="font-body font-bold fs-11 mb-1\\.5" style="margin-bottom:6px;color:var(--ink)">${t('accessory.customizeTitle')}</div>
+    ${anyOwned ? `
+    <div class="font-body font-bold fs-9 mb-1" style="color:var(--ink-soft)">${t('accessory.slotHat')}</div>
+    ${accessoryPickerRowHtml(dragon, 'hat')}
+    <div class="font-body font-bold fs-9 mb-1 mt-2" style="margin-top:8px;color:var(--ink-soft)">${t('accessory.slotCollar')}</div>
+    ${accessoryPickerRowHtml(dragon, 'collar')}
+    ` : `<p class="font-body fs-10" style="color:var(--ink-soft)">${t('accessory.buyMoreHint')}</p>`}
+  </div>`;
+}
+
 function dragonDetailModalHtml(dragon) {
   const species = speciesById(dragon.speciesId);
   const busy = !!busyDragonIds()[dragon.id];
@@ -133,7 +162,7 @@ function dragonDetailModalHtml(dragon) {
   return `<div class="modal-overlay" data-backdrop-close="close-dragon-detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(dragonDisplayName(dragon, species))}"><div class="modal-sheet safe-bottom-sheet" tabindex="-1">
     <button data-action="close-dragon-detail" aria-label="${t('modal.closeAria')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;right:12px;background:#F1ECE2">${icon('x', { size: 16, color: 'var(--ink-soft)' })}</button>
     <button data-action="toggle-favorite" data-dragon-id="${dragon.id}" aria-pressed="${!!dragon.favorite}" aria-label="${dragon.favorite ? t('modal.removeFavorite') : t('modal.addFavorite')}" class="absolute w-8 h-8 rounded-full flex items-center justify-center" style="top:12px;left:12px;background:#F1ECE2">${icon('heart', { size: 16, color: dragon.favorite ? '#D9634A' : 'var(--ink-soft)' })}</button>
-    <div class="${dragonCardClass(dragon)}" style="border-radius:24px;position:relative">${bondTier(dragon) === 3 ? bondHeartsHtml() : ''}${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140 })}</div>
+    <div class="${dragonCardClass(dragon)}" style="border-radius:24px;position:relative">${bondTier(dragon) === 3 ? bondHeartsHtml() : ''}${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 140, hatId: dragon.hatId, collarId: dragon.collarId })}</div>
     <div class="flex items-center gap-2 mt-2 w-full justify-center">
       <input id="dragon-rename-input" data-dragon-id="${dragon.id}" value="${escapeHtml(dragonDisplayName(dragon, species))}" maxlength="16" aria-label="${t('modal.renameAria')}"
         class="font-display font-extrabold text-lg text-center rounded-xl px-2 py-1" style="color:var(--ink);background:var(--sky);max-width:180px"/>
@@ -143,6 +172,7 @@ function dragonDetailModalHtml(dragon) {
     ${dragonStatsRowHtml(dragon, species)}
     <p class="font-body fs-13 text-center mt-3 leading-relaxed" style="color:var(--ink)">${escapeHtml(species.lore)}</p>
     ${traitBlockHtml(dragon)}
+    ${accessoryCustomizeBlockHtml(dragon)}
     <div class="w-full mt-4">
       <div class="flex justify-between font-body font-bold fs-11 mb-1" style="color:var(--ink-soft)">
         <span>${t('modal.stageLabel', { s: STAGE_LABEL[dragon.stage] })}</span>${nextStageAt ? `<span>${t('modal.careCount', { n: dragon.careCount, total: nextStageAt })}</span>` : ''}
@@ -180,7 +210,7 @@ function wrapTextLines(text, maxChars) {
 
 function buildDragonCardSVG(dragon, species) {
   const c = ELEMENTS[species.element];
-  const dragonMarkup = dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 260 });
+  const dragonMarkup = dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 260, hatId: dragon.hatId, collarId: dragon.collarId });
   const name = escapeHtml(dragonDisplayName(dragon, species));
   const subtitle = `${ELEMENTS[species.element].name} · ${RARITY_LABEL[species.variant]}`;
   const loreLines = wrapTextLines(species.lore, 42);
@@ -746,7 +776,7 @@ function createDragon(speciesId) {
   return {
     id: uid('drg'), speciesId, stage: 'bebe', careCount: 0, lastCareAt: 0,
     temperament: TEMPERAMENTS[randInt(0, 3)], bornAt: Date.now(),
-    customName: null, favorite: false,
+    customName: null, favorite: false, hatId: null, collarId: null,
   };
 }
 
@@ -1058,6 +1088,31 @@ function resolveExpeditionGain(doubleDown) {
     renderTopBar();
   }
   ui.expeditionResult = null;
+  renderModals();
+}
+
+function buyAccessory(accId) {
+  const acc = accessoryById(accId);
+  if (!acc || state.accessoriesOwned.includes(accId) || state.ecailles < acc.cost) return;
+  state.ecailles -= acc.cost;
+  state.accessoriesOwned.push(accId);
+  saveStateDebounced();
+  showToast(t('toast.accessoryBought', { name: acc.name }));
+  haptic(25);
+  renderTopBar();
+  renderScreenBoutique();
+}
+
+// Équipe/déséquipe un accessoire sur UN dragon précis (jamais partagé entre dragons).
+// Passer accId=null déséquipe l'emplacement.
+function equipAccessory(dragonId, slot, accId) {
+  const d = state.dragons.find(dd => dd.id === dragonId);
+  if (!d) return;
+  if (accId && !state.accessoriesOwned.includes(accId)) return;
+  if (slot === 'hat') d.hatId = accId || null;
+  else if (slot === 'collar') d.collarId = accId || null;
+  saveStateDebounced();
+  haptic(15);
   renderModals();
 }
 

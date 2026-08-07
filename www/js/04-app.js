@@ -252,6 +252,12 @@ function dispatchAction(action, dataset, evt, el) {
     case 'buy-decor':
       buyDecor(decorId);
       break;
+    case 'buy-accessory':
+      buyAccessory(dataset.accessoryId);
+      break;
+    case 'equip-accessory':
+      equipAccessory(dataset.dragonId, dataset.slot, dataset.accessoryId || null);
+      break;
     case 'toggle-equip-decor':
       toggleEquipDecor(decorId);
       break;

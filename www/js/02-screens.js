@@ -212,7 +212,7 @@ function dragonHabitatCardHtml(dragon, busy) {
     ${dragon.favorite ? `<span class="absolute" style="top:6px;left:6px" aria-hidden="true">${icon('heart', { size: 13, color: '#D9634A' })}</span>` : ''}
     ${bondTier(dragon) === 3 ? `<span class="absolute" style="bottom:6px;left:6px;font-size:11px" aria-hidden="true">💞</span>` : ''}
     ${careStreak >= 3 && !busy ? `<span class="absolute font-body font-bold" style="bottom:6px;right:6px;font-size:9px;color:var(--gold-deep)" aria-hidden="true">🔥${careStreak}</span>` : ''}
-    ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68 })}
+    ${dragonSVG({ element: species.element, variant: species.variant, stage: dragon.stage, size: 68, hatId: dragon.hatId, collarId: dragon.collarId })}
     <div class="font-display font-bold text-xs mt-1" style="color:var(--ink)">${escapeHtml(dragonDisplayName(dragon, species))}</div>
     <div class="flex gap-1 mt-1">${dots}</div>
   </button>`;
@@ -713,13 +713,36 @@ function decorSectionHtml(title, items) {
   </div>`;
 }
 
+function accessoryCardHtml(acc, owned) {
+  const preview = `<svg viewBox="60 4 80 50" width="52" height="34">${accessorySVGFragment(acc.id)}</svg>`;
+  return `<div class="rounded-2xl p-2\\.5 flex flex-col items-center" style="padding:10px;background:var(--parchment)">
+    <div class="flex items-center justify-center" style="width:52px;height:34px">${preview}</div>
+    <div class="font-body font-bold fs-10 text-center mt-1\\.5" style="margin-top:6px;color:var(--ink)">${escapeHtml(acc.name)}</div>
+    ${owned
+      ? `<span class="font-body font-bold fs-9 mt-1" style="color:var(--ink-soft)">${t('accessory.owned')}</span>`
+      : `<button data-action="buy-accessory" data-accessory-id="${acc.id}" class="flex items-center gap-1 font-display font-bold fs-10 mt-1\\.5 px-2\\.5 py-1 rounded-full" style="margin-top:6px;padding:4px 10px;background:${state.ecailles >= acc.cost ? 'var(--gold)' : '#E4DCC9'};color:var(--ink)">${coinIconHtml()} ${acc.cost}</button>`}
+  </div>`;
+}
+
+function accessorySectionHtml(titleKey, items, ownedIds) {
+  if (items.length === 0) return '';
+  return `<div class="mb-3">
+    <div class="font-body font-bold fs-11 mb-1\\.5" style="margin-bottom:6px;color:var(--ink-soft)">${t(titleKey)}</div>
+    <div class="grid grid-cols-3 gap-2">${items.map(a => accessoryCardHtml(a, ownedIds.includes(a.id))).join('')}</div>
+  </div>`;
+}
+
 function renderScreenBoutique() {
   const activeEvent = getActiveEvent();
   const tab = ui.boutiqueTab || 'shop';
   const ELEMENT_ORDER = ['lumiere', 'feu', 'eau', 'terre', 'air', 'nature'];
 
   let body;
-  if (tab === 'collection') {
+  if (tab === 'accessories') {
+    const owned = state.accessoriesOwned || [];
+    body = accessorySectionHtml('accessory.slotHat', ACCESSORIES.filter(a => a.slot === 'hat'), owned)
+      + accessorySectionHtml('accessory.slotCollar', ACCESSORIES.filter(a => a.slot === 'collar'), owned);
+  } else if (tab === 'collection') {
     const owned = DECOR.filter(d => state.decorOwned.includes(d.id));
     if (owned.length === 0) {
       body = emptyNoteHtml(t('boutique.collectionEmpty'));
@@ -752,6 +775,7 @@ function renderScreenBoutique() {
     <div class="flex rounded-2xl p-1 mb-3" style="background:#F1ECE2">
       <button data-action="boutique-set-tab" data-tab="shop" class="flex-1 font-display font-bold fs-12 py-2 rounded-xl" style="padding:8px 0;background:${tab === 'shop' ? 'var(--parchment)' : 'transparent'};color:var(--ink)">${t('boutique.tabShop')}</button>
       <button data-action="boutique-set-tab" data-tab="collection" class="flex-1 font-display font-bold fs-12 py-2 rounded-xl" style="padding:8px 0;background:${tab === 'collection' ? 'var(--parchment)' : 'transparent'};color:var(--ink)">${t('boutique.tabCollection', { n: ownedCount, total: totalCount })}</button>
+      <button data-action="boutique-set-tab" data-tab="accessories" class="flex-1 font-display font-bold fs-12 py-2 rounded-xl" style="padding:8px 0;background:${tab === 'accessories' ? 'var(--parchment)' : 'transparent'};color:var(--ink)">${t('boutique.tabAccessories', { n: (state.accessoriesOwned || []).length, total: ACCESSORIES.length })}</button>
     </div>
     ${body}
   </div>`;

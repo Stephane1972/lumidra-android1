@@ -357,6 +357,7 @@ const DEFAULT_STATE = {
   passPoints: 0,
   passClaimedTiers: [],
   rivalComparisons: [],
+  accessoriesOwned: [],
   // Détection simple à la première ouverture : français par défaut sauf si l'appareil est
   // clairement réglé sur une autre langue. Modifiable ensuite dans les réglages.
   language: (typeof navigator !== 'undefined' && navigator.language && navigator.language.slice(0, 2).toLowerCase() === 'fr') ? 'fr' : 'en',
@@ -369,7 +370,7 @@ const DEFAULT_STATE = {
 function freshDefaultState() {
   return Object.assign({}, DEFAULT_STATE, {
     dragons: [], eggInbox: [], discovered: [], expeditions: [],
-    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [], passClaimedTiers: [], rivalComparisons: [],
+    decorOwned: [], decorEquipped: [], achievementsClaimed: [], dailyQuests: null, weeklyChallenge: null, expeditionLog: [], passClaimedTiers: [], rivalComparisons: [], accessoriesOwned: [],
   });
 }
 
@@ -533,6 +534,16 @@ const T = {
     'boutique.equip': 'Équiper',
     'boutique.tabShop': 'Boutique',
     'boutique.tabCollection': 'Ma collection ({n}/{total})',
+    'boutique.tabAccessories': 'Accessoires ({n}/{total})',
+    'accessory.slotHat': 'Chapeaux',
+    'accessory.slotCollar': 'Colliers',
+    'accessory.owned': 'Possédé',
+    'accessory.equip': 'Équiper',
+    'accessory.equipped': 'Équipé',
+    'accessory.unequip': 'Retirer',
+    'accessory.none': 'Aucun',
+    'accessory.customizeTitle': 'Personnaliser',
+    'accessory.buyMoreHint': 'Achète des accessoires en boutique pour personnaliser tes dragons.',
     'boutique.collectionEmpty': "Tu n'as encore rien acheté — direction l'onglet Boutique !",
     'boutique.shopEmpty': "Tout est acheté pour le moment — reviens à la prochaine saison !",
     'boutique.sectionSeasonal': 'Saisonnier',
@@ -641,6 +652,7 @@ const T = {
     'toast.gainScales': '+{n} écailles',
     'toast.decorUnavailable': "Cette décoration n'est pas disponible en ce moment",
     'toast.decorAdded': '{name} ajouté !',
+    'toast.accessoryBought': '{name} ajouté à ta collection d\u2019accessoires !',
     'toast.maxDecor': 'Maximum 3 décorations affichées',
     'toast.nameUpdated': 'Nom mis à jour',
     'toast.cardDownloaded': 'Carte du dragon téléchargée !',
@@ -825,6 +837,16 @@ const T = {
     'boutique.equip': 'Equip',
     'boutique.tabShop': 'Shop',
     'boutique.tabCollection': 'My collection ({n}/{total})',
+    'boutique.tabAccessories': 'Accessories ({n}/{total})',
+    'accessory.slotHat': 'Hats',
+    'accessory.slotCollar': 'Collars',
+    'accessory.owned': 'Owned',
+    'accessory.equip': 'Equip',
+    'accessory.equipped': 'Equipped',
+    'accessory.unequip': 'Remove',
+    'accessory.none': 'None',
+    'accessory.customizeTitle': 'Customize',
+    'accessory.buyMoreHint': 'Buy accessories in the shop to customize your dragons.',
     'boutique.collectionEmpty': "You haven't bought anything yet — head to the Shop tab!",
     'boutique.shopEmpty': "Everything's bought for now — check back next season!",
     'boutique.sectionSeasonal': 'Seasonal',
@@ -933,6 +955,7 @@ const T = {
     'toast.gainScales': '+{n} scales',
     'toast.decorUnavailable': 'This decoration is not available right now',
     'toast.decorAdded': '{name} added!',
+    'toast.accessoryBought': '{name} added to your accessory collection!',
     'toast.maxDecor': 'Maximum 3 decorations displayed',
     'toast.nameUpdated': 'Name updated',
     'toast.cardDownloaded': "Dragon's card downloaded!",
@@ -988,6 +1011,7 @@ function applyLanguage(lang) {
   ZONES.forEach(z => { z.name = en ? z.nameEn : z.nameFr; z.lore = en ? z.loreEn : z.loreFr; });
   EXPEDITION_TYPES.forEach(t => { t.name = en ? t.nameEn : t.nameFr; t.tagline = en ? t.taglineEn : t.taglineFr; });
   DECOR.forEach(d => { d.name = en ? d.nameEn : d.nameFr; });
+  ACCESSORIES.forEach(a => { a.name = en ? a.nameEn : a.nameFr; });
   ACHIEVEMENTS.forEach(a => { a.name = en ? a.nameEn : a.nameFr; a.desc = en ? a.descEn : a.descFr; });
   TITLES.forEach(t => { t.name = en ? t.nameEn : t.nameFr; });
 }
@@ -1230,6 +1254,68 @@ const WING_STRUTS = [
   { x: 52, y: -6 },
 ];
 
+/* =========================================================================
+   ACCESSOIRES COSMÉTIQUES — purement visuels, aucun effet de jeu. S'équipent
+   par dragon (chapeau + collier), achetables une fois pour toutes en écailles
+   ou distribués via la Voie du Gardien.
+   ========================================================================= */
+const ACCESSORIES = [
+  { id: 'couronne-or', slot: 'hat', nameFr: 'Couronne Dorée', nameEn: 'Golden Crown', cost: 90 },
+  { id: 'chapeau-paille', slot: 'hat', nameFr: 'Chapeau de Paille', nameEn: 'Straw Hat', cost: 60 },
+  { id: 'bonnet-hiver', slot: 'hat', nameFr: 'Bonnet Douillet', nameEn: 'Cosy Bobble Hat', cost: 60 },
+  { id: 'diademe-astral', slot: 'hat', nameFr: 'Diadème Astral', nameEn: 'Star Diadem', cost: 110 },
+  { id: 'echarpe-rayee', slot: 'collar', nameFr: 'Écharpe Rayée', nameEn: 'Striped Scarf', cost: 55 },
+  { id: 'collier-perles', slot: 'collar', nameFr: 'Collier de Perles', nameEn: 'Pearl Necklace', cost: 85 },
+  { id: 'noeud-papillon', slot: 'collar', nameFr: 'Nœud Papillon', nameEn: 'Bow Tie', cost: 50 },
+  { id: 'collier-floral', slot: 'collar', nameFr: 'Collier Floral', nameEn: 'Flower Garland', cost: 70 },
+];
+const ACCESSORIES_BY_ID = new Map(ACCESSORIES.map(a => [a.id, a]));
+function accessoryById(id) { return ACCESSORIES_BY_ID.get(id); }
+
+// Fragments SVG des accessoires. Les "hat" se placent DANS le groupe de la tête (ils suivent
+// donc automatiquement sa mise à l'échelle par stade) ; les "collar" se placent au niveau du cou,
+// hors du groupe tête, dans l'espace du corps.
+function accessorySVGFragment(accId) {
+  const s = `stroke="${INK}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"`;
+  switch (accId) {
+    case 'couronne-or': return `
+      <path d="M76,40 L82,20 L91,32 L100,16 L109,32 L118,20 L124,40 Z" fill="#F4C548" ${s}/>
+      <circle cx="91" cy="30" r="2.6" fill="#E0553F"/><circle cx="100" cy="24" r="2.8" fill="#4E8FD9"/><circle cx="109" cy="30" r="2.6" fill="#4FAE6B"/>`;
+    case 'chapeau-paille': return `
+      <ellipse cx="100" cy="40" rx="36" ry="7" fill="#E3C27E" ${s}/>
+      <path d="M78,38 Q100,4 122,38 Q100,26 78,38 Z" fill="#EDD39A" ${s}/>
+      <rect x="83" y="30" width="34" height="6" rx="3" fill="#B5502C" opacity="0.85"/>`;
+    case 'bonnet-hiver': return `
+      <path d="M74,42 Q76,10 100,10 Q124,10 126,42 Z" fill="#C7503A" ${s}/>
+      <rect x="72" y="38" width="56" height="8" rx="4" fill="#F4EDE0" ${s}/>
+      <circle cx="100" cy="10" r="7" fill="#F4EDE0" ${s}/>`;
+    case 'diademe-astral': return `
+      <path d="M74,44 Q100,26 126,44" fill="none" stroke="#8FA6D9" stroke-width="4" stroke-linecap="round"/>
+      <path d="M100,20 l2.6,6.4 6.8,0.6 -5.2,4.6 1.6,6.8 -5.8,-3.6 -5.8,3.6 1.6,-6.8 -5.2,-4.6 6.8,-0.6 Z" fill="#F4EDE0" ${s}/>
+      <circle cx="80" cy="38" r="2.4" fill="#8FA6D9"/><circle cx="120" cy="38" r="2.4" fill="#8FA6D9"/>`;
+    case 'echarpe-rayee': return `
+      <path d="M74,100 Q100,116 126,100 L126,110 Q100,126 74,110 Z" fill="#E0553F" ${s}/>
+      <path d="M80,100 L80,110 M92,102 L92,113 M108,102 L108,113 M120,100 L120,110" stroke="#F4EDE0" stroke-width="4"/>
+      <path d="M78,108 L72,128 L82,124 Z" fill="#E0553F" ${s}/>`;
+    case 'collier-perles': return `
+      <path d="M72,98 Q100,120 128,98" fill="none" stroke="none"/>
+      ${[72, 84, 96, 100, 104, 116, 128].map((x, i) => `<circle cx="${x}" cy="${98 + Math.sin((i / 6) * Math.PI) * 20}" r="4.2" fill="#F4EDE0" ${s}/>`).join('')}`;
+    case 'noeud-papillon': return `
+      <path d="M86,104 L98,98 L98,112 Z" fill="#4E8FD9" ${s}/>
+      <path d="M114,104 L102,98 L102,112 Z" fill="#4E8FD9" ${s}/>
+      <rect x="97" y="100" width="6" height="8" rx="2" fill="#2F5A96" ${s}/>`;
+    case 'collier-floral': return `
+      ${[78, 90, 100, 110, 122].map((x, i) => {
+        const y = 96 + Math.sin((i / 4) * Math.PI) * 16;
+        return `<g transform="translate(${x},${y})">
+          <circle r="3" cy="-4" fill="#F2A6C4"/><circle r="3" cx="4" cy="2" fill="#F2A6C4"/><circle r="3" cx="-4" cy="2" fill="#F2A6C4"/>
+          <circle r="2" fill="#F4C548"/>
+        </g>`;
+      }).join('')}`;
+    default: return '';
+  }
+}
+
 function wingSVG(mirror, scale, fill, stroke) {
   const scaleX = mirror ? -scale : scale;
   let struts = '';
@@ -1251,6 +1337,8 @@ function backSpikesSVG(count, fill) {
 
 function dragonSVG(opts) {
   const element = opts.element, variant = opts.variant, stage = opts.stage || 'adulte', size = opts.size || 100;
+  const hatId = opts.hatId || null;
+  const collarId = opts.collarId || null;
   const c = ELEMENTS[element];
   const idStr = nextSvgUid();
   const gradId = `grad-${element}-${idStr}`;
@@ -1302,6 +1390,7 @@ function dragonSVG(opts) {
         <ellipse cx="100" cy="76" rx="22" ry="14" fill="url(#${gradId})" stroke="${INK}" stroke-width="3"/>
         <circle cx="100" cy="72" r="33" fill="url(#${gradId})" stroke="${INK}" stroke-width="3.5"/>
         <g transform="translate(100,72) scale(${hornScale}) translate(-100,-72)">${hornsSVG(variant, c.deep)}</g>
+        ${hatId ? accessorySVGFragment(hatId) : ''}
         <ellipse cx="76" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
         <ellipse cx="124" cy="80" rx="8" ry="6" fill="#FF9E8A" opacity="0.5"/>
         <g class="dragon-eye-blink">
@@ -1317,6 +1406,7 @@ function dragonSVG(opts) {
         <path d="M91,89 Q100,94 109,89" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
         <path d="M92,89 L91,94 L95,90 Z" fill="#FFFFFF"/>
       </g>
+      ${collarId ? accessorySVGFragment(collarId) : ''}
     </g>
   </svg>`;
 }
