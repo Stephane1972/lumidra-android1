@@ -365,7 +365,7 @@ function renderScreenSanctuaire() {
     html += emptyNoteHtml(t('sanctuaire.empty'));
   } else {
     if (state.dragons.length > 1) {
-      html += `<button data-action="care-all-dragons" class="w-full flex items-center justify-center gap-1\\.5 font-body font-bold fs-11 rounded-xl mb-2\\.5" style="padding:8px;margin-bottom:10px;background:rgba(255,255,255,.55);color:var(--ink)">${icon('heart', { size: 13, color: '#D9634A' })} ${t('sanctuaire.careAll')}</button>`;
+      html += `<button data-action="care-all-dragons" class="w-full flex items-center justify-center gap-2 font-display font-bold fs-13 rounded-xl mb-2\\.5" style="padding:11px;margin-bottom:10px;background:linear-gradient(135deg,#FFD3C4,#FFAF9A);color:#8A3B22;box-shadow:0 3px 10px rgba(217,99,74,0.28)">${icon('heart', { size: 17, color: '#D9634A' })} ${t('sanctuaire.careAll')}</button>`;
     }
     if (state.dragons.length > 5) {
       html += `<input id="sanctuaire-search-input" data-bind="sanctuaire-search" value="${escapeHtml(ui.sanctuaireSearch || '')}" placeholder="${t('sanctuaire.searchPlaceholder')}" aria-label="${t('sanctuaire.searchAria')}"
