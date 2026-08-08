@@ -1,12 +1,16 @@
-const CACHE_NAME = 'lumidra-cache-v3';
+const CACHE_NAME = 'lumidra-cache-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
-  './js/01-data.js',
-  './js/02-screens.js',
-  './js/03-actions-modals.js',
-  './js/04-app.js',
+  './js/01-data-content.js',
+  './js/02-i18n-helpers.js',
+  './js/03-icons-art.js',
+  './js/04-game-logic.js',
+  './js/05-screens.js',
+  './js/06-modals-share.js',
+  './js/07-actions-render.js',
+  './js/08-app.js',
   './manifest.json',
   './fonts/baloo-2-latin-500-normal.woff2',
   './fonts/baloo-2-latin-600-normal.woff2',

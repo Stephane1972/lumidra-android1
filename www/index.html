@@ -25,10 +25,14 @@
   <div id="modal-root"></div>
   <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
 </div>
-<script src="js/01-data.js"></script>
-<script src="js/02-screens.js"></script>
-<script src="js/03-actions-modals.js"></script>
-<script src="js/04-app.js"></script>
+<script src="js/01-data-content.js"></script>
+<script src="js/02-i18n-helpers.js"></script>
+<script src="js/03-icons-art.js"></script>
+<script src="js/04-game-logic.js"></script>
+<script src="js/05-screens.js"></script>
+<script src="js/06-modals-share.js"></script>
+<script src="js/07-actions-render.js"></script>
+<script src="js/08-app.js"></script>
 <script>
 if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
