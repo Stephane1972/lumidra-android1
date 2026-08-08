@@ -13,7 +13,7 @@
 @font-face { font-family:'Nunito'; font-style:normal; font-weight:800; font-display:swap; src:url('fonts/nunito-latin-800-normal.woff2') format('woff2'); }
 
 :root {
-  --ink:#3A2E2A; --ink-soft:#806B5E; --sky:#F3F6FB; --parchment:#FFFCF6;
+  --ink:#3A2E2A; --ink-soft:#6B5747; --sky:#F3F6FB; --parchment:#FFFCF6;
   --gold:#EDA23C; --gold-deep:#C97A1F; --gold-deep-btn:#D5862B;
 }
 
@@ -376,6 +376,7 @@ body.gentle-fx .screen-transition-in { animation-duration:.2s; }
 body { display:flex; justify-content:center; align-items:flex-start; min-height:100vh; min-height:100dvh; }
 #lumidra-app { width:100%; max-width:430px; height:100vh; height:100dvh; max-height:900px; background:var(--sky); position:relative; overflow:hidden; display:flex; flex-direction:column; }
 #main-shell { display:flex; flex-direction:column; height:100%; min-height:0; }
+#onboarding-root { height:100%; min-height:0; }
 @media (min-width:431px) {
   body { background:#e2e5ea; padding:24px 0; }
   #lumidra-app { border-radius:28px; box-shadow:0 12px 40px rgba(0,0,0,.18); height:844px; }

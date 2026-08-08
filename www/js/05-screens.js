@@ -398,17 +398,22 @@ function achievementsCardHtml() {
     const claimed = state.achievementsClaimed.includes(a.id);
     const prog = a.progress(state);
     const ready = !claimed && prog >= a.target;
-    return `<div class="flex items-center gap-2\\.5" style="gap:10px;padding:7px 0;border-bottom:1px solid #EEE6D8">
-      <div class="flex-1">
-        <div class="font-body font-bold fs-12" style="color:${claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(a.name)}</div>
-        <div class="font-body fs-10" style="color:var(--ink-soft)">${escapeHtml(a.desc)}</div>
+    const pct = Math.min(100, Math.round((prog / a.target) * 100));
+    return `<div style="padding:9px 0;border-bottom:1px solid #EEE6D8">
+      <div class="flex items-center gap-2\\.5" style="gap:10px">
+        <span class="flex items-center justify-center shrink-0" style="width:30px;height:30px;border-radius:10px;background:${claimed ? '#E6DFD1' : 'rgba(201,122,31,.12)'}">${icon(achievementIcon(a.id), { size: 15, color: claimed ? 'var(--ink-soft)' : 'var(--gold-deep)' })}</span>
+        <div class="flex-1">
+          <div class="font-body font-bold fs-12" style="color:${claimed ? 'var(--ink-soft)' : 'var(--ink)'}">${escapeHtml(a.name)}</div>
+          <div class="font-body fs-10" style="color:var(--ink-soft)">${escapeHtml(a.desc)}</div>
+        </div>
+        ${claimed
+          ? `<span style="display:inline-flex">${icon('check', { size: 14, color: 'var(--ink-soft)' })}</span>`
+          : ready
+            ? `<button data-action="claim-achievement" data-achievement-id="${a.id}" class="font-display font-bold fs-10 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${coinIconHtml()} +${a.reward}</button>`
+            : `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${prog}/${a.target}</span>`
+        }
       </div>
-      ${claimed
-        ? `<span style="display:inline-flex">${icon('check', { size: 14, color: 'var(--ink-soft)' })}</span>`
-        : ready
-          ? `<button data-action="claim-achievement" data-achievement-id="${a.id}" class="font-display font-bold fs-10 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:var(--gold);color:var(--ink)">${coinIconHtml()} +${a.reward}</button>`
-          : `<span class="font-body font-bold fs-10 shrink-0" style="color:var(--ink-soft)">${prog}/${a.target}</span>`
-      }
+      ${claimed ? '' : `<div class="rounded-full" style="height:5px;margin-top:7px;margin-left:40px;background:#EEE6D8;overflow:hidden"><div style="height:100%;width:${pct}%;background:${ready ? 'var(--gold)' : 'var(--gold-deep)'};border-radius:9999px"></div></div>`}
     </div>`;
   }).join('');
   return `<div class="mb-3 rounded-2xl p-3\\.5" style="padding:14px;background:#F1ECE2">
@@ -720,9 +725,10 @@ function decorCardHtml(d) {
   const action = !owned
     ? `<button data-action="buy-decor" data-decor-id="${d.id}" ${canAfford ? '' : 'disabled'} class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full flex items-center justify-center gap-1" style="padding:6px 12px;background:${canAfford ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">${coinIconHtml()} ${d.cost}</button>`
     : `<button data-action="toggle-equip-decor" data-decor-id="${d.id}" class="mt-2 font-display font-bold fs-11 px-3 py-1\\.5 rounded-xl w-full" style="padding:6px 12px;background:${equipped ? 'var(--gold-deep-btn)' : '#F1ECE2'};color:${equipped ? 'var(--ink)' : 'var(--ink-soft)'}">${equipped ? t('boutique.equipped') : t('boutique.equip')}</button>`;
+  const elc = ELEMENTS[d.element] || ELEMENTS.lumiere;
   return `<div class="rounded-2xl p-3 flex flex-col items-center relative" style="background:var(--parchment)">
     ${d.seasonal ? `<span class="absolute font-display font-bold" style="top:6px;right:6px;font-size:14px" aria-hidden="true">${EVENTS.find(e => e.id === d.seasonal)?.emoji || ''}</span>` : ''}
-    <div class="mb-1 flex items-center justify-center" style="height:34px">${decorIconSVG(d.id, 34)}</div>
+    <div class="mb-1 flex items-center justify-center rounded-full" style="height:48px;width:48px;background:${elc.light}55">${decorIconSVG(d.id, 32)}</div>
     <div class="font-display font-bold text-xs text-center" style="color:var(--ink)">${d.name}</div>
     ${action}
   </div>`;
@@ -883,6 +889,12 @@ function renderScreenLabo() {
     <button data-action="breed-dragons" ${canBreed ? '' : 'disabled'} class="w-full font-display font-bold text-sm py-3 rounded-2xl flex items-center justify-center gap-2" style="background:${canBreed ? 'var(--gold)' : '#D8CFC0'};color:var(--ink)">
       ${onCooldown ? t('labo.availableIn', { time: fmtCountdown(cooldownLeft) }) : `${coinIconHtml()} ${t('labo.breed', { cost: BREED_COST })}`}
     </button>
+
+    <div class="rounded-3xl mt-5 p-5 flex flex-col items-center text-center" style="margin-top:20px;background:linear-gradient(180deg,#F1ECE2,#E9E2D2)">
+      <div class="rounded-full flex items-center justify-center mb-3" style="width:64px;height:64px;background:rgba(201,122,31,.14)">${icon('flask', { size: 30, color: 'var(--gold-deep)' })}</div>
+      <div class="font-display font-bold fs-13 mb-1\\.5" style="margin-bottom:6px;color:var(--ink)">${t('labo.tipTitle')}</div>
+      <p class="font-body font-semibold fs-11" style="color:var(--ink-soft);max-width:280px">${t('labo.tipBody')}</p>
+    </div>
   </div>`;
 }
 

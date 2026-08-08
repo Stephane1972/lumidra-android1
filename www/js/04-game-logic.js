@@ -67,6 +67,16 @@ const WEEKLY_POOL = [
   { type: 'collecte', descFr: 'Gagne 400 écailles en expédition cette semaine', descEn: 'Earn 400 scales from expeditions this week', target: 400, reward: 80 },
 ];
 
+function achievementIcon(id) {
+  if (id.includes('tribu')) return 'heart';
+  if (id.includes('explorateur')) return 'map';
+  if (id === 'genetique' || id.includes('eleveur')) return 'flask';
+  if (id === 'decorateur') return 'shopping-bag';
+  if (id.includes('legende') || id.includes('mythique') || id === 'premier-envol') return 'sparkles';
+  if (id.includes('collectionneur') || id.includes('gardien')) return 'book-open';
+  return 'star';
+}
+
 const ACHIEVEMENTS = [
   { id: 'premier-envol', nameFr: 'Premier Envol', nameEn: 'First Flight', descFr: 'Fais éclore ton premier dragon.', descEn: 'Hatch your first dragon.', reward: 20, target: 1, progress: (s) => Math.min(1, s.dragons.length) },
   { id: 'petite-tribu', nameFr: 'Petite Tribu', nameEn: 'Small Tribe', descFr: 'Élève 5 dragons.', descEn: 'Raise 5 dragons.', reward: 40, target: 5, progress: (s) => Math.min(5, s.dragons.length) },
