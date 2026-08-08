@@ -672,6 +672,7 @@ const T = {
     'toast.dragonReleased': '{name} relâché (+{n} écailles)',
     'toast.zoneLevelRequired': 'Niveau {n} requis pour débloquer cette zone',
     'toast.corruptedSave': 'Ta sauvegarde précédente était illisible — on repart à zéro, désolé 💛',
+    'toast.saveFailed': 'Impossible d\'enregistrer ta partie (stockage plein ou navigation privée) — libère de l\'espace pour ne pas perdre ta progression 💛',
     'toast.streakBonus': '🔥 Série de {n} jour{s} ! +{bonus} écailles',
     'toast.streakMilestone': "🔥✨ Palier de {n} jours d'affilée ! +{bonus} écailles bonus",
     'toast.dailyComboBonus': '⭐ Les 3 quêtes du jour, terminées ! +{n} écailles bonus',
@@ -978,6 +979,7 @@ const T = {
     'toast.dragonReleased': '{name} released (+{n} scales)',
     'toast.zoneLevelRequired': 'Level {n} required to unlock this zone',
     'toast.corruptedSave': 'Your previous save could not be read — starting fresh, sorry 💛',
+    'toast.saveFailed': 'Couldn\'t save your progress (storage full or private browsing) — free up space to avoid losing it 💛',
     'toast.streakBonus': '🔥 {n}-day streak! +{bonus} scales',
     'toast.streakMilestone': '🔥✨ {n}-day milestone! +{bonus} bonus scales',
     'toast.dailyComboBonus': '⭐ All 3 daily quests done! +{n} bonus scales',
@@ -1868,6 +1870,7 @@ function claimAchievement(id) {
 /* ---- état persistant + état d'interface transitoire ---- */
 let state = freshDefaultState();
 let saveWasCorrupted = false; // signalé une fois au joueur au démarrage si la sauvegarde était illisible, jamais persisté
+let saveFailureWarned = false; // signalé une seule fois par session si l'écriture de sauvegarde échoue (quota plein, mode privé...)
 let now = Date.now();
 
 const ui = {
@@ -1923,8 +1926,20 @@ function loadState() {
 function saveStateDebounced() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    } catch (e) {
+      // Stockage indisponible (quota plein, navigation privée...) : la partie continue en mémoire,
+      // mais le joueur risque de perdre sa progression à la fermeture — un seul avertissement par
+      // session suffit à le prévenir sans matraquer un toast à chaque action.
+      warnSaveFailureOnce();
+    }
   }, 300);
+}
+function warnSaveFailureOnce() {
+  if (saveFailureWarned) return;
+  saveFailureWarned = true;
+  if (typeof showToast === 'function') showToast(t('toast.saveFailed'));
 }
 
 /* ---- export / import de la sauvegarde (fichier .json) ----
@@ -2027,7 +2042,7 @@ function applyPendingImport() {
   // des champs qui n'existaient pas dans l'ancienne sauvegarde, ils gardent leur valeur par défaut.
   state = Object.assign(freshDefaultState(), ui.pendingImport);
   document.body.classList.toggle('gentle-fx', !!state.gentleAnimations);
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { warnSaveFailureOnce(); }
   ui.pendingImport = null;
   ui.confirmImportOpen = false;
   ui.screen = 'sanctuaire';

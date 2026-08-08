@@ -1200,7 +1200,7 @@ function doReset() {
   state.expeditions.forEach(exp => cancelExpeditionNotification(exp.id));
   state = freshDefaultState();
   document.body.classList.remove('gentle-fx');
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { warnSaveFailureOnce(); }
   ui.screen = 'sanctuaire';
   ui.confirmResetOpen = false;
   ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
