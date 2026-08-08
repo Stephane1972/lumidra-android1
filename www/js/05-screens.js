@@ -376,7 +376,17 @@ function renderScreenSanctuaire() {
       ? emptyNoteHtml(t('sanctuaire.noSearchResults'))
       : `<div class="grid grid-cols-2 gap-3">${sortedDragonsForDisplay().map(d => dragonHabitatCardHtml(d, !!busy[d.id])).join('')}</div>`;
   }
-  html += `</div></div>`;
+  html += `</div>`;
+
+  html += `<div class="rounded-2xl mt-3 p-3\\.5 flex items-center gap-3" style="margin-top:12px;padding:14px;background:#F1ECE2">
+    <span class="flex items-center justify-center shrink-0 rounded-full" style="width:38px;height:38px;background:rgba(201,122,31,.14)">${icon('sparkles', { size: 18, color: 'var(--gold-deep)' })}</span>
+    <div class="flex-1">
+      <div class="font-display font-bold fs-11" style="color:var(--ink)">${t('tip.title')}</div>
+      <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${t('tip.' + dailyTipIndex())}</div>
+    </div>
+  </div>`;
+
+  html += `</div>`;
 
   document.getElementById('screen-root').innerHTML = html;
 }

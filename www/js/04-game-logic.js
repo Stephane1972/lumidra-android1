@@ -67,6 +67,13 @@ const WEEKLY_POOL = [
   { type: 'collecte', descFr: 'Gagne 400 écailles en expédition cette semaine', descEn: 'Earn 400 scales from expeditions this week', target: 400, reward: 80 },
 ];
 
+const TIP_COUNT = 6;
+function dailyTipIndex() {
+  const start = Date.UTC(new Date().getUTCFullYear(), 0, 0);
+  const dayOfYear = Math.floor((Date.now() - start) / 86400000);
+  return dayOfYear % TIP_COUNT;
+}
+
 function achievementIcon(id) {
   if (id.includes('tribu')) return 'heart';
   if (id.includes('explorateur')) return 'map';
