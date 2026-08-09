@@ -636,14 +636,45 @@ function activeExpeditionCardHtml(exp) {
   const remaining = exp.endAt - now;
   const ready = remaining <= 0;
   const speedCost = ready ? 0 : speedUpCost(remaining);
-  return `<div class="rounded-2xl p-3 flex items-center gap-3" style="background:${ready ? 'linear-gradient(135deg,#FFF3DC,#FCE3B8)' : 'var(--parchment)'}">
-    <div class="flex-1">
-      <div class="font-display font-bold text-xs" style="color:var(--ink)">${escapeHtml(zone.name)}</div>
-      <div class="font-body font-bold fs-11" style="color:${ready ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${ready ? t('carte.expeditionDone') : t('carte.returnIn', { time: fmtCountdown(remaining) })}</div>
+  const team = exp.dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
+  const leader = team[0];
+  const leaderSpecies = leader ? speciesById(leader.speciesId) : null;
+
+  let progressHtml = '';
+  if (!ready) {
+    const total = exp.endAt - exp.startAt;
+    const elapsed = Math.min(total, Math.max(0, now - exp.startAt));
+    const pct = total > 0 ? (elapsed / total) * 100 : 100;
+    const teamBonus = computeTeamBonus(exp.dragonIds, zone);
+    const activeEvent = getActiveEvent();
+    const eventBoost = !!(activeEvent && zone.elements.includes(activeEvent.boostElement));
+    const type = EXPEDITION_TYPES.find(t => t.id === exp.typeId);
+    const eggChancePct = Math.round(Math.min(0.97, type.eggChance + teamBonus.eggChanceBonus + (eventBoost ? 0.05 : 0)) * 100);
+    progressHtml = `<div style="margin-top:10px">
+      <div style="position:relative;height:22px;background:#EEE6D8;border-radius:9999px;overflow:visible">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${zoneThemeElement(zone).light},${zoneThemeElement(zone).base});border-radius:9999px;transition:width 1s linear"></div>
+        <div class="dragon-anim-idle" style="position:absolute;top:50%;left:${pct.toFixed(1)}%;transform:translate(-50%,-50%);transition:left 1s linear;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">
+          ${leaderSpecies ? dragonSVG({ element: leaderSpecies.element, variant: leaderSpecies.variant, stage: leader.stage, size: 26 }) : '🐾'}
+        </div>
+      </div>
+      <div class="flex items-center gap-1 mt-1\\.5" style="margin-top:6px;color:var(--ink-soft)">
+        ${icon('sparkles', { size: 11, color: 'var(--gold-deep)' })}
+        <span class="font-body font-bold fs-10">${t('carte.eggChanceHint', { n: eggChancePct })}</span>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="rounded-2xl p-3" style="background:${ready ? 'linear-gradient(135deg,#FFF3DC,#FCE3B8)' : 'var(--parchment)'}">
+    <div class="flex items-center gap-3">
+      <div class="flex-1">
+        <div class="font-display font-bold text-xs" style="color:var(--ink)">${escapeHtml(zone.name)}</div>
+        <div class="font-body font-bold fs-11" style="color:${ready ? 'var(--gold-deep)' : 'var(--ink-soft)'}">${ready ? t('carte.expeditionDone') : t('carte.returnIn', { time: fmtCountdown(remaining) })}</div>
+      </div>
+      ${ready
+        ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>`
+        : `<button data-action="carte-speed-up" data-exp-id="${exp.id}" class="font-display font-bold fs-10 px-2\\.5 py-1\\.5 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:#F1ECE2;color:var(--ink-soft)">⚡ ${speedCost}</button>`}
     </div>
-    ${ready
-      ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>`
-      : `<button data-action="carte-speed-up" data-exp-id="${exp.id}" class="font-display font-bold fs-10 px-2\\.5 py-1\\.5 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:#F1ECE2;color:var(--ink-soft)">⚡ ${speedCost}</button>`}
+    ${progressHtml}
   </div>`;
 }
 
