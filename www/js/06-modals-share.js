@@ -336,7 +336,7 @@ function releaseButtonHtml(dragon, species, busy) {
       </div>
     </div>`;
   }
-  return `<button data-action="request-release-dragon" data-dragon-id="${dragon.id}" ${busy ? 'disabled' : ''} class="w-full font-body font-bold fs-11 mt-3 py-2" style="color:${busy ? '#D8CFC0' : 'var(--ink-soft)'}">${t('modal.releaseButton', { n: refund })}</button>`;
+  return `<button data-action="request-release-dragon" data-dragon-id="${dragon.id}" ${busy ? 'disabled' : ''} class="w-full font-body font-bold fs-10 flex items-center justify-center gap-1\\.5" style="margin-top:14px;padding-top:12px;border-top:1px solid #EEE6D8;color:${busy ? '#D8CFC0' : 'var(--ink-soft)'}">${icon('upload', { size: 12, color: busy ? '#D8CFC0' : 'var(--ink-soft)' })} ${t('modal.releaseButton', { n: refund })}</button>`;
 }
 
 function speciesDetailModalHtml(entry) {
