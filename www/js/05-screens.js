@@ -524,6 +524,8 @@ function renderScreenDragondex() {
    ÉCRAN — CARTE / EXPÉDITIONS
    ========================================================================= */
 
+const ZONE_MOTIF = { plaine: 'flame', golfe: 'droplet', foret: 'leaf', archipel: 'wind', cime: 'sun', voile: 'sparkles' };
+
 function zoneThemeElement(zone) {
   const overrides = { cime: 'lumiere', voile: 'air' };
   return ELEMENTS[overrides[zone.id] || zone.elements[0]];
@@ -573,6 +575,7 @@ function zonesPathMapHtml() {
     }).join('');
     return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
       <div style="position:absolute;left:50%;top:50%;width:100px;height:100px;transform:translate(-50%,-50%);border-radius:9999px;background:${unlocked ? theme.base : '#C9C0AE'};opacity:0.28;filter:blur(6px)" aria-hidden="true"></div>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0.24;pointer-events:none" aria-hidden="true">${icon(ZONE_MOTIF[zone.id] || 'star', { size: 150, color: theme.deep })}</div>
       ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
       ${boosted ? `<div style="position:absolute;left:calc(50% + 22px);top:-8px;font-size:15px" aria-hidden="true" title="${t('carte.eventBoostHint')}">${activeEvent.emoji}</div>` : ''}
       <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : t('dragondex.lockedSuffix')}"
