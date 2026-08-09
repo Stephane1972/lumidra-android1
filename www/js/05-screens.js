@@ -594,6 +594,8 @@ function zonesPathMapHtml() {
       <path d="${pathD}" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="8" stroke-linecap="round" stroke-dasharray="3 15"/>
       <path d="${pathD}" fill="none" stroke="url(#carte-trail-grad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15" opacity="0.9"
         style="clip-path:inset(0 0 ${Math.max(0, 100 - ((firstLockedIndex === -1 ? n - 1 : firstLockedIndex) / (n - 1)) * 100)}% 0)"/>
+      <path d="${pathD}" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 34" class="carte-trail-shimmer"
+        style="clip-path:inset(0 0 ${Math.max(0, 100 - ((firstLockedIndex === -1 ? n - 1 : firstLockedIndex) / (n - 1)) * 100)}% 0)"/>
     </svg>
     ${nodesHtml}
   </div>`;

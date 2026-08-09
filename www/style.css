@@ -287,6 +287,12 @@ body.gentle-fx .dragon-tail-swish { animation-duration: 4.4s; }
 body.gentle-fx #lumidra-app::before { opacity:.4; animation-duration:42s; }
 @media (prefers-reduced-motion: reduce) { #lumidra-app::before { animation:none; } }
 
+/* ---- scintillement du sentier d'expédition déjà parcouru ---- */
+.carte-trail-shimmer { animation: carte-trail-shimmer-move 2.2s linear infinite; filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
+@keyframes carte-trail-shimmer-move { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -140; } }
+body.gentle-fx .carte-trail-shimmer { animation-duration: 4s; opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .carte-trail-shimmer { animation:none; opacity:.4; } }
+
 /* ---- transition douce entre écrans (Sanctuaire/Dragondex/Carte/...) ---- */
 @keyframes lumidra-screen-in { 0%{opacity:0; transform:translateY(10px);} 100%{opacity:1; transform:translateY(0);} }
 .screen-transition-in { animation: lumidra-screen-in .32s cubic-bezier(.3,.9,.3,1.1); }
