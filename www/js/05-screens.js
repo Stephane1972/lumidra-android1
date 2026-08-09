@@ -637,8 +637,6 @@ function activeExpeditionCardHtml(exp) {
   const ready = remaining <= 0;
   const speedCost = ready ? 0 : speedUpCost(remaining);
   const team = exp.dragonIds.map(id => state.dragons.find(d => d.id === id)).filter(Boolean);
-  const leader = team[0];
-  const leaderSpecies = leader ? speciesById(leader.speciesId) : null;
 
   let progressHtml = '';
   if (!ready) {
@@ -650,12 +648,20 @@ function activeExpeditionCardHtml(exp) {
     const eventBoost = !!(activeEvent && zone.elements.includes(activeEvent.boostElement));
     const type = EXPEDITION_TYPES.find(t => t.id === exp.typeId);
     const eggChancePct = Math.round(Math.min(0.97, type.eggChance + teamBonus.eggChanceBonus + (eventBoost ? 0.05 : 0)) * 100);
+    const walkers = team.slice(0, 3);
+    const offsets = [0, -6, -11]; // les suivants traînent légèrement derrière le meneur
+    const walkersHtml = walkers.map((d, i) => {
+      const s = speciesById(d.speciesId);
+      const wPct = Math.max(0, pct + offsets[i]);
+      const size = i === 0 ? 26 : 20;
+      return `<div class="dragon-anim-idle" style="position:absolute;top:50%;left:${wPct.toFixed(1)}%;transform:translate(-50%,-50%);transition:left 1s linear;z-index:${walkers.length - i};opacity:${i === 0 ? 1 : 0.85};filter:drop-shadow(0 1px 2px rgba(0,0,0,.25));animation-delay:${(i * 0.25).toFixed(2)}s">
+        ${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size })}
+      </div>`;
+    }).join('');
     progressHtml = `<div style="margin-top:10px">
       <div style="position:relative;height:22px;background:#EEE6D8;border-radius:9999px;overflow:visible">
         <div style="position:absolute;top:0;left:0;height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${zoneThemeElement(zone).light},${zoneThemeElement(zone).base});border-radius:9999px;transition:width 1s linear"></div>
-        <div class="dragon-anim-idle" style="position:absolute;top:50%;left:${pct.toFixed(1)}%;transform:translate(-50%,-50%);transition:left 1s linear;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">
-          ${leaderSpecies ? dragonSVG({ element: leaderSpecies.element, variant: leaderSpecies.variant, stage: leader.stage, size: 26 }) : '🐾'}
-        </div>
+        ${walkersHtml || `<div class="dragon-anim-idle" style="position:absolute;top:50%;left:${pct.toFixed(1)}%;transform:translate(-50%,-50%);transition:left 1s linear;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))">🐾</div>`}
       </div>
       <div class="flex items-center gap-1 mt-1\\.5" style="margin-top:6px;color:var(--ink-soft)">
         ${icon('sparkles', { size: 11, color: 'var(--gold-deep)' })}
