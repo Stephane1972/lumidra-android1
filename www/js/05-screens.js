@@ -609,8 +609,11 @@ function zonesPathMapHtml() {
   </div>`;
 }
 
-function typesPathHtml(types) {
+const TYPE_ICON = { reco: 'clock', collecte: 'shopping-bag', explo: 'map', majeure: 'shield', 'quete-legendaire': 'star', 'quete-mythique': 'sparkles', 'quete-eternelle': 'mountain' };
+
+function typesPathHtml(types, zone) {
   const stepColors = ['#8FBF7F', '#E0AA3E', '#E8734A', '#B5502C', '#8A6FBF'];
+  const theme = zone ? zoneThemeElement(zone) : null;
   return `<div class="flex flex-col">${types.map((et, i) => {
     const color = stepColors[i % stepColors.length];
     const isLast = i === types.length - 1;
@@ -620,6 +623,7 @@ function typesPathHtml(types) {
         ${!isLast ? `<div style="flex:1;width:3px;min-height:18px;background:#E6DFD3;margin:2px 0"></div>` : ''}
       </div>
       <button data-action="carte-choose-type" data-type-id="${et.id}" class="rounded-2xl p-3\\.5 flex items-center gap-3 text-left flex-1" style="padding:14px;margin-bottom:14px;background:var(--parchment)">
+        <span class="flex items-center justify-center shrink-0 rounded-full" style="width:36px;height:36px;background:${theme ? theme.light + '66' : '#F1ECE2'}">${icon(TYPE_ICON[et.id] || 'map', { size: 17, color: theme ? theme.deep : 'var(--gold-deep)' })}</span>
         <div class="flex-1">
           <div class="font-display font-bold fs-13" style="color:var(--ink)">${et.name}</div>
           <div class="font-body font-semibold fs-11" style="color:var(--ink-soft)">~${fmtCountdown(et.seconds * 1000)} · ${et.ecaillesMin}-${et.ecaillesMax} ${t('carte.scalesUnit')}${et.team ? t('carte.teamSuffix') : ''}</div>
@@ -781,7 +785,7 @@ function renderScreenCarte() {
   } else if (c.view === 'types') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     const loreHtml = zone.lore ? `<p class="font-body fs-11 italic mb-3" style="color:var(--ink-soft)">${escapeHtml(zone.lore)}</p>` : '';
-    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(et => (!et.team || state.mode === 'stratege') && (!et.requiresAllLegendary || allLegendariesDiscovered()) && (!et.requiresMythic || hasAnyMythic()))));
+    html += flowPanelHtml(zone.name, loreHtml + typesPathHtml(EXPEDITION_TYPES.filter(et => (!et.team || state.mode === 'stratege') && (!et.requiresAllLegendary || allLegendariesDiscovered()) && (!et.requiresMythic || hasAnyMythic())), zone));
   } else if (c.view === 'pick1') {
     const zone = ZONES.find(z => z.id === c.zoneId);
     let inner;
