@@ -576,7 +576,9 @@ function zonesPathMapHtml() {
     return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
       <div style="position:absolute;left:50%;top:50%;width:100px;height:100px;transform:translate(-50%,-50%);border-radius:9999px;background:${unlocked ? theme.base : '#C9C0AE'};opacity:0.28;filter:blur(6px)" aria-hidden="true"></div>
       <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0.24;pointer-events:none" aria-hidden="true">${icon(ZONE_MOTIF[zone.id] || 'star', { size: 150, color: theme.deep })}</div>
-      ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
+      ${isNext ? `<div class="anim-float" style="position:absolute;left:50%;top:-34px;transform:translateX(-50%);white-space:nowrap" aria-hidden="true">
+        <span class="font-display font-bold" style="display:inline-block;font-size:9px;padding:3px 9px;border-radius:9999px;background:var(--gold-deep);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18)">${t('carte.nextStop')}</span>
+      </div>` : ''}
       ${boosted ? `<div style="position:absolute;left:calc(50% + 22px);top:-8px;font-size:15px" aria-hidden="true" title="${t('carte.eventBoostHint')}">${activeEvent.emoji}</div>` : ''}
       <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : t('dragondex.lockedSuffix')}"
         class="rounded-full flex items-center justify-center relative ${unlocked ? 'dragon-anim-idle' : ''}"
@@ -591,6 +593,9 @@ function zonesPathMapHtml() {
   const gradientStops = points.map((p, i) => `<stop offset="${(i / (n - 1) * 100).toFixed(0)}%" stop-color="${p.theme.base}"/>`).join('');
 
   return `<div style="position:relative;width:100%;height:${totalHeight}px;border-radius:20px;overflow:hidden;background:linear-gradient(180deg, ${bgStops})">
+    <div class="carte-cloud" style="top:8%;left:-10%;width:120px;height:40px;animation-duration:38s" aria-hidden="true"></div>
+    <div class="carte-cloud" style="top:38%;left:-16%;width:90px;height:30px;animation-duration:52s;animation-delay:-14s" aria-hidden="true"></div>
+    <div class="carte-cloud" style="top:68%;left:-12%;width:100px;height:34px;animation-duration:44s;animation-delay:-28s" aria-hidden="true"></div>
     ${mistHtml}
     <svg viewBox="0 0 320 ${totalHeight}" style="position:absolute;top:0;left:0;width:100%;height:100%" preserveAspectRatio="none" aria-hidden="true">
       <defs><linearGradient id="carte-trail-grad" x1="0" y1="0" x2="0" y2="1">${gradientStops}</linearGradient></defs>

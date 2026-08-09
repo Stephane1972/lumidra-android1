@@ -287,7 +287,20 @@ body.gentle-fx .dragon-tail-swish { animation-duration: 4.4s; }
 body.gentle-fx #lumidra-app::before { opacity:.4; animation-duration:42s; }
 @media (prefers-reduced-motion: reduce) { #lumidra-app::before { animation:none; } }
 
-/* ---- scintillement du sentier d'expédition déjà parcouru ---- */
+/* ---- nuages en dérive sur la carte d'expédition ---- */
+.carte-cloud {
+  position:absolute; background:#fff; opacity:.4; border-radius:9999px;
+  filter:blur(2px); animation-name:carte-cloud-drift; animation-timing-function:linear; animation-iteration-count:infinite;
+  pointer-events:none;
+}
+.carte-cloud::before, .carte-cloud::after {
+  content:''; position:absolute; background:#fff; border-radius:9999px;
+}
+.carte-cloud::before { width:55%; height:140%; top:-40%; left:8%; }
+.carte-cloud::after { width:40%; height:110%; top:-25%; right:10%; }
+@keyframes carte-cloud-drift { from { transform:translateX(0); } to { transform:translateX(130vw); } }
+body.gentle-fx .carte-cloud { opacity:.25; }
+@media (prefers-reduced-motion: reduce) { .carte-cloud { animation:none; } }
 .carte-trail-shimmer { animation: carte-trail-shimmer-move 2.2s linear infinite; filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
 @keyframes carte-trail-shimmer-move { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -140; } }
 body.gentle-fx .carte-trail-shimmer { animation-duration: 4s; opacity: .5; }
