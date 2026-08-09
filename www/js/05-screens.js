@@ -524,14 +524,20 @@ function renderScreenDragondex() {
    ÉCRAN — CARTE / EXPÉDITIONS
    ========================================================================= */
 
+function zoneThemeElement(zone) {
+  const overrides = { cime: 'lumiere', voile: 'air' };
+  return ELEMENTS[overrides[zone.id] || zone.elements[0]];
+}
+
 function zonesPathMapHtml() {
   const level = computeLevel(state.xp);
   const n = ZONES.length;
   const xs = [76, 244, 76, 244, 160, 160]; // alternance gauche/droite façon "parcours"
   const ySpacing = 132;
   const yStart = 56;
-  const points = ZONES.map((z, i) => ({ zone: z, x: xs[i % xs.length], y: yStart + i * ySpacing, unlocked: level >= z.unlockLevel }));
+  const points = ZONES.map((z, i) => ({ zone: z, x: xs[i % xs.length], y: yStart + i * ySpacing, unlocked: level >= z.unlockLevel, theme: zoneThemeElement(z) }));
   const firstLockedIndex = points.findIndex(p => !p.unlocked);
+  const totalHeight = yStart + (n - 1) * ySpacing + 70;
 
   let pathD = '';
   points.forEach((p, i) => {
@@ -542,10 +548,22 @@ function zonesPathMapHtml() {
       pathD += ` C ${prev.x},${midY} ${p.x},${midY} ${p.x},${p.y}`;
     }
   });
-  const totalHeight = yStart + (n - 1) * ySpacing + 70;
+
+  // Bande d'ambiance : la couleur de fond glisse doucement d'un élément de zone au suivant en
+  // descendant le parcours, façon traversée de biomes (plaine chaude -> golfe embrumé -> ...).
+  const bgStops = points.map(p => `${p.theme.light}59 ${((p.y / totalHeight) * 100).toFixed(1)}%`).join(', ');
+
+  // Petites touches de brume/texture entre les nœuds pour éviter un tracé trop nu — positions
+  // déterministes (dérivées de l'index) pour rester stables d'un rendu à l'autre.
+  const mistHtml = points.slice(0, -1).map((p, i) => {
+    const next = points[i + 1];
+    const mx = (p.x + next.x) / 2 + (i % 2 === 0 ? -34 : 34);
+    const my = (p.y + next.y) / 2;
+    return `<div style="position:absolute;left:${(mx / 320) * 100}%;top:${my}px;width:30px;height:30px;border-radius:9999px;background:${p.theme.light};opacity:0.3;filter:blur(3px);transform:translate(-50%,-50%)" aria-hidden="true"></div>`;
+  }).join('');
 
   const nodesHtml = points.map((p, i) => {
-    const { zone, unlocked } = p;
+    const { zone, unlocked, theme } = p;
     const isNext = i === (firstLockedIndex === -1 ? -1 : firstLockedIndex);
     const activeEvent = getActiveEvent();
     const boosted = unlocked && activeEvent && zone.elements.includes(activeEvent.boostElement);
@@ -554,11 +572,12 @@ function zonesPathMapHtml() {
       return icon(c.icon, { size: 13, color: unlocked ? c.deep : '#B7AF9E' });
     }).join('');
     return `<div style="position:absolute;left:${(p.x / 320) * 100}%;top:${p.y}px;transform:translate(-50%,-50%);width:96px;text-align:center;">
+      <div style="position:absolute;left:50%;top:50%;width:100px;height:100px;transform:translate(-50%,-50%);border-radius:9999px;background:${unlocked ? theme.base : '#C9C0AE'};opacity:0.28;filter:blur(6px)" aria-hidden="true"></div>
       ${isNext ? `<div style="position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:22px" aria-hidden="true" class="anim-float">📍</div>` : ''}
       ${boosted ? `<div style="position:absolute;left:calc(50% + 22px);top:-8px;font-size:15px" aria-hidden="true" title="${t('carte.eventBoostHint')}">${activeEvent.emoji}</div>` : ''}
       <button data-action="carte-open-zone" data-zone-id="${zone.id}" data-locked="${unlocked ? '0' : '1'}" aria-label="${escapeHtml(zone.name)}${unlocked ? '' : t('dragondex.lockedSuffix')}"
         class="rounded-full flex items-center justify-center relative ${unlocked ? 'dragon-anim-idle' : ''}"
-        style="width:66px;height:66px;margin:0 auto;background:${unlocked ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : '#D8CFC0'};box-shadow:0 4px 0 ${unlocked ? 'var(--gold-deep)' : '#B7AF9E'};border:3px solid #fff;animation-delay:${(i * 0.35).toFixed(2)}s">
+        style="width:72px;height:72px;margin:0 auto;background:${unlocked ? 'linear-gradient(135deg,var(--gold),var(--gold-deep-btn))' : '#D8CFC0'};box-shadow:0 4px 0 ${unlocked ? 'var(--gold-deep)' : '#B7AF9E'};border:3px solid #fff;animation-delay:${(i * 0.35).toFixed(2)}s">
         ${unlocked ? `<span style="display:flex;gap:1px">${chips}</span>` : icon('lock', { size: 18, color: '#8C8371' })}
       </button>
       <div class="font-display font-bold" style="font-size:10px;margin-top:6px;color:${unlocked ? 'var(--ink)' : 'var(--ink-soft)'};line-height:1.2">${escapeHtml(zone.name)}</div>
@@ -566,10 +585,14 @@ function zonesPathMapHtml() {
     </div>`;
   }).join('');
 
-  return `<div style="position:relative;width:100%;height:${totalHeight}px;">
+  const gradientStops = points.map((p, i) => `<stop offset="${(i / (n - 1) * 100).toFixed(0)}%" stop-color="${p.theme.base}"/>`).join('');
+
+  return `<div style="position:relative;width:100%;height:${totalHeight}px;border-radius:20px;overflow:hidden;background:linear-gradient(180deg, ${bgStops})">
+    ${mistHtml}
     <svg viewBox="0 0 320 ${totalHeight}" style="position:absolute;top:0;left:0;width:100%;height:100%" preserveAspectRatio="none" aria-hidden="true">
-      <path d="${pathD}" fill="none" stroke="#D8CFC0" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15"/>
-      <path d="${pathD}" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15" opacity="0.85"
+      <defs><linearGradient id="carte-trail-grad" x1="0" y1="0" x2="0" y2="1">${gradientStops}</linearGradient></defs>
+      <path d="${pathD}" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="8" stroke-linecap="round" stroke-dasharray="3 15"/>
+      <path d="${pathD}" fill="none" stroke="url(#carte-trail-grad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="3 15" opacity="0.9"
         style="clip-path:inset(0 0 ${Math.max(0, 100 - ((firstLockedIndex === -1 ? n - 1 : firstLockedIndex) / (n - 1)) * 100)}% 0)"/>
     </svg>
     ${nodesHtml}
@@ -611,6 +634,25 @@ function activeExpeditionCardHtml(exp) {
     ${ready
       ? `<button data-action="carte-claim" data-exp-id="${exp.id}" class="font-display font-bold text-xs px-3\\.5 py-2 rounded-xl" style="padding:8px 14px;background:var(--gold);color:var(--ink)">${t('carte.claim')}</button>`
       : `<button data-action="carte-speed-up" data-exp-id="${exp.id}" class="font-display font-bold fs-10 px-2\\.5 py-1\\.5 rounded-xl flex items-center gap-1 shrink-0" style="padding:6px 10px;background:#F1ECE2;color:var(--ink-soft)">⚡ ${speedCost}</button>`}
+  </div>`;
+}
+
+function scoutPanelHtml() {
+  const c = ui.carte;
+  const done = c.scoutTaps >= SCOUT_MAX_TAPS;
+  const dotDelay = c.scoutStartedAt ? -((Date.now() - c.scoutStartedAt) % 2400) : 0;
+  return `<div class="rounded-2xl p-3\\.5" style="padding:14px;background:#F1ECE2">
+    <div class="flex items-center justify-between mb-1\\.5" style="margin-bottom:6px">
+      <span class="font-display font-bold fs-12" style="color:var(--ink)">${icon('map', { size: 14, color: 'var(--gold-deep)' })} ${t('carte.scoutTitle')}</span>
+      ${c.scoutBonusPct > 0 ? `<span class="font-display font-bold fs-11" style="color:var(--gold-deep)">+${c.scoutBonusPct}%</span>` : ''}
+    </div>
+    ${done
+      ? `<p class="font-body font-semibold fs-11" style="color:var(--ink-soft)">${c.scoutBonusPct > 0 ? t('carte.scoutDoneBonus', { n: c.scoutBonusPct }) : t('carte.scoutDoneNone')}</p>`
+      : `<div class="hatch-timing-track" style="margin:0 auto">
+          <div class="hatch-timing-zone"></div>
+          <div class="hatch-timing-dot" style="animation-delay:${dotDelay}ms"></div>
+        </div>
+        <button data-action="carte-scout-tap" class="font-display font-bold fs-11 rounded-xl w-full mt-2" style="margin-top:8px;padding:8px;background:var(--gold);color:var(--ink)">${t('carte.scoutTap', { n: c.scoutTaps, max: SCOUT_MAX_TAPS })}</button>`}
   </div>`;
 }
 
@@ -704,10 +746,10 @@ function renderScreenCarte() {
         return `<button data-action="carte-pick-single" data-dragon-id="${d.id}" class="rounded-xl p-1\\.5 flex flex-col items-center" style="padding:6px;background:var(--parchment)">${dragonSVG({ element: s.element, variant: s.variant, stage: d.stage, size: 48 })}</button>`;
       }).join('')}</div>`;
     }
-    html += flowPanelHtml(t('carte.chooseDragon'), inner);
+    html += flowPanelHtml(t('carte.chooseDragon'), scoutPanelHtml() + inner);
   } else if (c.view === 'team') {
     const zone = ZONES.find(z => z.id === c.zoneId);
-    html += flowPanelHtml(t('carte.buildTeam'), teamPickerHtml(zone, availableDragons));
+    html += flowPanelHtml(t('carte.buildTeam'), scoutPanelHtml() + teamPickerHtml(zone, availableDragons));
   }
 
   html += `</div>`;

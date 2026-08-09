@@ -223,12 +223,12 @@ function dispatchAction(action, dataset, evt, el) {
         if (el) { el.classList.remove('anim-shake'); void el.offsetWidth; el.classList.add('anim-shake'); }
         break;
       }
-      ui.carte = { view: 'types', zoneId: zoneId, typeId: null, teamIds: [] };
+      ui.carte = { view: 'types', zoneId: zoneId, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
       renderScreenCarte();
       break;
     }
     case 'carte-back': {
-      if (ui.carte.view === 'types') ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+      if (ui.carte.view === 'types') ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
       else ui.carte.view = 'types';
       renderScreenCarte();
       break;
@@ -237,12 +237,18 @@ function dispatchAction(action, dataset, evt, el) {
       const type = EXPEDITION_TYPES.find(t => t.id === typeId);
       ui.carte.typeId = typeId;
       ui.carte.teamIds = [];
+      ui.carte.scoutTaps = 0;
+      ui.carte.scoutBonusPct = 0;
+      ui.carte.scoutStartedAt = Date.now();
       ui.carte.view = type.team ? 'team' : 'pick1';
       renderScreenCarte();
       break;
     }
     case 'carte-pick-single':
       startExpedition(ui.carte.zoneId, ui.carte.typeId, [dragonId]);
+      break;
+    case 'carte-scout-tap':
+      scoutTap();
       break;
     case 'carte-toggle-team-member': {
       const ids = ui.carte.teamIds;

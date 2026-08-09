@@ -149,6 +149,21 @@ function hatchTimingIsBonus(startedAt) {
   return pos >= 0.55 && pos <= 0.82;
 }
 
+const SCOUT_MAX_TAPS = 3;
+const SCOUT_BONUS_PER_TAP = 5;
+function scoutTap() {
+  if (ui.carte.scoutTaps >= SCOUT_MAX_TAPS) return;
+  if (!ui.carte.scoutStartedAt) return;
+  if (hatchTimingIsBonus(ui.carte.scoutStartedAt)) {
+    ui.carte.scoutBonusPct = Math.min(SCOUT_MAX_TAPS * SCOUT_BONUS_PER_TAP, ui.carte.scoutBonusPct + SCOUT_BONUS_PER_TAP);
+    haptic(20);
+  } else {
+    haptic(10);
+  }
+  ui.carte.scoutTaps += 1;
+  renderScreenCarte();
+}
+
 function createDragon(speciesId) {
   return {
     id: uid('drg'), speciesId, stage: 'bebe', careCount: 0, lastCareAt: 0,
@@ -270,13 +285,14 @@ async function scheduleStreakReminder() {
 
 function startExpedition(zoneId, typeId, dragonIds) {
   const type = EXPEDITION_TYPES.find(t => t.id === typeId);
-  const newExp = { id: uid('exp'), zoneId, typeId, dragonIds, startAt: Date.now(), endAt: Date.now() + type.seconds * 1000 };
+  const scoutBonusPct = ui.carte.scoutBonusPct || 0;
+  const newExp = { id: uid('exp'), zoneId, typeId, dragonIds, startAt: Date.now(), endAt: Date.now() + type.seconds * 1000, scoutBonusPct };
   state.expeditions.push(newExp);
   scheduleExpeditionNotification(newExp);
   bumpQuestProgress('expedition', 1);
   saveStateDebounced();
-  showToast(t('toast.expeditionLaunched'));
-  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+  showToast(scoutBonusPct > 0 ? t('toast.expeditionLaunchedScouted', { n: scoutBonusPct }) : t('toast.expeditionLaunched'));
+  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
   if (ui.screen === 'carte') renderScreenCarte();
 }
 
@@ -409,6 +425,7 @@ function claimExpedition(expId) {
   const activeEvent = getActiveEvent();
   const eventBoost = !!(activeEvent && zone.elements.includes(activeEvent.boostElement));
   let ecaillesGain = randInt(type.ecaillesMin, type.ecaillesMax) + teamBonus.ecaillesBonus;
+  if (exp.scoutBonusPct) ecaillesGain = Math.round(ecaillesGain * (1 + exp.scoutBonusPct / 100));
   let gotEgg = null;
   let gotLegendary = false;
   let gotMythic = false;
@@ -549,7 +566,7 @@ function doReset() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { warnSaveFailureOnce(); }
   ui.screen = 'sanctuaire';
   ui.confirmResetOpen = false;
-  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
   renderAll();
 }
 

@@ -266,7 +266,7 @@ const ui = {
   dragondexRarityFilter: 'tous',
   onboarding: { name: '', mode: 'eclosion' },
   reglagesName: '',
-  carte: { view: 'zones', zoneId: null, typeId: null, teamIds: [] },
+  carte: { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 },
   sanctuaireSort: 'recent',
   sanctuaireSearch: '',
   objectivesBannerCollapsed: true,
@@ -423,7 +423,7 @@ function applyPendingImport() {
   ui.pendingImport = null;
   ui.confirmImportOpen = false;
   ui.screen = 'sanctuaire';
-  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [] };
+  ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
   renderAll();
   showToast(t('toast.importSuccess'));
 }
