@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumidra-cache-v4';
+const CACHE_NAME = 'lumidra-cache-v5';
 const ASSETS = [
   './',
   './index.html',
