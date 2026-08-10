@@ -856,7 +856,9 @@ function decorSectionHtml(title, items) {
 }
 
 function accessoryPreviewViewBox(slot) {
-  return slot === 'charm' ? '142 122 52 52' : '60 4 80 50';
+  if (slot === 'charm') return '142 122 52 52';
+  if (slot === 'collar') return '66 74 68 60';
+  return '60 4 80 50';
 }
 
 function accessoryCardHtml(acc, owned) {
