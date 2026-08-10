@@ -23,7 +23,7 @@ function renderAll() {
 function renderScreenByName(name) {
   if (name === 'sanctuaire') renderScreenSanctuaire();
   else if (name === 'dragondex') renderScreenDragondex();
-  else if (name === 'carte') renderScreenCarte();
+  else if (name === 'carte') renderScreenCarte({ resetScroll: true });
   else if (name === 'boutique') renderScreenBoutique();
   else if (name === 'reglages') renderScreenReglages();
   else if (name === 'labo') renderScreenLabo();
@@ -293,7 +293,7 @@ function startExpedition(zoneId, typeId, dragonIds) {
   saveStateDebounced();
   showToast(scoutBonusPct > 0 ? t('toast.expeditionLaunchedScouted', { n: scoutBonusPct }) : t('toast.expeditionLaunched'));
   ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
-  if (ui.screen === 'carte') renderScreenCarte();
+  if (ui.screen === 'carte') renderScreenCarte({ resetScroll: true });
 }
 
 /* =========================================================================

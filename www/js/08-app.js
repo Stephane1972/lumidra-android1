@@ -4,17 +4,7 @@
 
 setInterval(() => {
   now = Date.now();
-  if (state.onboarded && ui.screen === 'carte') {
-    // Ce ré-affichage périodique ne sert qu'à rafraîchir les comptes à rebours d'expédition —
-    // sans ceci, la reconstruction complète du HTML remettait le défilement à zéro chaque seconde,
-    // rendant impossible de lire l'écran en scrollant (contrairement à une vraie navigation,
-    // où repartir en haut de l'écran reste le comportement voulu).
-    const prevScrollable = document.querySelector('#screen-root .overflow-y-auto');
-    const prevScrollTop = prevScrollable ? prevScrollable.scrollTop : 0;
-    renderScreenCarte();
-    const newScrollable = document.querySelector('#screen-root .overflow-y-auto');
-    if (newScrollable) newScrollable.scrollTop = prevScrollTop;
-  }
+  if (state.onboarded && ui.screen === 'carte') renderScreenCarte();
   if (ui.detailDragonId) {
     const prevSheet = document.querySelector('.modal-sheet');
     const prevSheetScrollTop = prevSheet ? prevSheet.scrollTop : 0;
@@ -224,13 +214,13 @@ function dispatchAction(action, dataset, evt, el) {
         break;
       }
       ui.carte = { view: 'types', zoneId: zoneId, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
-      renderScreenCarte();
+      renderScreenCarte({ resetScroll: true });
       break;
     }
     case 'carte-back': {
       if (ui.carte.view === 'types') ui.carte = { view: 'zones', zoneId: null, typeId: null, teamIds: [], scoutTaps: 0, scoutBonusPct: 0 };
       else ui.carte.view = 'types';
-      renderScreenCarte();
+      renderScreenCarte({ resetScroll: true });
       break;
     }
     case 'carte-choose-type': {
@@ -241,7 +231,7 @@ function dispatchAction(action, dataset, evt, el) {
       ui.carte.scoutBonusPct = 0;
       ui.carte.scoutStartedAt = Date.now();
       ui.carte.view = type.team ? 'team' : 'pick1';
-      renderScreenCarte();
+      renderScreenCarte({ resetScroll: true });
       break;
     }
     case 'carte-pick-single':

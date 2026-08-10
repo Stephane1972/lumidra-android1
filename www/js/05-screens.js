@@ -778,7 +778,7 @@ function teamPickerHtml(zone, availableDragons) {
   </div>`;
 }
 
-function renderScreenCarte() {
+function renderScreenCarteRaw() {
   const busy = busyDragonIds();
   const availableDragons = state.dragons.filter(d => !busy[d.id]);
   const c = ui.carte;
@@ -817,6 +817,17 @@ function renderScreenCarte() {
   document.getElementById('screen-root').innerHTML = html;
 }
 
+// Toute mise à jour de l'écran carte (choix d'un dragon, minuteur, repérage...) passe par ce
+// point unique qui préserve le défilement — sans ça, chaque re-rendu (y compris juste taper sur
+// un dragon pour composer une équipe) ramenait l'écran tout en haut, rendant la sélection instable.
+function renderScreenCarte(opts) {
+  const resetScroll = opts && opts.resetScroll;
+  const prevScrollable = document.querySelector('#screen-root .overflow-y-auto');
+  const prevScrollTop = prevScrollable ? prevScrollable.scrollTop : 0;
+  renderScreenCarteRaw();
+  const newScrollable = document.querySelector('#screen-root .overflow-y-auto');
+  if (newScrollable) newScrollable.scrollTop = resetScroll ? 0 : prevScrollTop;
+}
 function flowPanelHtml(title, innerHtml) {
   return `<div>
     <button data-action="carte-back" class="flex items-center gap-1 font-display font-bold text-xs mb-2\\.5" style="margin-bottom:10px;color:var(--gold-deep)">${icon('chevron-left', { size: 15 })} ${t('carte.back')}</button>
