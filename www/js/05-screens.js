@@ -785,7 +785,7 @@ function renderScreenCarteRaw() {
   let html = `<div class="flex-1 overflow-y-auto px-4 pb-4">`;
 
   if (state.expeditions.length > 0) {
-    html += `<div class="mb-3 flex flex-col gap-2">${state.expeditions.map(activeExpeditionCardHtml).join('')}</div>`;
+    html += `<div id="active-expeditions-block" class="mb-3 flex flex-col gap-2">${state.expeditions.map(activeExpeditionCardHtml).join('')}</div>`;
   }
 
   if (c.view === 'zones') {
@@ -820,6 +820,16 @@ function renderScreenCarteRaw() {
 // Toute mise à jour de l'écran carte (choix d'un dragon, minuteur, repérage...) passe par ce
 // point unique qui préserve le défilement — sans ça, chaque re-rendu (y compris juste taper sur
 // un dragon pour composer une équipe) ramenait l'écran tout en haut, rendant la sélection instable.
+// Rafraîchit uniquement les cartes d'expédition en cours (comptes à rebours, sentier animé) —
+// sans reconstruire le reste de l'écran (parcours illustré, sélecteurs de dragons), qui ne dépend
+// pas de l'horloge. Avec plusieurs expéditions actives, refaire tout l'écran chaque seconde
+// devenait lourd et cassait la fluidité du défilement.
+function tickActiveExpeditions() {
+  const el = document.getElementById('active-expeditions-block');
+  if (!el || state.expeditions.length === 0) return;
+  el.innerHTML = state.expeditions.map(activeExpeditionCardHtml).join('');
+}
+
 function renderScreenCarte(opts) {
   const resetScroll = opts && opts.resetScroll;
   const prevScrollable = document.querySelector('#screen-root .overflow-y-auto');

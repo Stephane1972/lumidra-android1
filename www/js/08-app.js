@@ -4,7 +4,7 @@
 
 setInterval(() => {
   now = Date.now();
-  if (state.onboarded && ui.screen === 'carte') renderScreenCarte();
+  if (state.onboarded && ui.screen === 'carte') tickActiveExpeditions();
   if (ui.detailDragonId) {
     const prevSheet = document.querySelector('.modal-sheet');
     const prevSheetScrollTop = prevSheet ? prevSheet.scrollTop : 0;
