@@ -7,7 +7,17 @@ function renderOnboarding() {
   const root = document.getElementById('onboarding-root');
   root.innerHTML = `
   <div class="absolute inset-0 flex flex-col items-center justify-center px-6 text-center safe-top safe-bottom" style="background:linear-gradient(180deg,#FFF6E0,var(--sky) 60%)">
-    <div class="anim-pulse mb-2 onboarding-egg-wrap">${eggSVG({ element: 'lumiere', size: 84, cracks: 0 })}</div>
+    <div style="position:relative;width:220px;height:150px;display:flex;align-items:center;justify-content:center;margin-bottom:4px">
+      ${[
+        { el: 'feu', top: '2%', left: '6%', size: 34, delay: '0s' },
+        { el: 'eau', top: '4%', left: '78%', size: 30, delay: '.5s' },
+        { el: 'nature', top: '58%', left: '0%', size: 32, delay: '1s' },
+        { el: 'air', top: '62%', left: '82%', size: 30, delay: '1.6s' },
+        { el: 'terre', top: '78%', left: '30%', size: 26, delay: '.8s' },
+        { el: 'lumiere', top: '80%', left: '62%', size: 26, delay: '1.3s' },
+      ].map(p => `<div class="dragon-anim-idle" style="position:absolute;top:${p.top};left:${p.left};opacity:.38;animation-delay:${p.delay};pointer-events:none" aria-hidden="true">${dragonSVG({ element: p.el, variant: 0, stage: 'bebe', size: p.size })}</div>`).join('')}
+      <div class="anim-pulse onboarding-egg-wrap" style="position:relative;z-index:1">${eggSVG({ element: 'lumiere', size: 84, cracks: 0 })}</div>
+    </div>
     <h1 class="font-display font-extrabold text-3xl" style="color:var(--ink)">Lumidra</h1>
     <p class="font-body font-bold text-sm mt-1 mb-6" style="color:var(--ink-soft)">${t('onboarding.tagline')}</p>
 
